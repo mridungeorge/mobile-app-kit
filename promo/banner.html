@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Mobile App Factory — README banner</title>
+<link rel="stylesheet" href="promo.css" />
+<style>
+  /* page geometry for the 1600x800 README banner */
+  #stage { width: 1600px; height: 800px; }
+
+  .brand { left: 96px; top: 80px; }
+
+  .headline {
+    left: 96px;
+    top: 160px;
+    font-size: 108px;
+    line-height: 1.03;
+  }
+
+  .headline .u { position: relative; display: inline-block; }
+
+  .sub { left: 96px; top: 424px; width: 790px; font-size: 21px; }
+
+  .proof { left: 96px; top: 534px; }
+
+  .rail { left: 96px; right: 600px; top: 636px; }
+
+  .device { left: 1150px; top: 79px; }
+
+  .bg-glow {
+    background:
+      radial-gradient(46% 62% at 76% 62%, rgba(67, 146, 247, 0.20), transparent 72%),
+      radial-gradient(36% 44% at 22% 18%, rgba(163, 118, 233, 0.12), transparent 74%);
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bg-glow"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-vignette"></div>
+
+  <div class="brand">
+    <span class="mark"></span>
+    <span class="brand__name">Mobile App Factory</span>
+  </div>
+
+  <h1 class="headline">
+    <span class="line">One sentence.</span>
+    <span class="line">A <span class="u">shipped<span class="w__bar" style="transform:scaleX(1)"></span></span> app.</span>
+  </h1>
+
+  <p class="sub">
+    Design, motion, privacy declarations and store compliance —
+    one pipeline that reshapes itself around your idea.
+  </p>
+
+  <div class="proof">
+    <span><b>14</b> archetypes</span>
+    <span class="dot"></span>
+    <span>iOS <b>+</b> Android</span>
+    <span class="dot"></span>
+    <span><b>Store</b>-ready</span>
+  </div>
+
+  <div class="rail" id="rail">
+    <div class="rail__track"></div>
+    <div class="rail__fill" style="transform:scaleX(1)"></div>
+  </div>
+
+  <div class="device">
+    <div class="phone">
+      <div class="screen">
+        <div class="status">
+          <span>9:41</span>
+          <span class="pill"></span>
+        </div>
+        <div class="app">
+          <header class="app__head">
+            <div>
+              <p class="app__eyebrow">Tuesday, 10 November</p>
+              <h2 class="app__title">Tonight</h2>
+            </div>
+            <span class="avatar">AR</span>
+          </header>
+
+          <div class="score">
+            <div class="score__glow" style="opacity:.4"></div>
+            <svg class="score__ring" viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="54" class="ring-track"></circle>
+              <circle cx="60" cy="60" r="54" class="ring-progress"
+                      stroke-dasharray="339.292" stroke-dashoffset="47.5"></circle>
+            </svg>
+            <div class="score__value">
+              <span class="score__num">86</span>
+              <span class="score__unit">Sleep score</span>
+            </div>
+          </div>
+
+          <div class="metrics">
+            <div class="metric metric--a"><span class="metric__label">Deep</span><span class="metric__value">1h 42m</span></div>
+            <div class="metric metric--v"><span class="metric__label">REM</span><span class="metric__value">1h 58m</span></div>
+            <div class="metric metric--g"><span class="metric__label">HRV</span><span class="metric__value">54 ms</span></div>
+          </div>
+
+          <div class="stages">
+            <div class="stages__head"><span>Sleep stages</span><span>6h 48m</span></div>
+            <div class="stages__bar">
+              <i style="width:19%;background:#4392f7"></i>
+              <i style="width:56%;background:rgba(255,255,255,.26)"></i>
+              <i style="width:25%;background:#a376e9"></i>
+            </div>
+            <div class="stages__legend">
+              <span><b style="background:#4392f7"></b>Deep</span>
+              <span><b style="background:rgba(255,255,255,.26)"></b>Core</span>
+              <span><b style="background:#a376e9"></b>REM</span>
+            </div>
+          </div>
+
+          <div class="chart">
+            <span class="bar" style="height:38%"></span>
+            <span class="bar" style="height:62%"></span>
+            <span class="bar" style="height:44%"></span>
+            <span class="bar" style="height:78%"></span>
+            <span class="bar" style="height:56%"></span>
+            <span class="bar" style="height:88%"></span>
+            <span class="bar" style="height:70%"></span>
+          </div>
+
+          <div class="hint">
+            <span class="hint__dot"></span>
+            <p><strong>Go to bed 20 min earlier.</strong> Your deep sleep drops when you start after 11:40pm.</p>
+          </div>
+
+          <nav class="tabs">
+            <span class="tab on">
+              <svg class="tab__icon" viewBox="0 0 15 15" aria-hidden="true"><path d="M9.4 1.6a5.5 5.5 0 1 0 4 9.3A6.3 6.3 0 0 1 9.4 1.6z"/></svg>
+              Tonight
+            </span>
+            <span class="tab">
+              <svg class="tab__icon" viewBox="0 0 15 15" aria-hidden="true"><path d="M2.2 12V8.4M6 12V5.2M9.8 12V7M13.4 12V2.8"/></svg>
+              Trends
+            </span>
+            <span class="tab">
+              <svg class="tab__icon" viewBox="0 0 15 15" aria-hidden="true"><path d="M3.2 3.4h8.6M3.2 7.1h8.6M3.2 10.8h5.2"/></svg>
+              Journal
+            </span>
+            <span class="tab">
+              <svg class="tab__icon" viewBox="0 0 15 15" aria-hidden="true"><circle cx="7.5" cy="5.2" r="2.4"/><path d="M2.9 12.4a4.7 4.7 0 0 1 9.2 0"/></svg>
+              Profile
+            </span>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-grain"></div>
+</div>
+
+<script>
+  // Rail in its settled state.
+  var rail = document.getElementById('rail');
+  ['Route', 'Product', 'Design', 'Build', 'Motion', 'Comply', 'Release', 'Review']
+    .forEach(function (name, i, all) {
+      var node = document.createElement('div');
+      node.className = 'node';
+      node.style.left = (i / (all.length - 1)) * 100 + '%';
+      node.innerHTML =
+        '<span class="node__dot" style="background:#4392f7;border-color:rgba(160,205,255,.9);' +
+        'box-shadow:0 0 0 3px rgba(67,146,247,.30)"></span>' +
+        '<span class="node__label" style="color:#d5d7db">' + name + '</span>';
+      rail.appendChild(node);
+    });
+</script>
+</body>
+</html>

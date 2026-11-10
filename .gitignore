@@ -9,6 +9,9 @@
 # Local project artifacts produced by the Mobile App Factory.
 **/.mobile/
 
+# Promo render scratch space (frames and the font-inlined build).
+promo/.build/
+
 # Environment and secrets.
 .env
 .env.*

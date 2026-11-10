@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Mobile App Factory — promo render (4:5)</title>
+<link rel="stylesheet" href="promo.css" />
+<style>
+  /* page geometry for the 1080x1350 Instagram format */
+  #stage { width: 1080px; height: 1350px; }
+
+  .brand { left: 88px; right: 88px; top: 76px; }
+
+  .headline { left: 88px; right: 88px; top: 150px; font-size: 98px; line-height: 1.02; }
+
+  .sub { left: 88px; top: 388px; width: 726px; }
+
+  .proof { left: 88px; top: 480px; }
+
+  .rail { left: 88px; right: 88px; top: 556px; }
+
+  .device { left: 50%; top: 646px; margin-left: -153px; }
+
+  .foot { left: 88px; right: 88px; bottom: 22px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bg-glow" id="glow"></div>
+  <div class="bg-grid" id="grid"></div>
+  <div class="bg-vignette"></div>
+
+  <div class="brand" id="brand">
+    <span class="mark"></span>
+    <span class="brand__name">Mobile App Factory</span>
+    <span class="brand__meta">v1.0</span>
+  </div>
+
+  <h1 class="headline" id="headline">
+    <span class="line">
+      <span class="w" data-w>One</span> <span class="w" data-w>sentence.</span>
+    </span>
+    <span class="line">
+      <span class="w" data-w>A</span>
+      <span class="w" data-w data-underline>shipped<span class="w__bar" id="ubar"></span></span>
+      <span class="w" data-w>app.</span>
+    </span>
+  </h1>
+
+  <p class="sub" id="sub">
+    Design, motion, privacy declarations and store compliance —
+    one pipeline that reshapes itself around your idea.
+  </p>
+
+  <div class="proof" id="proof">
+    <span><b>14</b> archetypes</span>
+    <span class="dot"></span>
+    <span>iOS <b>+</b> Android</span>
+    <span class="dot"></span>
+    <span><b>Store</b>-ready</span>
+  </div>
+
+  <div class="rail" id="rail">
+    <div class="rail__track"></div>
+    <div class="rail__fill" id="railFill"></div>
+    <div class="rail__spark" id="spark"></div>
+  </div>
+
+  <div class="device" id="device">
+    <div class="phone">
+      <div class="screen">
+        <div class="status">
+          <span>9:41</span>
+          <span class="pill"></span>
+        </div>
+        <div class="app">
+          <header class="app__head">
+            <div>
+              <p class="app__eyebrow">Tuesday, 10 November</p>
+              <h2 class="app__title">Tonight</h2>
+            </div>
+            <span class="avatar">AR</span>
+          </header>
+
+          <div class="score">
+            <div class="score__glow" id="scoreGlow"></div>
+            <svg class="score__ring" viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="54" class="ring-track"></circle>
+              <circle cx="60" cy="60" r="54" class="ring-progress" id="ring"
+                      stroke-dasharray="339.292" stroke-dashoffset="339.292"></circle>
+            </svg>
+            <div class="score__value">
+              <span class="score__num" id="scoreNum">0</span>
+              <span class="score__unit">Sleep score</span>
+            </div>
+          </div>
+
+          <div class="metrics">
+            <div class="metric metric--a" data-metric><span class="metric__label">Deep</span><span class="metric__value">1h 42m</span></div>
+            <div class="metric metric--v" data-metric><span class="metric__label">REM</span><span class="metric__value">1h 58m</span></div>
+            <div class="metric metric--g" data-metric><span class="metric__label">HRV</span><span class="metric__value">54 ms</span></div>
+          </div>
+
+          <div class="stages" id="stages">
+            <div class="stages__head"><span>Sleep stages</span><span>6h 48m</span></div>
+            <div class="stages__bar" id="stagesBar">
+              <i style="width:19%;background:#4392f7"></i>
+              <i style="width:56%;background:rgba(255,255,255,.26)"></i>
+              <i style="width:25%;background:#a376e9"></i>
+            </div>
+            <div class="stages__legend">
+              <span><b style="background:#4392f7"></b>Deep</span>
+              <span><b style="background:rgba(255,255,255,.26)"></b>Core</span>
+              <span><b style="background:#a376e9"></b>REM</span>
+            </div>
+          </div>
+
+          <div class="chart">
+            <span class="bar" data-bar style="height:38%"></span>
+            <span class="bar" data-bar style="height:62%"></span>
+            <span class="bar" data-bar style="height:44%"></span>
+            <span class="bar" data-bar style="height:78%"></span>
+            <span class="bar" data-bar style="height:56%"></span>
+            <span class="bar" data-bar style="height:88%"></span>
+            <span class="bar" data-bar style="height:70%"></span>
+          </div>
+
+          <div class="hint" id="hint">
+            <span class="hint__dot"></span>
+            <p><strong>Go to bed 20 min earlier.</strong> Your deep sleep drops when you start after 11:40pm.</p>
+          </div>
+
+          <nav class="tabs">
+            <span class="tab on" data-tab>
+              <svg class="tab__icon" viewBox="0 0 15 15" aria-hidden="true"><path d="M9.4 1.6a5.5 5.5 0 1 0 4 9.3A6.3 6.3 0 0 1 9.4 1.6z"/></svg>
+              Tonight
+            </span>
+            <span class="tab" data-tab>
+              <svg class="tab__icon" viewBox="0 0 15 15" aria-hidden="true"><path d="M2.2 12V8.4M6 12V5.2M9.8 12V7M13.4 12V2.8"/></svg>
+              Trends
+            </span>
+            <span class="tab" data-tab>
+              <svg class="tab__icon" viewBox="0 0 15 15" aria-hidden="true"><path d="M3.2 3.4h8.6M3.2 7.1h8.6M3.2 10.8h5.2"/></svg>
+              Journal
+            </span>
+            <span class="tab" data-tab>
+              <svg class="tab__icon" viewBox="0 0 15 15" aria-hidden="true"><circle cx="7.5" cy="5.2" r="2.4"/><path d="M2.9 12.4a4.7 4.7 0 0 1 9.2 0"/></svg>
+              Profile
+            </span>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot" id="foot">
+    <span>Claude skills · mobile-app-factory + motion-experiences</span>
+    <span class="foot__url">github.com/mridungeorge/mobile-app-kit</span>
+  </div>
+
+  <div class="bg-grain"></div>
+  <div class="sheen" id="sheen"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var DURATION = 8.0;
+
+  var clamp = function (v, a, b) {
+    a = a === undefined ? 0 : a;
+    b = b === undefined ? 1 : b;
+    return Math.min(b, Math.max(a, v));
+  };
+  var p = function (t, start, dur) { return clamp((t - start) / dur); };
+  var easeOutCubic = function (x) { return 1 - Math.pow(1 - x, 3); };
+  var easeOutQuint = function (x) { return 1 - Math.pow(1 - x, 5); };
+  var easeInOutCubic = function (x) {
+    return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  };
+  var easeOutBack = function (x) {
+    var c1 = 1.4, c3 = c1 + 1;
+    return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+  };
+
+  var el = function (id) { return document.getElementById(id); };
+
+  var $glow = el('glow');
+  var $grid = el('grid');
+  var $brand = el('brand');
+  var $words = Array.prototype.slice.call(document.querySelectorAll('[data-w]'));
+  var $ubar = el('ubar');
+  var $sub = el('sub');
+  var $proof = el('proof');
+  var $rail = el('rail');
+  var $railFill = el('railFill');
+  var $spark = el('spark');
+  var $device = el('device');
+  var $ring = el('ring');
+  var $num = el('scoreNum');
+  var $metrics = Array.prototype.slice.call(document.querySelectorAll('[data-metric]'));
+  var $bars = Array.prototype.slice.call(document.querySelectorAll('[data-bar]'));
+  var $hint = el('hint');
+  var $stagesBar = el('stagesBar');
+  var $stages = el('stages');
+  var $tabs = Array.prototype.slice.call(document.querySelectorAll('[data-tab]'));
+  var $glowScore = el('scoreGlow');
+  var $foot = el('foot');
+  var $sheen = el('sheen');
+
+  /* -------------------------------------------------------------- rail */
+  var PHASES = ['Route', 'Product', 'Design', 'Build', 'Motion', 'Comply', 'Release', 'Review'];
+  var nodes = [];
+  PHASES.forEach(function (name, i) {
+    var x = (i / (PHASES.length - 1)) * 100;
+    var node = document.createElement('div');
+    node.className = 'node';
+    node.style.left = x + '%';
+    node.innerHTML = '<span class="node__dot"></span><span class="node__label">' + name + '</span>';
+    $rail.appendChild(node);
+    nodes.push({
+      dot: node.querySelector('.node__dot'),
+      label: node.querySelector('.node__label'),
+      x: i / (PHASES.length - 1)
+    });
+  });
+
+  var RING_C = 339.292;
+
+  function seek(t) {
+    /* ---- background ---------------------------------------------------- */
+    var bgIn = easeOutCubic(p(t, 0.0, 0.55));
+    $grid.style.opacity = (0.85 * bgIn).toFixed(4);
+    $glow.style.opacity = (0.55 + 0.45 * easeOutCubic(p(t, 0.1, 1.6))).toFixed(4);
+    $grid.style.transform = 'scale(' + (1.06 - 0.06 * bgIn).toFixed(4) + ')';
+
+    /* ---- brand --------------------------------------------------------- */
+    var b = easeOutQuint(p(t, 0.05, 0.5));
+    $brand.style.opacity = b.toFixed(4);
+    $brand.style.transform = 'translateY(' + (-14 * (1 - b)).toFixed(2) + 'px)';
+
+    /* ---- headline ------------------------------------------------------ */
+    var starts = [0.45, 0.68, 0.95, 1.15, 1.33];
+    $words.forEach(function (w, i) {
+      var q = easeOutQuint(p(t, starts[i] || 1.35, 0.8));
+      w.style.opacity = q.toFixed(4);
+      w.style.transform =
+        'translateY(' + (0.85 * (1 - q) * 98).toFixed(2) + 'px) scale(' +
+        (0.94 + 0.06 * q).toFixed(4) + ')';
+      w.style.filter = q > 0.99 ? 'none' : 'blur(' + (5 * (1 - q)).toFixed(2) + 'px)';
+    });
+
+    var ub = easeInOutCubic(p(t, 1.70, 0.60));
+    $ubar.style.transform = 'scaleX(' + ub.toFixed(4) + ')';
+
+    var s = easeOutCubic(p(t, 1.55, 0.55));
+    $sub.style.opacity = s.toFixed(4);
+    $sub.style.transform = 'translateY(' + (16 * (1 - s)).toFixed(2) + 'px)';
+
+    var pr = easeOutCubic(p(t, 1.75, 0.55));
+    $proof.style.opacity = pr.toFixed(4);
+    $proof.style.transform = 'translateY(' + (12 * (1 - pr)).toFixed(2) + 'px)';
+
+    /* ---- rail ---------------------------------------------------------- */
+    var railIn = easeOutCubic(p(t, 2.05, 0.4));
+    $rail.style.opacity = railIn.toFixed(4);
+    $rail.style.transform = 'translateY(' + (10 * (1 - railIn)).toFixed(2) + 'px)';
+
+    var prog = easeInOutCubic(p(t, 2.35, 1.70));
+    $railFill.style.transform = 'scaleX(' + prog.toFixed(4) + ')';
+    $spark.style.opacity = (prog > 0.005 && prog < 0.999 ? 1 : 0).toFixed(2);
+    $spark.style.left = (prog * 100).toFixed(3) + '%';
+
+    nodes.forEach(function (n) {
+      // Light as the spark arrives: full exactly when prog reaches the node.
+      var lit = clamp((prog - n.x + 0.05) / 0.05);
+      var pop = easeOutBack(clamp((prog - n.x + 0.05) / 0.09));
+      n.dot.style.background = lit > 0.02 ? '#4392f7' : '#0b0c0d';
+      n.dot.style.borderColor = lit > 0.02 ? 'rgba(160,205,255,0.9)' : 'rgba(255,255,255,0.2)';
+      n.dot.style.boxShadow = lit > 0.02
+        ? '0 0 0 ' + (3 + 7 * (1 - lit)).toFixed(1) + 'px rgba(67,146,247,' + (0.30 * lit).toFixed(3) + ')'
+        : 'none';
+      n.dot.style.transform = 'scale(' + (1 + 0.45 * Math.max(0, pop - 0.85)).toFixed(3) + ')';
+      n.label.style.color = lit > 0.5 ? '#d5d7db' : '#71747a';
+    });
+
+    /* ---- device -------------------------------------------------------- */
+    var d = easeOutQuint(p(t, 3.50, 0.90));
+    $device.style.opacity = d.toFixed(4);
+    $device.style.transform =
+      'translateY(' + (110 * (1 - d)).toFixed(2) + 'px) scale(' + (0.94 + 0.06 * d).toFixed(4) + ')';
+
+    var ringP = easeInOutCubic(p(t, 4.30, 1.15));
+    $ring.setAttribute('stroke-dashoffset', (RING_C * (1 - ringP * 0.86)).toFixed(2));
+
+    var countP = easeOutCubic(p(t, 4.35, 1.05));
+    $num.textContent = String(Math.round(86 * countP));
+
+    $glowScore.style.opacity = (0.18 + 0.22 * ringP + 0.06 * Math.sin(t * 2.2)).toFixed(3);
+
+    $metrics.forEach(function (m, i) {
+      var q = easeOutCubic(p(t, 4.75 + i * 0.08, 0.5));
+      m.style.opacity = q.toFixed(4);
+      m.style.transform = 'translateY(' + (10 * (1 - q)).toFixed(2) + 'px)';
+    });
+
+    $bars.forEach(function (bar, i) {
+      var q = easeOutQuint(p(t, 4.85 + i * 0.05, 0.55));
+      bar.style.transform = 'scaleY(' + q.toFixed(4) + ')';
+    });
+
+    var sb = easeInOutCubic(p(t, 4.75, 0.75));
+    $stagesBar.style.transform = 'scaleX(' + sb.toFixed(4) + ')';
+    $stages.style.opacity = (0.15 + 0.85 * sb).toFixed(3);
+
+    var h = easeOutCubic(p(t, 5.35, 0.5));
+    $hint.style.opacity = h.toFixed(4);
+    $hint.style.transform = 'translateY(' + (12 * (1 - h)).toFixed(2) + 'px)';
+
+    $tabs.forEach(function (tab, i) {
+      var q = easeOutCubic(p(t, 5.55 + i * 0.05, 0.4));
+      tab.style.opacity = q.toFixed(4);
+    });
+
+    /* ---- footer + sheen ------------------------------------------------ */
+    var f = easeOutCubic(p(t, 5.75, 0.6));
+    $foot.style.opacity = (0.9 * f).toFixed(4);
+
+    var sh = p(t, 6.10, 1.5);
+    $sheen.style.opacity = (sh > 0 && sh < 1 ? 0.10 * Math.sin(sh * Math.PI) : 0).toFixed(4);
+    $sheen.style.transform = 'rotate(14deg) translateX(' + (1600 * easeInOutCubic(sh)).toFixed(1) + 'px)';
+  }
+
+  window.__seek = function (t) { seek(Number(t)); };
+  window.__duration = DURATION;
+  window.__ready = document.fonts.ready.then(function () {
+    seek(0);
+    return true;
+  });
+})();
+</script>
+</body>
+</html>
