@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  PrivacyInfo.xcprivacy — starting point, not a finished manifest.
+  Place in the app target (and any extension target) and keep the declarations in sync
+  with the SDKs actually linked. Delete categories you do not use; an over-declaration
+  is also a review problem because it must match the privacy answers in App Store Connect.
+
+  Verify with:
+    plutil -lint PrivacyInfo.xcprivacy
+    npx expo prebuild (clean build, then confirm the file is copied into ios/<App>/)
+-->
+<plist version="1.0">
+<dict>
+  <!-- Set true only if the app or an SDK tracks users across apps/sites for advertising. -->
+  <key>NSPrivacyTracking</key>
+  <false/>
+
+  <!-- Domains used for tracking, if NSPrivacyTracking is true. -->
+  <key>NSPrivacyTrackingDomains</key>
+  <array/>
+
+  <!--
+    Collected data. Each item:
+      NSPrivacyCollectedDataType                  — see Apple's taxonomy
+      NSPrivacyCollectedDataTypeLinked            — linked to the user's identity
+      NSPrivacyCollectedDataTypeTracking          — used for tracking
+      NSPrivacyCollectedDataTypePurposes          — purposes array
+    Common types:
+      NSPrivacyCollectedDataTypeName, EmailAddress, PhoneNumber, PhysicalAddress,
+      Health, Fitness, PaymentInfo, CreditInfo, PreciseLocation, CoarseLocation,
+      SensitiveInfo, Contacts, PhotosOrVideos, AudioData, GameplayContent,
+      CustomerSupport, OtherUserContent, BrowsingHistory, SearchHistory,
+      UserID, DeviceID, PurchaseHistory, ProductInteraction, AdvertisingData,
+      OtherUsageData, CrashData, PerformanceData, OtherDiagnosticData
+    Purposes:
+      NSPrivacyCollectedDataTypePurposeAppFunctionality, Analytics, Advertising,
+      Marketing, DeveloperAdvertising, ThirdPartyAdvertising, Other
+  -->
+  <key>NSPrivacyCollectedDataTypes</key>
+  <array>
+    <!-- EXAMPLE: remove or replace. Account + diagnostics is the common minimum. -->
+    <dict>
+      <key>NSPrivacyCollectedDataType</key>
+      <string>NSPrivacyCollectedDataTypeUserID</string>
+      <key>NSPrivacyCollectedDataTypeLinked</key>
+      <true/>
+      <key>NSPrivacyCollectedDataTypeTracking</key>
+      <false/>
+      <key>NSPrivacyCollectedDataTypePurposes</key>
+      <array>
+        <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+      </array>
+    </dict>
+    <dict>
+      <key>NSPrivacyCollectedDataType</key>
+      <string>NSPrivacyCollectedDataTypeCrashData</string>
+      <key>NSPrivacyCollectedDataTypeLinked</key>
+      <false/>
+      <key>NSPrivacyCollectedDataTypeTracking</key>
+      <false/>
+      <key>NSPrivacyCollectedDataTypePurposes</key>
+      <array>
+        <string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+      </array>
+    </dict>
+  </array>
+
+  <!--
+    Required-reason APIs. Keep only the categories the code actually calls, with a valid reason code.
+    UserDefaults:        CA92.1 (own app settings), 1C8F.1 (app group), C56D.1 (SDK), AC6B.1
+    FileTimestamp:       C617.1 (own container), 3B52.1 (user-selected file), DDA9.1 (display only)
+    SystemBootTime:      35F9.1 (measure elapsed time), 8FFB.1 (absolute timestamps)
+    DiskSpace:           E174.1 (write/delete), 85F4.1 (display), 7D9E.1 (preallocate)
+    ActiveKeyboards:     3EC4.1 (custom keyboard), 54BD.1 (settings UI)
+    See Apple's "Describing use of required reason API" for the current list.
+  -->
+  <key>NSPrivacyAccessedAPITypes</key>
+  <array>
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key>
+      <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+      <key>NSPrivacyAccessedAPITypeReasons</key>
+      <array>
+        <string>CA92.1</string>
+      </array>
+    </dict>
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key>
+      <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+      <key>NSPrivacyAccessedAPITypeReasons</key>
+      <array>
+        <string>C617.1</string>
+      </array>
+    </dict>
+  </array>
+</dict>
+</plist>

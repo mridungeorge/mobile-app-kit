@@ -1,0 +1,50 @@
+{
+  "_instructions": [
+    "Copy this file to .mobile/metadata/metadata.json.",
+    "Replace every example value with the real listing. Keep the field names.",
+    "iOS icon must be a single 1024x1024 PNG with no alpha.",
+    "Android icon 512x512 (alpha allowed), feature graphic 1024x500 (no alpha).",
+    "Screenshots are written as WxH strings; replace with the real export sizes.",
+    "iOS needs at least one portrait 6.9-inch set: 1320x2868 (or 1290x2796).",
+    "Android allows 2-8 phone screenshots per device type.",
+    "Validate before submitting: node scripts/validate-metadata.mjs .mobile/metadata"
+  ],
+  "ios": {
+    "name": "Halcyon — Sleep Tracker",
+    "subtitle": "Fall asleep in 10 minutes",
+    "promotionalText": "New: weekly sleep debt, and a wind-down reminder that adapts to your bedtime.",
+    "keywords": "sleep,insomnia,alarm,bedtime,sleepcycle,wearable",
+    "description": "Halcyon turns last night into one clear decision for tonight.\n\nWHY IT WORKS\n• One score you can act on, not a wall of charts\n• Deep, core and REM stages with the confidence band shown\n• On-device analysis — nothing leaves the phone unless you export it\n\nHOW IT WORKS\n1. Put the phone on the mattress and start the night\n2. Wake to a score and the three inputs that moved it\n3. Get one suggestion for tonight, based on your own data\n\nNo ads, no data resale. Subscription required after the free trial; cancel in two taps.\n\nQuestions? support@example.com",
+    "whatsNew": "First release: nightly scoring, stage breakdown, and one actionable suggestion each morning.",
+    "supportUrl": "https://example.com/support",
+    "privacyPolicyUrl": "https://example.com/privacy",
+    "primaryCategory": "Health & Fitness",
+    "ageRating": "13+",
+    "demoAccount": {
+      "username": "review@example.com",
+      "password": "replace-with-a-real-demo-password"
+    },
+    "icon": "1024x1024",
+    "screenshots": ["1320x2868", "1320x2868", "1320x2868", "1320x2868", "1320x2868", "1320x2868"]
+  },
+  "android": {
+    "appName": "Halcyon: Sleep Tracker",
+    "shortDescription": "Track sleep, spot patterns, and wake at the right moment.",
+    "fullDescription": "Halcyon turns last night into one clear decision for tonight.\n\nWHY IT WORKS\n• One score you can act on, not a wall of charts\n• Deep, core and REM stages with the confidence band shown\n• On-device analysis — nothing leaves the phone unless you export it\n\nHOW IT WORKS\n1. Put the phone on the mattress and start the night\n2. Wake to a score and the three inputs that moved it\n3. Get one suggestion for tonight, based on your own data\n\nNo ads, no data resale. Subscription required after the free trial; cancel in two taps.\n\nQuestions? support@example.com",
+    "contactEmail": "support@example.com",
+    "privacyPolicyUrl": "https://example.com/privacy",
+    "packageName": "com.example.halcyon",
+    "targetSdk": 36,
+    "icon": "512x512",
+    "featureGraphic": "1024x500",
+    "screenshots": ["1080x1920", "1080x1920", "1080x1920", "1080x1920", "1080x1920", "1080x1920"],
+    "declarations": {
+      "dataSafety": true,
+      "contentRating": true,
+      "appAccess": true,
+      "ads": true,
+      "targetAudience": true,
+      "accountDeletion": true
+    }
+  }
+}

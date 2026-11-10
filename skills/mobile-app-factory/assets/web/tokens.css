@@ -1,0 +1,186 @@
+/* Rune Mobile tokens — web / Capacitor / Ionic.
+   Import once, then use var(--bg), var(--space-lg), var(--radius-md), etc. */
+
+:root {
+  color-scheme: light dark;
+
+  /* surfaces */
+  --bg: #f0f1f4;
+  --bg-deep: #f7f7f9;
+  --card: #ffffff;
+  --card-raised: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --border-strong: rgba(0, 0, 0, 0.18);
+  --text: #1a1c1f;
+  --text-secondary: #606369;
+  --text-tertiary: #7b7e85;
+  --separator: rgba(0, 0, 0, 0.13);
+  --control-track: rgba(51, 51, 51, 0.13);
+  --control-off: rgba(51, 51, 51, 0.24);
+  --hover: rgba(51, 51, 51, 0.07);
+  --press: rgba(51, 51, 51, 0.12);
+  --scrim: rgba(0, 0, 0, 0.4);
+
+  /* accent — change these two to switch the app's single accent */
+  --accent: #3680dd;
+  --accent-soft: rgba(54, 128, 221, 0.12);
+  --on-accent: #ffffff;
+
+  --success: #1da758;
+  --warning: #df7b0c;
+  --danger: #c62a2f;
+
+  /* space */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+  --space-xxxl: 48px;
+
+  /* radius */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-pill: 999px;
+
+  /* type */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Inter, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --text-display: 700 32px/1.1 var(--font-sans);
+  --text-title: 600 22px/1.2 var(--font-sans);
+  --text-title-sm: 600 17px/1.3 var(--font-sans);
+  --text-section: 600 11.5px/1.3 var(--font-sans);
+  --text-body: 400 14px/1.35 var(--font-sans);
+  --text-body-sm: 400 13px/1.4 var(--font-sans);
+  --text-label: 500 12px/1.25 var(--font-sans);
+  --text-caption: 400 11.5px/1.3 var(--font-sans);
+
+  /* elevation */
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.14);
+  --shadow-overlay: 0 16px 32px rgba(0, 0, 0, 0.14);
+
+  /* motion */
+  --dur-instant: 100ms;
+  --dur-snap: 250ms;
+  --dur-settle: 300ms;
+  --dur-reflow: 400ms;
+  --dur-glide: 320ms;
+  --dur-drift: 850ms;
+
+  --ease-enter: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-overshoot: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --ease-draw: cubic-bezier(0.45, 0, 0.2, 1);
+
+  /* targets */
+  --target-min: 44px;
+  --row-height: 56px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121314;
+    --bg-deep: #0b0c0d;
+    --card: #1c1d20;
+    --card-raised: #2b2d31;
+    --border: rgba(255, 255, 255, 0.05);
+    --border-strong: rgba(255, 255, 255, 0.12);
+    --text: #eff0f2;
+    --text-secondary: #a2a5aa;
+    --text-tertiary: #7b7e85;
+    --separator: rgba(255, 255, 255, 0.055);
+    --control-track: rgba(255, 255, 255, 0.05);
+    --control-off: rgba(255, 255, 255, 0.085);
+    --hover: rgba(255, 255, 255, 0.016);
+    --press: rgba(255, 255, 255, 0.03);
+    --scrim: rgba(0, 0, 0, 0.6);
+
+    --accent: #4392f7;
+    --accent-soft: rgba(67, 146, 247, 0.16);
+    --on-accent: #0b0c0d;
+
+    --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-overlay: 0 16px 32px rgba(0, 0, 0, 0.4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 100ms;
+    --dur-snap: 150ms;
+    --dur-settle: 150ms;
+    --dur-reflow: 150ms;
+    --dur-glide: 150ms;
+    --dur-drift: 150ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 150ms !important;
+    transition-duration: 150ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Base primitives ------------------------------------------------------- */
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: var(--text-body);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+.surface {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+
+.btn {
+  min-height: var(--target-min);
+  padding: 0 var(--space-lg);
+  border-radius: var(--radius-sm);
+  border: 0;
+  font: 600 13px/1 var(--font-sans);
+  background: var(--accent);
+  color: var(--on-accent);
+  transition: transform var(--dur-instant) var(--ease-enter),
+              background-color var(--dur-snap) linear;
+}
+.btn:active { transform: scale(0.98); }
+
+.btn--secondary {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-height: var(--row-height);
+  padding: 0 var(--space-lg);
+  border-bottom: 1px solid var(--separator);
+}
+.row:active { background: var(--press); }
+
+/* Entrance helper used with GSAP or CSS-only:
+   <div class="reveal" style="--i:0"> */
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity var(--dur-settle) var(--ease-enter),
+              transform var(--dur-settle) var(--ease-enter);
+  transition-delay: calc(var(--i, 0) * 32ms);
+}
+.reveal.is-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { transform: none; }
+}

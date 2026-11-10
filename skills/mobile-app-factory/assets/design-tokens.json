@@ -1,0 +1,92 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "meta": {
+    "name": "Rune Mobile",
+    "version": "1.0.0",
+    "source": "Derived from github.com/anomalyco/rune (tok.rs, rune-motion/tokens.rs)",
+    "updated": "2026-11-10"
+  },
+  "color": {
+    "light": {
+      "bg": "#f0f1f4",
+      "bgDeep": "#f7f7f9",
+      "card": "#ffffff",
+      "cardRaised": "#ffffff",
+      "border": "#0000001a",
+      "borderStrong": "#0000002e",
+      "text": "#1a1c1f",
+      "textSecondary": "#606369",
+      "textTertiary": "#7b7e85",
+      "separator": "#00000021",
+      "controlTrack": "#33333321",
+      "controlOff": "#3333333d",
+      "hover": "#33333312",
+      "press": "#3333331f",
+      "scrim": "#00000066"
+    },
+    "dark": {
+      "bg": "#121314",
+      "bgDeep": "#0b0c0d",
+      "card": "#1c1d20",
+      "cardRaised": "#2b2d31",
+      "border": "#ffffff0d",
+      "borderStrong": "#ffffff1f",
+      "text": "#eff0f2",
+      "textSecondary": "#a2a5aa",
+      "textTertiary": "#7b7e85",
+      "separator": "#ffffff0e",
+      "controlTrack": "#ffffff0d",
+      "controlOff": "#ffffff16",
+      "hover": "#ffffff04",
+      "press": "#ffffff08",
+      "scrim": "#00000099"
+    },
+    "accent": {
+      "blue": { "light": "#3680dd", "dark": "#4392f7" },
+      "purple": { "light": "#9065d0", "dark": "#a376e9" },
+      "pink": { "light": "#ce4682", "dark": "#e05e94" },
+      "orange": { "light": "#df7b0c", "dark": "#dc7200" },
+      "green": { "light": "#1da758", "dark": "#11ae5b" },
+      "graphite": { "light": "#777a82", "dark": "#888c94" }
+    },
+    "status": {
+      "success": { "light": "#1da758", "dark": "#11ae5b" },
+      "warning": { "light": "#df7b0c", "dark": "#dc7200" },
+      "danger": { "light": "#c62a2f", "dark": "#e5484d" }
+    }
+  },
+  "space": { "xs": 4, "sm": 8, "md": 12, "lg": 16, "xl": 24, "xxl": 32, "xxxl": 48 },
+  "radius": { "xs": 4, "sm": 6, "md": 8, "lg": 10, "xl": 12, "pill": 999 },
+  "type": {
+    "display": { "size": 32, "weight": 700, "lineHeight": 35, "tracking": -0.32 },
+    "title": { "size": 22, "weight": 600, "lineHeight": 26, "tracking": -0.2 },
+    "titleSmall": { "size": 17, "weight": 600, "lineHeight": 22, "tracking": -0.1 },
+    "section": { "size": 11.5, "weight": 600, "lineHeight": 15, "tracking": 0.4 },
+    "body": { "size": 14, "weight": 400, "lineHeight": 19, "tracking": 0 },
+    "bodySmall": { "size": 13, "weight": 400, "lineHeight": 18, "tracking": 0 },
+    "label": { "size": 12, "weight": 500, "lineHeight": 15, "tracking": 0 },
+    "caption": { "size": 11.5, "weight": 400, "lineHeight": 15, "tracking": 0 },
+    "mono": { "size": 12, "weight": 500, "lineHeight": 17, "tracking": 0 }
+  },
+  "motion": {
+    "instant": { "duration": 100, "bounce": 0, "exitDuration": 100 },
+    "snap": { "duration": 250, "bounce": 0, "exitDuration": 200 },
+    "settle": { "duration": 300, "bounce": 0, "exitDuration": 240 },
+    "reflow": { "duration": 400, "bounce": 0, "exitDuration": 320 },
+    "glide": { "duration": 320, "bounce": 0, "exitDuration": 260 },
+    "morph": { "duration": 300, "bounce": 0.16, "exitDuration": 270 },
+    "pop": { "duration": 250, "bounce": 0.15, "exitDuration": 200 },
+    "drift": { "duration": 850, "bounce": 0, "exitDuration": 600 },
+    "cssEnter": { "duration": 150, "easing": "cubic-bezier(0.2, 0.8, 0.2, 1)" },
+    "cssExit": { "duration": 110, "easing": "cubic-bezier(0.4, 0, 1, 1)" },
+    "overshoot": { "easing": "cubic-bezier(0.34, 1.45, 0.64, 1)" },
+    "drawOn": { "easing": "cubic-bezier(0.45, 0, 0.2, 1)" },
+    "reducedMotion": { "duration": 150, "mode": "fade" }
+  },
+  "elevation": {
+    "flat": { "border": "1px", "shadow": "none" },
+    "raised": { "shadow": "0 1px 2px rgba(0,0,0,0.24)", "border": "1px" },
+    "overlay": { "shadow": "0 16px 32px rgba(0,0,0,0.3)", "border": "1px" }
+  },
+  "targets": { "minTouch": 44, "rowHeight": 56, "buttonHeight": 44, "inputHeight": 44 }
+}

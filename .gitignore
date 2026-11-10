@@ -1,0 +1,32 @@
+# Build artefacts, dependencies and local runtime state.
+**/node_modules/
+**/dist/
+**/.vite/
+**/*.tsbuildinfo
+**/.expo/
+**/.turbo/
+
+# Local project artifacts produced by the Mobile App Factory.
+**/.mobile/
+
+# Environment and secrets.
+.env
+.env.*
+!/.env.example
+**/secrets/
+*.p8
+*.p12
+*.jks
+*.keystore
+play-service-account.json
+
+# OS / editor noise.
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Logs.
+*.log
+npm-debug.log*
