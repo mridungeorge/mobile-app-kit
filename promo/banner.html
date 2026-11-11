@@ -12,18 +12,20 @@
 
   .headline {
     left: 96px;
-    top: 160px;
-    font-size: 108px;
+    top: 156px;
+    font-size: 106px;
     line-height: 1.03;
   }
 
   .headline .u { position: relative; display: inline-block; }
 
-  .sub { left: 96px; top: 424px; width: 790px; font-size: 21px; }
+  .sub { left: 96px; top: 400px; width: 726px; font-size: 20px; }
 
-  .proof { left: 96px; top: 534px; }
+  .proof { left: 96px; top: 524px; }
 
-  .rail { left: 96px; right: 600px; top: 636px; }
+  .stacks { left: 96px; top: 570px; flex-direction: row; align-items: center; }
+
+  .rail { left: 96px; right: 600px; top: 648px; }
 
   .device { left: 1150px; top: 79px; }
 
@@ -46,26 +48,35 @@
   </div>
 
   <h1 class="headline">
-    <span class="line">One sentence.</span>
-    <span class="line">A <span class="u">shipped<span class="w__bar" style="transform:scaleX(1)"></span></span> app.</span>
+    <span class="line">One idea.</span>
+    <span class="line">A <span class="u">real<span class="w__bar" style="transform:scaleX(1)"></span></span> app.</span>
   </h1>
 
   <p class="sub">
-    Design, motion, privacy declarations and store compliance —
-    one pipeline that reshapes itself around your idea.
+    A questionnaire, a preview you approve, then production-native Kotlin + Compose
+    and Swift + SwiftUI — design, motion, privacy and store compliance included.
   </p>
 
   <div class="proof">
     <span><b>14</b> archetypes</span>
     <span class="dot"></span>
-    <span>iOS <b>+</b> Android</span>
+    <span>native <b>iOS</b> + <b>Android</b></span>
     <span class="dot"></span>
-    <span><b>Store</b>-ready</span>
+    <span><b>publish</b>-ready</span>
+  </div>
+
+  <div class="stacks">
+    <span class="chip chip--accent"><span class="chip__dot"></span>Kotlin + Compose</span>
+    <span class="chip chip--violet"><span class="chip__dot"></span>Swift + SwiftUI</span>
   </div>
 
   <div class="rail" id="rail">
     <div class="rail__track"></div>
     <div class="rail__fill" style="transform:scaleX(1)"></div>
+    <div class="gate" style="left:22.222%;top:-44px">
+      <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.4 6.3 4.9 8.8 9.6 3.4"/></svg>
+      Preview approved
+    </div>
   </div>
 
   <div class="device">
@@ -159,17 +170,19 @@
 </div>
 
 <script>
-  // Rail in its settled state.
+  // Rail in its settled state: the pipeline as it runs today.
   var rail = document.getElementById('rail');
-  ['Route', 'Product', 'Design', 'Build', 'Motion', 'Comply', 'Release', 'Review']
+  ['Intake', 'Route', 'Preview', 'Product', 'Design', 'Build', 'Motion', 'Comply', 'Release', 'Review']
     .forEach(function (name, i, all) {
+      var gate = name === 'Preview';
       var node = document.createElement('div');
       node.className = 'node';
       node.style.left = (i / (all.length - 1)) * 100 + '%';
       node.innerHTML =
-        '<span class="node__dot" style="background:#4392f7;border-color:rgba(160,205,255,.9);' +
-        'box-shadow:0 0 0 3px rgba(67,146,247,.30)"></span>' +
-        '<span class="node__label" style="color:#d5d7db">' + name + '</span>';
+        '<span class="node__dot" style="background:' + (gate ? '#11ae5b' : '#4392f7') + ';' +
+        'border-color:' + (gate ? 'rgba(120,240,180,.9)' : 'rgba(160,205,255,.9)') + ';' +
+        'box-shadow:0 0 0 3px ' + (gate ? 'rgba(17,174,91,.34)' : 'rgba(67,146,247,.30)') + '"></span>' +
+        '<span class="node__label" style="color:' + (gate ? '#3ddc84' : '#d5d7db') + '">' + name + '</span>';
       rail.appendChild(node);
     });
 </script>

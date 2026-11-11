@@ -235,6 +235,26 @@ try {
   errors.push(`native template smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
 }
 
+// README artwork: every image the repo README references must exist on disk, so the
+// hero banner and the animation cannot silently rot when the artwork is re-rendered.
+try {
+  const repoRoot = resolve(root, "..", "..");
+  const readmePath = join(repoRoot, "README.md");
+  if (!existsSync(readmePath)) {
+    warnings.push("README.md not found at the repo root; skipped artwork check");
+  } else {
+    const readme = readFileSync(readmePath, "utf8");
+    const assets = [...readme.matchAll(/src="((?:docs|promo)\/[^"]+\.(?:png|gif|jpg|jpeg|webp|svg|mp4))"/g)]
+      .map((m) => m[1]);
+    const missing = [...new Set(assets)].filter((asset) => !existsSync(join(repoRoot, asset)));
+    if (missing.length) errors.push(...missing.map((a) => `README references missing artwork: ${a}`));
+    else if (!assets.length) warnings.push("README references no artwork");
+    else ok.push(`readme: ${new Set(assets).size} referenced image(s) exist`);
+  }
+} catch (error) {
+  errors.push(`README artwork check failed: ${error.message}`);
+}
+
 // Report
 console.log(`Mobile App Factory — skill audit\nroot: ${root}\n`);
 for (const line of ok) console.log(`  ✓ ${line}`);

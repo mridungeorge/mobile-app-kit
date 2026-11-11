@@ -10,15 +10,19 @@
 
   .brand { left: 88px; right: 88px; top: 76px; }
 
-  .headline { left: 88px; right: 88px; top: 150px; font-size: 98px; line-height: 1.02; }
+  .headline { left: 88px; right: 88px; top: 150px; font-size: 94px; line-height: 1.02; }
 
-  .sub { left: 88px; top: 388px; width: 726px; }
+  .sub { left: 88px; top: 356px; width: 762px; font-size: 19px; }
 
-  .proof { left: 88px; top: 480px; }
+  .proof { left: 88px; top: 448px; }
 
-  .rail { left: 88px; right: 88px; top: 556px; }
+  .rail { left: 88px; right: 88px; top: 542px; }
 
-  .device { left: 50%; top: 646px; margin-left: -153px; }
+  .gate { left: 289px; top: 490px; }
+
+  .device { left: 50%; top: 630px; margin-left: -153px; }
+
+  .stacks { right: 88px; top: 690px; }
 
   .foot { left: 88px; right: 88px; bottom: 22px; }
 </style>
@@ -32,37 +36,42 @@
   <div class="brand" id="brand">
     <span class="mark"></span>
     <span class="brand__name">Mobile App Factory</span>
-    <span class="brand__meta">v1.0</span>
+    <span class="brand__meta">intake → approval → native</span>
   </div>
 
   <h1 class="headline" id="headline">
     <span class="line">
-      <span class="w" data-w>One</span> <span class="w" data-w>sentence.</span>
+      <span class="w" data-w>One</span> <span class="w" data-w>idea.</span>
     </span>
     <span class="line">
       <span class="w" data-w>A</span>
-      <span class="w" data-w data-underline>shipped<span class="w__bar" id="ubar"></span></span>
+      <span class="w" data-w data-underline>real<span class="w__bar" id="ubar"></span></span>
       <span class="w" data-w>app.</span>
     </span>
   </h1>
 
   <p class="sub" id="sub">
-    Design, motion, privacy declarations and store compliance —
-    one pipeline that reshapes itself around your idea.
+    A questionnaire, a preview you approve, then production-native Kotlin + Compose
+    and Swift + SwiftUI — design, motion, privacy and store compliance included.
   </p>
 
   <div class="proof" id="proof">
     <span><b>14</b> archetypes</span>
     <span class="dot"></span>
-    <span>iOS <b>+</b> Android</span>
+    <span>native <b>iOS</b> + <b>Android</b></span>
     <span class="dot"></span>
-    <span><b>Store</b>-ready</span>
+    <span><b>publish</b>-ready</span>
   </div>
 
   <div class="rail" id="rail">
     <div class="rail__track"></div>
     <div class="rail__fill" id="railFill"></div>
     <div class="rail__spark" id="spark"></div>
+  </div>
+
+  <div class="gate" id="gate">
+    <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.4 6.3 4.9 8.8 9.6 3.4"/></svg>
+    Preview approved
   </div>
 
   <div class="device" id="device">
@@ -152,8 +161,13 @@
     </div>
   </div>
 
+  <div class="stacks" id="stacks">
+    <span class="chip chip--accent" data-chip><span class="chip__dot"></span>Kotlin + Compose</span>
+    <span class="chip chip--violet" data-chip><span class="chip__dot"></span>Swift + SwiftUI</span>
+  </div>
+
   <div class="foot" id="foot">
-    <span>Claude skills · mobile-app-factory + motion-experiences</span>
+    <span>Claude skill · mobile-app-factory</span>
     <span class="foot__url">github.com/mridungeorge/mobile-app-kit</span>
   </div>
 
@@ -165,7 +179,7 @@
 (function () {
   'use strict';
 
-  var DURATION = 8.0;
+  var DURATION = 8.4;
 
   var clamp = function (v, a, b) {
     a = a === undefined ? 0 : a;
@@ -195,6 +209,7 @@
   var $rail = el('rail');
   var $railFill = el('railFill');
   var $spark = el('spark');
+  var $gate = el('gate');
   var $device = el('device');
   var $ring = el('ring');
   var $num = el('scoreNum');
@@ -205,11 +220,15 @@
   var $stages = el('stages');
   var $tabs = Array.prototype.slice.call(document.querySelectorAll('[data-tab]'));
   var $glowScore = el('scoreGlow');
+  var $chips = Array.prototype.slice.call(document.querySelectorAll('[data-chip]'));
   var $foot = el('foot');
   var $sheen = el('sheen');
 
   /* -------------------------------------------------------------- rail */
-  var PHASES = ['Route', 'Product', 'Design', 'Build', 'Motion', 'Comply', 'Release', 'Review'];
+  /* The pipeline as it actually runs: intake and preview gate first, then the
+     seven build-to-review phases. Preview is the only human decision. */
+  var PHASES = ['Intake', 'Route', 'Preview', 'Product', 'Design', 'Build', 'Motion', 'Comply', 'Release', 'Review'];
+  var PREVIEW_INDEX = PHASES.indexOf('Preview');
   var nodes = [];
   PHASES.forEach(function (name, i) {
     var x = (i / (PHASES.length - 1)) * 100;
@@ -221,11 +240,18 @@
     nodes.push({
       dot: node.querySelector('.node__dot'),
       label: node.querySelector('.node__label'),
-      x: i / (PHASES.length - 1)
+      x: i / (PHASES.length - 1),
+      gate: name === 'Preview'
     });
   });
 
   var RING_C = 339.292;
+
+  /* ---- shared timings so the gate fires when the spark arrives ------- */
+  var FILL_START = 2.20;
+  var FILL_DUR = 1.90;
+  var PREVIEW_X = PREVIEW_INDEX / (PHASES.length - 1);
+  var GATE_T = FILL_START + PREVIEW_X * FILL_DUR;
 
   function seek(t) {
     /* ---- background ---------------------------------------------------- */
@@ -240,33 +266,33 @@
     $brand.style.transform = 'translateY(' + (-14 * (1 - b)).toFixed(2) + 'px)';
 
     /* ---- headline ------------------------------------------------------ */
-    var starts = [0.45, 0.68, 0.95, 1.15, 1.33];
+    var starts = [0.45, 0.62, 0.85, 1.00, 1.16];
     $words.forEach(function (w, i) {
-      var q = easeOutQuint(p(t, starts[i] || 1.35, 0.8));
+      var q = easeOutQuint(p(t, starts[i] || 1.2, 0.8));
       w.style.opacity = q.toFixed(4);
       w.style.transform =
-        'translateY(' + (0.85 * (1 - q) * 98).toFixed(2) + 'px) scale(' +
+        'translateY(' + (0.85 * (1 - q) * 94).toFixed(2) + 'px) scale(' +
         (0.94 + 0.06 * q).toFixed(4) + ')';
       w.style.filter = q > 0.99 ? 'none' : 'blur(' + (5 * (1 - q)).toFixed(2) + 'px)';
     });
 
-    var ub = easeInOutCubic(p(t, 1.70, 0.60));
+    var ub = easeInOutCubic(p(t, 1.52, 0.58));
     $ubar.style.transform = 'scaleX(' + ub.toFixed(4) + ')';
 
-    var s = easeOutCubic(p(t, 1.55, 0.55));
+    var s = easeOutCubic(p(t, 1.45, 0.55));
     $sub.style.opacity = s.toFixed(4);
     $sub.style.transform = 'translateY(' + (16 * (1 - s)).toFixed(2) + 'px)';
 
-    var pr = easeOutCubic(p(t, 1.75, 0.55));
+    var pr = easeOutCubic(p(t, 1.65, 0.55));
     $proof.style.opacity = pr.toFixed(4);
     $proof.style.transform = 'translateY(' + (12 * (1 - pr)).toFixed(2) + 'px)';
 
     /* ---- rail ---------------------------------------------------------- */
-    var railIn = easeOutCubic(p(t, 2.05, 0.4));
+    var railIn = easeOutCubic(p(t, 1.95, 0.4));
     $rail.style.opacity = railIn.toFixed(4);
     $rail.style.transform = 'translateY(' + (10 * (1 - railIn)).toFixed(2) + 'px)';
 
-    var prog = easeInOutCubic(p(t, 2.35, 1.70));
+    var prog = easeInOutCubic(p(t, FILL_START, FILL_DUR));
     $railFill.style.transform = 'scaleX(' + prog.toFixed(4) + ')';
     $spark.style.opacity = (prog > 0.005 && prog < 0.999 ? 1 : 0).toFixed(2);
     $spark.style.left = (prog * 100).toFixed(3) + '%';
@@ -275,58 +301,78 @@
       // Light as the spark arrives: full exactly when prog reaches the node.
       var lit = clamp((prog - n.x + 0.05) / 0.05);
       var pop = easeOutBack(clamp((prog - n.x + 0.05) / 0.09));
-      n.dot.style.background = lit > 0.02 ? '#4392f7' : '#0b0c0d';
-      n.dot.style.borderColor = lit > 0.02 ? 'rgba(160,205,255,0.9)' : 'rgba(255,255,255,0.2)';
+      n.dot.style.background = lit > 0.02 ? (n.gate ? '#11ae5b' : '#4392f7') : '#0b0c0d';
+      n.dot.style.borderColor = lit > 0.02
+        ? (n.gate ? 'rgba(120,240,180,0.9)' : 'rgba(160,205,255,0.9)')
+        : 'rgba(255,255,255,0.2)';
       n.dot.style.boxShadow = lit > 0.02
-        ? '0 0 0 ' + (3 + 7 * (1 - lit)).toFixed(1) + 'px rgba(67,146,247,' + (0.30 * lit).toFixed(3) + ')'
+        ? '0 0 0 ' + (3 + 7 * (1 - lit)).toFixed(1) + 'px ' +
+          (n.gate
+            ? 'rgba(17,174,91,' + (0.34 * lit).toFixed(3) + ')'
+            : 'rgba(67,146,247,' + (0.30 * lit).toFixed(3) + ')')
         : 'none';
       n.dot.style.transform = 'scale(' + (1 + 0.45 * Math.max(0, pop - 0.85)).toFixed(3) + ')';
-      n.label.style.color = lit > 0.5 ? '#d5d7db' : '#71747a';
+      n.label.style.color = lit > 0.5 ? (n.gate ? '#3ddc84' : '#d5d7db') : '#71747a';
     });
 
+    /* ---- approval gate chip -------------------------------------------- */
+    var g = p(t, GATE_T + 0.06, 0.42);
+    var gq = easeOutQuint(g);
+    var gpop = easeOutBack(g);
+    $gate.style.opacity = gq.toFixed(4);
+    $gate.style.transform =
+      'translateX(-50%) translateY(' + (10 * (1 - gq)).toFixed(2) + 'px) scale(' +
+      (0.86 + 0.14 * gpop).toFixed(4) + ')';
+
     /* ---- device -------------------------------------------------------- */
-    var d = easeOutQuint(p(t, 3.50, 0.90));
+    var d = easeOutQuint(p(t, 3.60, 0.90));
     $device.style.opacity = d.toFixed(4);
     $device.style.transform =
       'translateY(' + (110 * (1 - d)).toFixed(2) + 'px) scale(' + (0.94 + 0.06 * d).toFixed(4) + ')';
 
-    var ringP = easeInOutCubic(p(t, 4.30, 1.15));
+    $chips.forEach(function (chip, i) {
+      var c = easeOutQuint(p(t, 4.05 + i * 0.12, 0.5));
+      chip.style.opacity = c.toFixed(4);
+      chip.style.transform = 'translateX(' + (18 * (1 - c)).toFixed(2) + 'px)';
+    });
+
+    var ringP = easeInOutCubic(p(t, 4.40, 1.15));
     $ring.setAttribute('stroke-dashoffset', (RING_C * (1 - ringP * 0.86)).toFixed(2));
 
-    var countP = easeOutCubic(p(t, 4.35, 1.05));
+    var countP = easeOutCubic(p(t, 4.45, 1.05));
     $num.textContent = String(Math.round(86 * countP));
 
     $glowScore.style.opacity = (0.18 + 0.22 * ringP + 0.06 * Math.sin(t * 2.2)).toFixed(3);
 
     $metrics.forEach(function (m, i) {
-      var q = easeOutCubic(p(t, 4.75 + i * 0.08, 0.5));
+      var q = easeOutCubic(p(t, 4.85 + i * 0.08, 0.5));
       m.style.opacity = q.toFixed(4);
       m.style.transform = 'translateY(' + (10 * (1 - q)).toFixed(2) + 'px)';
     });
 
     $bars.forEach(function (bar, i) {
-      var q = easeOutQuint(p(t, 4.85 + i * 0.05, 0.55));
+      var q = easeOutQuint(p(t, 4.95 + i * 0.05, 0.55));
       bar.style.transform = 'scaleY(' + q.toFixed(4) + ')';
     });
 
-    var sb = easeInOutCubic(p(t, 4.75, 0.75));
+    var sb = easeInOutCubic(p(t, 4.85, 0.75));
     $stagesBar.style.transform = 'scaleX(' + sb.toFixed(4) + ')';
     $stages.style.opacity = (0.15 + 0.85 * sb).toFixed(3);
 
-    var h = easeOutCubic(p(t, 5.35, 0.5));
+    var h = easeOutCubic(p(t, 5.45, 0.5));
     $hint.style.opacity = h.toFixed(4);
     $hint.style.transform = 'translateY(' + (12 * (1 - h)).toFixed(2) + 'px)';
 
     $tabs.forEach(function (tab, i) {
-      var q = easeOutCubic(p(t, 5.55 + i * 0.05, 0.4));
+      var q = easeOutCubic(p(t, 5.65 + i * 0.05, 0.4));
       tab.style.opacity = q.toFixed(4);
     });
 
     /* ---- footer + sheen ------------------------------------------------ */
-    var f = easeOutCubic(p(t, 5.75, 0.6));
+    var f = easeOutCubic(p(t, 5.85, 0.6));
     $foot.style.opacity = (0.9 * f).toFixed(4);
 
-    var sh = p(t, 6.10, 1.5);
+    var sh = p(t, 6.20, 1.5);
     $sheen.style.opacity = (sh > 0 && sh < 1 ? 0.10 * Math.sin(sh * Math.PI) : 0).toFixed(4);
     $sheen.style.transform = 'rotate(14deg) translateX(' + (1600 * easeInOutCubic(sh)).toFixed(1) + 'px)';
   }

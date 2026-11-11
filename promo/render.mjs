@@ -12,7 +12,7 @@ import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -31,29 +31,36 @@ const OUT_DIR = path.resolve(ROOT, arg('out', 'docs'));
 const BUILD_DIR = path.join(HERE, '.build');
 const FRAME_DIR = path.join(BUILD_DIR, 'frames');
 
+const WIN = process.platform === 'win32';
+
 function resolveFfmpeg() {
   const explicit = arg('ffmpeg', process.env.FFMPEG);
   if (explicit) return explicit;
+  const bin = WIN ? 'ffmpeg.exe' : 'ffmpeg';
   const candidates = [
+    path.join(ROOT, 'node_modules', 'ffmpeg-static', bin),
+    path.join(process.env.TEMP || '/tmp', 'opencode', 'promo-tools', 'node_modules', 'ffmpeg-static', bin),
     '/tmp/opencode/promo-tools/node_modules/ffmpeg-static/ffmpeg',
-    path.join(ROOT, 'node_modules', 'ffmpeg-static', 'ffmpeg'),
   ];
   for (const c of candidates) if (fs.existsSync(c)) return c;
-  return 'ffmpeg';
+  return bin;
 }
 const FFMPEG = resolveFfmpeg();
 
+const CHROME_CANDIDATES = [
+  process.env.CHROME_PATH,
+  '/usr/bin/google-chrome',
+  '/usr/bin/chromium',
+  path.join(process.env.HOME || '', '.cache', 'ms-playwright', 'chromium-1248', 'chrome-linux64', 'chrome'),
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  path.join(process.env.LOCALAPPDATA || '', 'Google', 'Chrome', 'Application', 'chrome.exe'),
+  path.join(process.env.PROGRAMFILES || '', 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+].filter(Boolean);
+
 const CHROME = arg(
   'chrome',
-  process.env.CHROME_PATH ||
-    path.join(
-      process.env.HOME,
-      '.cache',
-      'ms-playwright',
-      'chromium-1248',
-      'chrome-linux64',
-      'chrome',
-    ),
+  CHROME_CANDIDATES.find((c) => fs.existsSync(c)) || CHROME_CANDIDATES[0],
 );
 
 function sh(cmd, args, opts = {}) {
@@ -63,6 +70,7 @@ function sh(cmd, args, opts = {}) {
 function loadPuppeteer() {
   const candidates = [
     'puppeteer-core',
+    path.join(ROOT, 'node_modules', 'puppeteer-core'),
     path.join(process.env.NPM_GLOBAL_ROOT || '', 'puppeteer-core'),
   ];
   for (const c of candidates) {
@@ -73,8 +81,15 @@ function loadPuppeteer() {
     }
   }
   // Fall back to the global root reported by npm, if this script was not given NODE_PATH.
-  const globalRoot = execFileSync('npm', ['root', '-g'], { encoding: 'utf8' }).trim();
-  return require(path.join(globalRoot, 'puppeteer-core'));
+  try {
+    const globalRoot = execFileSync(WIN ? 'npm.cmd' : 'npm', ['root', '-g'], { encoding: 'utf8' }).trim();
+    return require(path.join(globalRoot, 'puppeteer-core'));
+  } catch {
+    throw new Error(
+      'puppeteer-core not found. Install it first:  npm install --no-save puppeteer-core\n' +
+        'Then point CHROME_PATH at a Chrome/Chromium binary (or pass --chrome).',
+    );
+  }
 }
 
 function buildPage(templateName, outName) {
@@ -91,7 +106,7 @@ function buildPage(templateName, outName) {
   const html = fs.readFileSync(path.join(HERE, templateName), 'utf8');
   const target = path.join(BUILD_DIR, outName);
   fs.writeFileSync(target, html);
-  return `file://${target}`;
+  return pathToFileURL(target).href;
 }
 
 async function main() {
