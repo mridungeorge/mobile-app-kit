@@ -5,18 +5,18 @@ Make the app real: every screen in the inventory, every state, no placeholders. 
 
 ## Read
 - `.mobile/00-profile.json` (stack, permissions, screens)
-- `.mobile/01-prd.md`, `.mobile/02-design.md`
+- `.mobile/01-prd.md`, `.mobile/02-design.md`, `.mobile/00-approval.json`
 - `references/stacks-and-repos.md`
 - `references/component-map.md`
 - `references/adaptive-ui.md`
-- `assets/rn/*` or `assets/web/tokens.css` for tokens/components
+- `assets/android/project/` or `assets/ios/project/` (native starters), `assets/rn/*` or `assets/web/tokens.css` (prototype paths)
 
 ## Write
 Application code, `.mobile/03-build-log.md`.
 
 ## Method
-1. Scaffold with the stack in the profile unless the user overrode it; record the override. Copy tokens in before writing screens.
-2. Build a **primitive layer** first: Surface, Text roles, Button, ListRow, Field, Sheet, EmptyState. One file each. Everything else composes these. Use the mapping in `references/component-map.md`.
+1. Scaffold with the stack in the profile unless the user overrode it; record the override. Native default: `node scripts/scaffold-native.mjs --platform android|ios --name "<App>" --out <dir>` (or `scripts/new-app.sh native-android|native-ios` for the project plus docs and CI). Copy tokens in before writing screens.
+2. Build a **primitive layer** first: Surface, Text roles, Button, ListRow, Field, Sheet, EmptyState. One file each (Compose: one composable per file under `ui/`; SwiftUI: one `View` per file under `DesignSystem/`). Everything else composes these. Use the mapping in `references/component-map.md`.
 3. Build screens in the order a new user meets them (onboarding → auth → home → core loop → settings). That order surfaces missing states early.
 4. Implement all six states per screen (default, loading, empty, partial, error, success). Empty and error states are features, not polish.
 5. Wire real or mocked data behind a single repository/service interface so screens never call APIs directly.
@@ -26,7 +26,7 @@ Application code, `.mobile/03-build-log.md`.
 9. Keep a build log: file map, what's done, what's stubbed, how to run, which profile items are still unimplemented.
 
 ## Gate
-- App launches cold without errors on a device/simulator
+- App launches cold without errors on a device/simulator (`./gradlew :app:assembleDebug` / `xcodebuild build` or Xcode Run)
 - Every inventory screen reachable
 - No lorem ipsum, no TODO copy, no dead buttons
 - All six states exist

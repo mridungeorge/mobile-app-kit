@@ -26,19 +26,21 @@ Both are global: they work in any project directory, and they share one design l
 <div align="center">
   <img src="docs/promo.gif" alt="Animated walkthrough: the headline builds, the eight-phase pipeline lights up, and the app screen assembles" width="440">
   <br>
-  <sub>The eight-phase pipeline running on the reference screen — <a href="motion-demo">motion-demo/</a></sub>
+  <sub>The pipeline running on the reference screen — <a href="motion-demo">motion-demo/</a></sub>
 </div>
 
 ---
 
 ## The pipeline
 
-Eight phases, each with one owner, one artifact and one gate. Phase 0 is a script, not a prompt, so the same idea always produces the same profile.
+Ten stages: requirements intake, deterministic routing, preview approval, then seven build-to-review phases — each with one owner, one artifact and one gate. Routing is a script, not a prompt, so the same idea always produces the same profile.
 
 | # | Phase | Reads | Writes | Gate |
 |---|---|---|---|---|
-| 0 | **Route** *(deterministic script)* | your sentence + a few answers | `.mobile/00-profile.json` | Archetype chosen, stack and motion budget set |
-| 1 | **Product** | profile | `.mobile/01-prd.md` | Core loop is one sentence; ≤ 12 screens |
+| Q | **Questionnaire** *(deterministic script)* | your idea + answers | `.mobile/00-intake.json` | Requirements captured: audience, platforms, data, permissions, money |
+| 0 | **Route** *(deterministic script)* | intake + a few answers | `.mobile/00-profile.json` | Archetype chosen, stack and motion budget set |
+| P | **Preview & approve** *(script + your decision)* | intake + profile | `.mobile/preview/index.html`, `.mobile/00-approval.json` | You approve, or changes are applied and re-reviewed |
+| 1 | **Product** | approved profile | `.mobile/01-prd.md` | Core loop is one sentence; ≤ 12 screens |
 | 2 | **Design** | PRD + profile | `.mobile/02-design.md` | Tokens, type scale, state matrix per screen |
 | 3 | **Build** | design + stack | app code, `.mobile/03-build-log.md` | App runs, every screen real, no placeholder copy |
 | 4 | **Motion** | build + budget | `.mobile/04-motion.md` | Entry, reveal, gesture, press states within budget |
@@ -81,17 +83,36 @@ cd mobile-app-kit
 
 The installer copies both skills into `~/.claude/skills/` and runs the self-audit. Set `CLAUDE_SKILLS_DIR` to install elsewhere.
 
-## Use it
+## Use it (end-to-end for new developers)
 
-In any project, in Claude:
+**1) Start with the questionnaire (requirements intake):**
+```bash
+node skills/mobile-app-factory/scripts/questionnaire.mjs
+# writes .mobile/00-intake.json, .mobile/00-intake.md, .mobile/00-profile.json
+```
 
-> Use the **mobile-app-factory** skill. Build **a sleep tracker that plays white noise and shows weekly trends**. No code yet, solo developer, subscription.
+**2) Generate an illustrative preview for approval:**
+```bash
+node skills/mobile-app-factory/scripts/generate-preview.mjs --dir .mobile
+# open .mobile/preview/index.html, fill the checklist, download feedback.json
+node skills/mobile-app-factory/scripts/review-preview.mjs --dir .mobile --from-feedback .mobile/preview/feedback.json
 
-Answer at most five questions, then follow the gates. When the app runs, add the motion layer:
+# or decide directly:
+node skills/mobile-app-factory/scripts/review-preview.mjs --dir .mobile --approve
+node skills/mobile-app-factory/scripts/review-preview.mjs --dir .mobile \
+  --request-changes "Add settings, drop paywall" --add-screen settings --remove-screen paywall
+# change requests update the intake/profile and regenerate the preview; loop until approved
+```
 
+**3) Continue the pipeline after approval** (PRD → design → native build → motion → compliance → release → review). In Claude:
+> Use the **mobile-app-factory** skill. I’ve completed intake and approved the preview in `.mobile/`. Build **a production-ready native app** (Android: Kotlin + Jetpack Compose in Android Studio; iOS: Swift + SwiftUI in Xcode) and take it through to publish-readiness.
+
+When the app runs, add the motion layer:
 > Use the **motion-experiences** skill to add scroll and in-screen animation. Keep it premium and respect reduced motion.
 
-The plain-English version of all of this is [`QUICKSTART.md`](skills/mobile-app-factory/QUICKSTART.md).
+> The preview is an illustrative app flow/screen approval step (not final UI). For optional concept/architecture illustrations you can also use [Anatomy](https://github.com/wheresryan22/anatomy). Store submission still requires your developer accounts, signing/CI secrets, device testing, and platform review actions.
+
+The plain-English version is [`QUICKSTART.md`](skills/mobile-app-factory/QUICKSTART.md).
 
 ## Run the reference page
 
@@ -103,30 +124,61 @@ npm install
 npm run dev
 ```
 
+## Native production scaffold helpers
+
+For proper native projects (not Expo Go):
+
+```bash
+# Android: buildable Kotlin + Jetpack Compose project (Gradle version catalog, theme, tests)
+./skills/mobile-app-factory/scripts/new-app.sh native-android "Night Notes" com.example.nightnotes
+
+# iOS: buildable Swift + SwiftUI project (XcodeGen project.yml, PrivacyInfo, XCTest)
+./skills/mobile-app-factory/scripts/new-app.sh native-ios "Night Notes" com.example.nightnotes
+```
+
+Each helper generates the actual project, not just notes: `android/` or `ios/` plus `.mobile/`
+state, design tokens, release/testing docs, and CI starters. Open the project in **Android
+Studio** / **Xcode**, or build from the command line:
+
+```bash
+cd "Night Notes/android" && gradle wrapper --gradle-version 8.13 && ./gradlew :app:assembleDebug
+cd "Night Notes/ios" && brew install xcodegen && xcodegen generate && open *.xcodeproj   # macOS
+```
+
 ## What's inside
 
 ```
 skills/mobile-app-factory/
-  SKILL.md                     pipeline, intake, gates, definition of done
+  SKILL.md                     pipeline, intake, preview gate, gates, definition of done
   QUICKSTART.md                idea → submission, without the jargon
   agents/01..07-*.md           7 role briefs, one per phase
-  references/                  11 deep references (see below)
+  references/                  15 deep references (router, design, stores, native release,
+                               testing, gap closure, orchestration, ...)
   assets/
     project-profile.template.json    hand-editable .mobile/00-profile.json
     design-tokens.json               platform-neutral tokens
-    rn/theme.ts  rn/motion.ts        React Native tokens + spring helpers
+    rn/theme.ts  rn/motion.ts        React Native tokens + spring helpers (prototype path)
     rn/components/                   9 primitives: Surface, Button, ListRow,
                                      Sheet, Reveal, TextField, Switch,
                                      SegmentedControl, EmptyState
     web/tokens.css                   web / Capacitor tokens + primitives
-    ios/PrivacyInfo.xcprivacy        starting privacy manifest
+    ios/PrivacyInfo.xcprivacy        privacy manifest starter
+    ios/project/                     buildable SwiftUI + XcodeGen starter
     android/data-safety-worksheet.md Play data-safety form + SDK inventory
-    ci/expo-eas.json                 EAS build/submit profiles
+    android/project/                 buildable Kotlin + Compose Gradle starter
+    ci/android-release.yml           native Android CI: lint, test, signed AAB
+    ci/ios-release.yml               native iOS CI: test, archive, TestFlight hook
+    ci/expo-eas.json                 EAS build/submit profiles (prototype only)
     store-metadata.template.json     validates clean out of the box
   scripts/
+    questionnaire.mjs                requirements intake → intake + profile + STATE
     route-idea.mjs                   deterministic idea → profile classifier
-    check-skill.mjs                  self-audit (structure, paths, archetypes)
-    new-app.sh                       scaffold Expo with tokens pre-installed
+    generate-preview.mjs             illustrative preview + exportable feedback
+    review-preview.mjs               change requests / approval → regenerate preview
+    scaffold-native.mjs              copy native starter, substitute package/bundle id
+    readiness-report.mjs             AI-fixable vs human/external gap report
+    check-skill.mjs                  self-audit + end-to-end pipeline smoke test
+    new-app.sh                       scaffold native Android/iOS (Expo explicit only)
     validate-metadata.mjs            zero-dependency store metadata linter
   evals/prompts.md               trigger + quality test prompts
 
@@ -178,14 +230,16 @@ node skills/mobile-app-factory/scripts/check-skill.mjs
 
 ```
   ✓ structure: required files and all 7 agent briefs present
-  ✓ frontmatter: name matches, description 902 chars
-  ✓ references: 54 unique paths checked, all resolve
+  ✓ frontmatter: name matches, description within limits
+  ✓ references: every referenced path resolves
   ✓ archetypes: 14 match between router and reference
   ✓ metadata template: validates clean
   ✓ router: 8/8 smoke cases classified correctly
   ✓ profiles: all archetypes emit a complete profile with ≤ 12 screens
+  ✓ pipeline: intake → preview → changes → approval → readiness report
+  ✓ native templates: Android + iOS scaffold and substitute cleanly
 
-PASS — 7 checks passed, 0 warnings, 0 errors
+PASS — 9 checks passed, 0 warnings, 0 errors
 ```
 
 The store metadata linter has no dependencies and runs against real listing copy:
@@ -193,6 +247,20 @@ The store metadata linter has no dependencies and runs against real listing copy
 ```bash
 node skills/mobile-app-factory/scripts/validate-metadata.mjs .mobile/metadata
 ```
+
+## Automated vs. external
+
+The factory closes every gap it can close with files and commands. Run:
+
+```bash
+node skills/mobile-app-factory/scripts/readiness-report.mjs --dir .mobile --strict
+```
+
+It checks the real artifacts and separates **AI-fixable leftovers** (missing PRD/design/motion/compliance,
+unvalidated metadata, missing native project, no PASS review) from **human/external actions**
+(developer accounts, signing material, CI secrets, real devices, store uploads, and the Google
+12-tester/14-day gate). The rule the agents follow — and the handoff format — is in
+[`skills/mobile-app-factory/references/gap-closure.md`](skills/mobile-app-factory/references/gap-closure.md).
 
 ## Artwork
 

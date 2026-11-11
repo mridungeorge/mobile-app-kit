@@ -7,7 +7,7 @@
 // agent numbering, and the metadata template. Exit code 1 means the skill is broken;
 // warnings do not fail the build.
 
-import { readFileSync, existsSync, mkdtempSync, copyFileSync, rmSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync, mkdtempSync, copyFileSync, rmSync, readdirSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,9 +36,19 @@ const required = [
   "references/google-play.md",
   "references/metadata-and-assets.md",
   "references/orchestration.md",
+  "references/gap-closure.md",
+  "references/mobile-testing.md",
+  "references/native-android-release.md",
+  "references/native-ios-release.md",
   "assets/design-tokens.json",
   "assets/project-profile.template.json",
   "assets/store-metadata.template.json",
+  "assets/android/project/settings.gradle.kts",
+  "assets/android/project/app/build.gradle.kts",
+  "assets/android/project/gradle/libs.versions.toml",
+  "assets/ios/project/project.yml",
+  "assets/ios/project/Sources/App.swift",
+  "assets/ios/project/Resources/PrivacyInfo.xcprivacy",
   "assets/rn/theme.ts",
   "assets/rn/motion.ts",
   "assets/rn/components/Surface.tsx",
@@ -56,7 +66,14 @@ const required = [
   "assets/ci/expo-eas.json",
   "scripts/route-idea.mjs",
   "scripts/validate-metadata.mjs",
+  "scripts/questionnaire.mjs",
+  "scripts/generate-preview.mjs",
+  "scripts/review-preview.mjs",
+  "scripts/scaffold-native.mjs",
+  "scripts/readiness-report.mjs",
   "scripts/new-app.sh",
+  "scripts/new-android-app.sh",
+  "scripts/new-ios-app.sh",
   "evals/prompts.md"
 ];
 for (const path of required) must(path);
@@ -148,6 +165,74 @@ try {
   else ok.push("profiles: all archetypes emit a complete profile with ≤ 12 screens");
 } catch (error) {
   errors.push(`router import failed: ${error.message}`);
+}
+
+// End-to-end pipeline smoke test: intake -> preview -> changes -> approval -> readiness report.
+try {
+  const temp = mkdtempSync(join(tmpdir(), "maf-pipeline-"));
+  const run = (script, args) => execFileSync(process.execPath, [join(root, "scripts", script), ...args], { stdio: "pipe" });
+
+  run("questionnaire.mjs", ["--out", temp, "--non-interactive", "--idea", "a sleep tracker with white noise", "--platforms", "both", "--monetisation", "subscription"]);
+  run("generate-preview.mjs", ["--dir", temp]);
+
+  const preview = readFileSync(join(temp, "preview", "index.html"), "utf8");
+  if (!preview.includes("feedback.json") || !preview.includes("Approval checklist")) {
+    throw new Error("preview is missing the feedback/approval UI");
+  }
+
+  run("review-preview.mjs", ["--dir", temp, "--request-changes", "Add settings and drop the paywall", "--add-screen", "settings", "--remove-screen", "paywall", "--no-regenerate"]);
+  const changed = JSON.parse(readFileSync(join(temp, "00-profile.json"), "utf8"));
+  if (!changed.screens.includes("settings")) throw new Error("--add-screen was not applied");
+  if (changed.screens.includes("paywall")) throw new Error("--remove-screen was not applied");
+
+  run("review-preview.mjs", ["--dir", temp, "--approve"]);
+  const approval = JSON.parse(readFileSync(join(temp, "00-approval.json"), "utf8"));
+  if (approval.status !== "approved") throw new Error("approval was not recorded");
+  if (!approval.history || !approval.history.length) throw new Error("approval history was not kept");
+
+  const report = JSON.parse(execFileSync(process.execPath, [join(root, "scripts", "readiness-report.mjs"), "--dir", temp, "--json"], { stdio: "pipe" }).toString());
+  if (!report.ai.some((item) => item.name === "Preview approved" && item.status === "pass")) {
+    throw new Error("readiness report does not see the approval");
+  }
+  if (!report.human.length) throw new Error("readiness report has no human/external items");
+
+  ok.push("pipeline: intake → preview → changes → approval → readiness report");
+  rmSync(temp, { recursive: true, force: true });
+} catch (error) {
+  errors.push(`pipeline smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
+}
+
+// Native starter smoke test: both templates copy, substitute and leave no placeholders.
+try {
+  const temp = mkdtempSync(join(tmpdir(), "maf-native-"));
+  const run = (args) => execFileSync(process.execPath, [join(root, "scripts", "scaffold-native.mjs"), ...args], { stdio: "pipe" });
+  run(["--platform", "android", "--name", "Smoke App", "--package", "com.example.smoke", "--out", join(temp, "android")]);
+  run(["--platform", "ios", "--name", "Smoke App", "--bundle-id", "com.example.smoke", "--out", join(temp, "ios")]);
+
+  const androidMain = join(temp, "android", "app", "src", "main", "java", "com", "example", "smoke", "MainActivity.kt");
+  const iosProject = join(temp, "ios", "project.yml");
+  if (!existsSync(androidMain)) throw new Error("Android package path was not substituted");
+  if (!existsSync(iosProject)) throw new Error("iOS project.yml was not generated");
+  if (!existsSync(join(temp, "ios", "Resources", "PrivacyInfo.xcprivacy"))) throw new Error("iOS PrivacyInfo missing");
+
+  const placeholders = ["__PROJECT_NAME__", "__APP_NAME__", "__APP_SLUG__", "__PACKAGE__", "__PACKAGE_PATH__", "__BUNDLE_ID__"];
+  const files = readdirSync(temp, { recursive: true }).filter((entry) => typeof entry === "string")
+    .map((entry) => join(temp, entry));
+  for (const file of files) {
+    let stat;
+    try { stat = statSync(file); } catch { continue; }
+    if (!stat.isFile()) continue;
+    const content = readFileSync(file);
+    if (content.includes(0)) continue;
+    const text = content.toString("utf8");
+    const left = placeholders.find((token) => text.includes(token));
+    if (left) throw new Error(`placeholder ${left} left in ${file.replace(temp, "")}`);
+  }
+
+  ok.push("native templates: Android + iOS scaffold and substitute cleanly");
+  rmSync(temp, { recursive: true, force: true });
+} catch (error) {
+  errors.push(`native template smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
 }
 
 // Report

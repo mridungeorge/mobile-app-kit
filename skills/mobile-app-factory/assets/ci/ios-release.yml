@@ -1,0 +1,43 @@
+name: iOS Release (Native Swift/SwiftUI, Xcode)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-test-archive:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Resolve packages
+        run: xcodebuild -resolvePackageDependencies -scheme "$SCHEME" -project "$PROJECT" || true
+        env:
+          SCHEME: App
+          PROJECT: App.xcodeproj
+
+      - name: Test
+        run: |
+          xcodebuild test \
+            -scheme "$SCHEME" \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -project "$PROJECT"
+        env:
+          SCHEME: App
+          PROJECT: App.xcodeproj
+
+      # Production signing/archive/upload typically uses Fastlane (match/gym/pilot)
+      # or App Store Connect API keys. Configure secrets and replace placeholders.
+      # - name: Install Fastlane
+      #   run: gem install fastlane
+      # - name: Build & Upload to TestFlight
+      #   run: fastlane beta
+      #   env:
+      #     APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      #     APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      #     APP_STORE_CONNECT_API_KEY: ${{ secrets.ASC_KEY }}

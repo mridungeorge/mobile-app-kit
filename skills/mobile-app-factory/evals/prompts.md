@@ -8,11 +8,11 @@ the quality bar. Use these when editing `SKILL.md` or the references.
 | Prompt | Should activate? | Why |
 |---|---|---|
 | "I want to build a habit tracker app and put it on both app stores." | yes | build + publish |
-| "How do I get my Expo app through Google Play's testing requirement?" | yes | store gate |
+| "How do I get my app through Google Play's testing requirement?" | yes | store gate |
 | "Write App Store metadata for my recipe app." | yes | metadata |
 | "My app got rejected under guideline 4.2, what do I change?" | yes | review |
 | "Design the onboarding flow for an iOS app." | yes | design, mobile |
-| "Which React Native UI kit should I use?" | yes | stack selection |
+| "Which native stack should I use, Kotlin or Swift first?" | yes | stack selection |
 | "Make me a logo for my bakery." | no | brand/design skill |
 | "Fix this Python stack trace." | no | unrelated |
 
@@ -34,13 +34,14 @@ Fail:
 - Invents a backend without saying so
 
 **2. Store-readiness audit**
-> "Here's my Expo app. Is it ready for the App Store and Play?"
+> "Here's my app. Is it ready for the App Store and Play?"
 
 Pass:
 - Reads the dependency list before declaring privacy answers
 - Checks Xcode 26 / iOS 26 SDK and targetSdk 36
 - Checks the Play 12-tester/14-day gate and says the calendar cost
 - Verifies account deletion (in-app + web) if accounts exist
+- Runs `scripts/readiness-report.mjs --strict` and separates AI-fixable gaps from human/external ones
 - Produces a blocker list with owners, not a vibe check
 
 Fail:
@@ -76,7 +77,7 @@ Pass:
 - Neither recites the same generic stack/screens
 
 Fail:
-- Both get an identical Expo template and a generic 8-screen list
+- Both get an identical generic template and a generic 8-screen list
 - The kids app gets ads or crash analytics without a Families review
 - The finance app gets a confetti/hero flourish
 
@@ -99,13 +100,30 @@ Pass:
 - Shows a manual location fallback and the blocked-permission Settings path
 - Reports file/screen evidence, not a general statement
 
+**8. Intake → preview → approval loop**
+> "I want a quiet sleep tracker with white noise and weekly trends. Build it."
+
+Pass:
+- Runs the questionnaire (or asks its questions), writes `.mobile/00-intake.json` + `00-profile.json`
+- Generates `.mobile/preview/index.html` and asks for approval before writing code
+- On "add a settings screen and drop the paywall", runs `review-preview.mjs` so the profile and preview both change
+- Refuses to start Phase 1 until `00-approval.json` has `status: approved`
+- Says which actions remain human (accounts, signing, devices, store upload)
+
+Fail:
+- Jumps straight to code with no preview
+- Regenerates the preview but leaves the profile unchanged (drift)
+- Claims the app is "published" or "approved by Apple/Google"
+
 ## Regression checks
 
 After any edit to the skill, confirm:
-- [ ] `node scripts/check-skill.mjs` passes (structure, paths, archetypes, metadata template, router smoke cases)
+- [ ] `node scripts/check-skill.mjs` passes (structure, paths, archetypes, metadata template, router smoke cases, pipeline smoke test, native template substitution)
 - [ ] The metadata template validates: copy `assets/store-metadata.template.json` to a temp dir as `metadata.json`, then run the script
 - [ ] All files referenced in `SKILL.md` exist
 - [ ] The pipeline table and `agents/` filenames match
 - [ ] `node scripts/route-idea.mjs --summary "<idea>"` returns a plausible archetype for the eight eval ideas: sleep, social, receipts, AI journal, kids tutor, marketplace, offline bird identifier, B2B field ops
 - [ ] Every archetype name in `references/idea-router.md` exists in `ARCHETYPES` in the router script
+- [ ] `node scripts/questionnaire.mjs --non-interactive --out <tmp> --idea "..."` writes intake + profile + STATE, and `--approve` unlocks the pipeline
+- [ ] `node scripts/scaffold-native.mjs --platform android|ios` leaves no `__PLACEHOLDER__` tokens behind
 - [ ] Dated store facts are still current (Apple upcoming requirements, Play target API)

@@ -6,15 +6,15 @@ Read this with `assets/rn/components/` (the nine ready-made RN components) and `
 
 ## Rules before the table
 
-1. **One kit per app.** Pick the column that matches the stack and use it for every component. Mixing RN core + Tamagui + a random UI lib is what makes an app look assembled.
+1. **One kit per app.** Pick the column that matches the stack and use it for every component. On native builds that means Material 3 in Compose and platform SwiftUI on iOS — do not add a third-party UI kit on top of the platform one. Mixing RN core + Tamagui + a random UI lib is what makes an app look assembled.
 2. **Re-skin, don't re-invent.** Map Rune anatomy onto the platform primitive: the button is still a button, it just gets height 44, radius 6, accent fill and a 0.98 press scale.
-3. **Platform navigation wins.** Use native stacks/tabs/modals (Expo Router, Flutter `go_router`, SwiftUI `NavigationStack`, Compose Navigation). Rune's `Page`/`Sidebar`/`Toolbar` are desktop shells; on mobile they become a nav bar, tab bar, and bottom sheet.
+3. **Platform navigation wins.** Use native stacks/tabs/modals (SwiftUI `NavigationStack`, Compose Navigation; Expo Router or Flutter `go_router` on the prototype paths). Rune's `Page`/`Sidebar`/`Toolbar` are desktop shells; on mobile they become a nav bar, tab bar, and bottom sheet.
 4. **Every interactive component needs**: label, role, state (default/hover/pressed/focused/disabled/loading/error), and a 44×44 minimum hit area. If it has no disabled state in the spec, it is incomplete.
 5. **No component is added for decoration.** If the screen works without it, cut it.
 
 ## The map
 
-Legend: **RN** = React Native + the chosen kit (react-native-reusables / Tamagui / NativeWind primitives); **Flutter** = Material 3; **SwiftUI** = iOS native; **Compose** = Jetpack Compose.
+Legend: **Compose** = Jetpack Compose + Material 3 (Android default), **SwiftUI** = iOS native (iOS default), **RN** = React Native + the chosen kit (prototype), **Flutter** = Material 3 (prototype).
 
 | Rune (`rune-kit`) | RN | Flutter | SwiftUI | Compose | Notes |
 |---|---|---|---|---|---|

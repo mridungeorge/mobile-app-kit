@@ -4,61 +4,78 @@ The idea router picks the archetype once. This file is about the *runtime*: the 
 
 Use this after Phase 3 (UI) and before Phase 4 (motion). Phase 4 must only animate what this file says is safe on the current tier.
 
+> Default targets are **native**: Kotlin + Jetpack Compose and Swift + SwiftUI. The snippets below lead with those. React Native / Flutter equivalents are noted where they differ, because the same rules apply to the prototype path.
+
 ## 1. The capability ladder
 
-Detect once at startup, cache in memory, and expose a single `AppEnvironment`:
+Detect once at startup, cache it, and expose a single environment object to the UI layer.
 
-```ts
-// src/platform/environment.ts
-import { Platform, Dimensions, PixelRatio, AccessibilityInfo } from "react-native";
+**Android (Kotlin)**
 
-export type Tier = "low" | "mid" | "high";
+```kotlin
+// platform/AppEnvironment.kt
+enum class Tier { LOW, MID, HIGH }
 
-export type AppEnvironment = {
-  tier: Tier;
-  reducedMotion: boolean;
-  boldText: boolean;
-  fontScale: number;
-  rtl: boolean;
-  dark: boolean;
-  haptics: boolean;
-  online: boolean;
-  lowPower: boolean;
-  screen: { width: number; height: number };
-};
+data class AppEnvironment(
+    val tier: Tier,
+    val reducedMotion: Boolean,
+    val boldText: Boolean,
+    val fontScale: Float,
+    val rtl: Boolean,
+    val dark: Boolean,
+    val haptics: Boolean,
+    val online: Boolean,
+    val lowPower: Boolean,
+)
 
-export const deviceTier = (): Tier => {
-  const memory = (globalThis as any).performance?.memory?.jsHeapSizeLimit ?? 0;
-  const cores = (globalThis as any).navigator?.hardwareConcurrency ?? 4;
-  if (Platform.OS === "web") return cores <= 2 || memory < 4e8 ? "low" : cores <= 4 ? "mid" : "high";
-  // expo-device: Device.deviceType, Device.totalMemory, Platform.constants
-  return "mid"; // replace with a real device check; see below
-};
+fun detectTier(context: Context): Tier {
+    val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+    val lowRam = am.isLowRamDevice
+    val memGb = am.memoryClass / 1024.0            // memoryClass is MB
+    return when {
+        lowRam || memGb < 3.0 -> Tier.LOW
+        memGb < 6.0 -> Tier.MID
+        else -> Tier.HIGH
+    }
+}
 ```
 
-For native, prefer `expo-device` + `expo-application`:
+**iOS (Swift)**
 
-```ts
-import * as Device from "expo-device";
+```swift
+// Platform/AppEnvironment.swift
+enum Tier { case low, mid, high }
 
-const tier: Tier =
-  (Device.totalMemory ?? 4e9) < 3e9 ? "low"
-  : (Device.totalMemory ?? 4e9) < 6e9 ? "mid"
-  : "high";
+struct AppEnvironment {
+    var tier: Tier
+    var reducedMotion: Bool
+    var boldText: Bool
+    var fontScale: CGFloat
+    var rtl: Bool
+    var dark: Bool
+    var haptics: Bool
+    var online: Bool
+    var lowPower: Bool
+}
+
+func detectTier() -> Tier {
+    let memoryGB = Double(ProcessInfo.processInfo.physicalMemory) / 1_073_741_824
+    let cores = ProcessInfo.processInfo.activeProcessorCount
+    if memoryGB < 3 || cores <= 2 { return .low }
+    if memoryGB < 6 { return .mid }
+    return .high
+}
 ```
+
+Keep the logic in one injectable object so previews and tests can force a tier. Compose: pass it through a `CompositionLocal`. SwiftUI: put it in the `Environment` via an `EnvironmentKey`.
+
+**Prototype path (React Native):** `expo-device` `Device.totalMemory` and `Device.isDevice` give the same signal; do not branch on model names there either.
 
 | Tier | Assume | UI rules | Motion rules |
 |---|---|---|---|
-| low | 2–3 GB RAM, 60 Hz, older GPU, possibly Android Go | list virtualization mandatory, images resized to view size, no blur/glass, no shadows beyond 1px, no concurrent video + map | fades and opacity only, 150–250 ms, no parallax, no pinned scrub, no blur, 30 fps acceptable |
+| low | 2–3 GB RAM, 60 Hz, older GPU, possibly Android Go | list virtualization mandatory (`LazyColumn` / `LazyVStack`), images decoded at view size, no blur/glass, no shadows beyond 1px, no concurrent video + map | fades and opacity only, 150–250 ms, no parallax, no pinned scrub, no blur, 30 fps acceptable |
 | mid | 4–6 GB, 60 Hz | one blur max, small Lottie okay, maps with tile caching | transforms + opacity, springs ≤ 400 ms, no more than 2 simultaneous tweens |
 | high | 8 GB+, 120 Hz, ProMotion | full design | full timeline, but still stop when offscreen or backgrounded |
-
-Expose it to components with a tiny context, not a global mutable:
-
-```tsx
-const EnvironmentContext = createContext<AppEnvironment>(defaultEnv);
-export const useEnvironment = () => useContext(EnvironmentContext);
-```
 
 **Never branch on device model names.** Branch on measured capability and on user preference. Model lists age badly and invite spoofing.
 
@@ -66,61 +83,68 @@ export const useEnvironment = () => useContext(EnvironmentContext);
 
 Capability is a ceiling; preference is a veto. The user's settings always win.
 
-| Signal | Source | Effect |
+| Signal | Native source | Effect |
 |---|---|---|
-| Reduce Motion | `AccessibilityInfo.isReduceMotionEnabled()` (RN), `useReducedMotion()` (web), `MediaQuery.of(context).disableAnimations` (Flutter) | travel becomes a 150 ms fade; parallax, scrub, autoplay and looping stop; progress still updates |
-| Bold Text | `AccessibilityInfo.isBoldTextEnabled()` | use the 600-weight token, not a synthetic bold; re-measure line heights |
-| Font Scale | `PixelRatio.getFontScale()` / `MediaQuery.textScaler` | layouts must reflow, not clip; cap decorative display type at ~1.3× but never body |
-| Invert / high contrast | `AccessibilityInfo.isInvertColorsEnabled()` | verify hairlines survive inversion; do not encode meaning in hue alone |
-| Screen reader | `AccessibilityInfo.isScreenReaderEnabled()` | disable scroll-jacking and gesture-only actions; announce state changes |
-| Low Power Mode | `expo-battery` `getPowerStateAsync()` | drop to `low` tier motion and pause background refresh |
-| RTL | `I18nManager.isRTL` | mirror layout, not icons that imply direction (play, chevrons); use `start`/`end`, never `left`/`right` |
-| Theme | `useColorScheme()` + in-app override | three states: system, light, dark. Persist the override; re-read system changes live |
+| Reduce Motion | Android `Settings.Global.ANIMATOR_DURATION_SCALE` / Compose `LocalMotionDurationScale`; iOS `UIAccessibility.isReduceMotionEnabled` (observe `reduceMotionStatusDidChangeNotification`) | travel becomes a 150 ms fade; parallax, scrub, autoplay and looping stop; progress still updates |
+| Bold Text | Android text scaling / Compose font weight; iOS `UIAccessibility.isBoldTextEnabled` | use the 600-weight token, not a synthetic bold; re-measure line heights |
+| Font Scale | Compose `LocalDensity.current.fontScale`; iOS `UIFontMetrics` + `@Environment(\.dynamicTypeSize)` | layouts must reflow, not clip; cap decorative display type at ~1.3× but never body |
+| Invert / high contrast | Android `AccessibilityManager.isHighTextContrastEnabled`; iOS `UIAccessibility.isInvertColorsEnabled` | verify hairlines survive inversion; do not encode meaning in hue alone |
+| Screen reader | `AccessibilityManager.isTouchExplorationEnabled` / `UIAccessibility.isVoiceOverRunning` | disable scroll-jacking and gesture-only actions; announce state changes |
+| Low Power Mode | Android `PowerManager.isPowerSaveMode`; iOS `ProcessInfo.processInfo.isLowPowerModeEnabled` | drop to `low` tier motion and pause background refresh |
+| RTL | Compose `LocalLayoutDirection`; iOS `UIView.userInterfaceLayoutDirection` | mirror layout, not icons that imply direction (play, chevrons); use `start`/`end`, never `left`/`right` |
+| Theme | Compose `isSystemInDarkTheme()`; SwiftUI `@Environment(\.colorScheme)` | three states: system, light, dark. Persist the override; re-read system changes live |
 
-```tsx
-useEffect(() => {
-  const subs = [
-    AccessibilityInfo.addEventListener("reduceMotionChanged", setReducedMotion),
-    AccessibilityInfo.addEventListener("boldTextChanged", setBoldText),
-    AccessibilityInfo.addEventListener("screenReaderChanged", setScreenReader)
-  ];
-  AccessibilityInfo.isReduceMotionEnabled().then(setReducedMotion);
-  return () => subs.forEach((s) => s.remove());
-}, []);
+Observe changes rather than reading once:
+
+```kotlin
+// Compose
+val reduceMotion = !LocalMotionDurationScale.current.isEnabled   // honours the OS animation scale
+val fontScale = LocalDensity.current.fontScale
+val dark = isSystemInDarkTheme()
 ```
 
-On web, listen to the media queries rather than reading once:
-
-```ts
-const mq = matchMedia("(prefers-reduced-motion: reduce)");
-mq.addEventListener("change", (e) => setReducedMotion(e.matches));
+```swift
+// SwiftUI
+@Environment(\.accessibilityReduceMotion) private var reduceMotion
+@Environment(\.dynamicTypeSize) private var dynamicType
+@Environment(\.colorScheme) private var colorScheme
 ```
+
+**Prototype path (React Native):** `AccessibilityInfo.isReduceMotionEnabled()` plus the `*Changed` listeners, and `PixelRatio.getFontScale()`. On web, listen to the `prefers-reduced-motion` media query rather than reading it once.
 
 ## 3. Layout adaptation
 
-- **Width classes**, not device classes: `compact < 380`, `regular 380–599`, `wide ≥ 600` (tablet/foldable). Use `useWindowDimensions()`, which updates on rotation and split-screen.
-- **Safe areas**: `react-native-safe-area-context`; bottom action bars must sit above the home indicator and the keyboard.
-- **Keyboard**: `KeyboardAvoidingView` + `keyboardShouldPersistTaps="handled"` on every form; test with a hardware keyboard too.
+- **Width classes**, not device classes: `compact < 380`, `regular 380–599`, `wide ≥ 600` (tablet/foldable). Compose: `BoxWithConstraints`; SwiftUI: `horizontalSizeClass` plus a width check — both update on rotation and split-screen.
+- **Safe areas**: `WindowInsets` / `safeAreaInset(edge:)`. Bottom action bars must sit above the home indicator and the keyboard.
+- **Keyboard**: Compose `imePadding()` + `BringIntoViewRequester`; SwiftUI `.scrollDismissesKeyboard(.interactively)`. Test with a hardware keyboard too.
 - **Foldables / tablets**: two-pane list-detail at `wide`, single column at `regular`. Do not stretch a phone layout to 1024 px.
 - **Landscape**: allow it unless the core loop is camera or a game. If locked, say so in the store listing.
-- **Text growth**: test at 200% (`fontScale` 2.0). Rules: labels wrap, buttons grow vertically, charts get a text fallback, no fixed-height rows containing text.
-- **Density**: data-dense archetypes (fintech, b2b-field) can use 32–36 px rows; consumer/health use 44–56 px. Never below 44×44 pt touch targets regardless of density.
+- **Text growth**: test at 200% (iOS accessibility sizes XXL–AX5). Rules: labels wrap, buttons grow vertically, charts get a text fallback, no fixed-height rows containing text.
+- **Density**: data-dense archetypes (fintech, b2b-field) can use 32–36 dp/pt rows; consumer/health use 44–56. Never below 44×44 touch targets regardless of density.
 
 ## 4. Offline and flaky network
 
 Assume the network is optional for anything that is not a live transaction.
 
-```ts
-type Mutation = { id: string; kind: string; payload: unknown; createdAt: number; attempts: number };
+```kotlin
+data class PendingMutation(
+    val id: String,
+    val kind: String,
+    val payload: String,
+    val createdAt: Long,
+    val attempts: Int,
+)
 ```
 
-- **Queue writes** in SQLite (not memory), with an idempotency key generated on the client.
+Store the queue in Room (Android) or SwiftData/Core Data (iOS), never in memory, with a client-generated idempotency key.
+
 - **Optimistic UI** with a `pending` badge; reconcile on response; on conflict, keep both and ask the user (never silently overwrite a field capture).
 - **Read cache** with stale-while-revalidate; show `last updated 4m ago` rather than a spinner over stale content.
 - **Retry** with jittered backoff, cap attempts, and a manual "Retry now".
 - **Offline banner** is persistent but not modal. A modal offline screen in a field app is a bug.
 - **Media**: capture locally first, upload later, compress to the display size (not the sensor size) unless the archetype needs originals (camera-photo, inspections).
 - **Conflict policy by archetype**: last-write-wins is fine for preferences; never for money, health entries, or inspection evidence.
+- **Background work**: WorkManager (Android) / `BGTaskScheduler` (iOS), each with a declared reason. Do not run a foreground service just to poll.
 
 ## 5. Permission adaptation
 
@@ -131,7 +155,9 @@ Every permission has four states, and the UI must handle all four: `undetermined
 | undetermined | explain the benefit *before* the system prompt, using a pre-permission sheet; only ask when the feature is first used |
 | granted | proceed; show a subtle indicator if the sensor is active (location, mic, camera) |
 | denied | feature-level empty state with "Enable" that re-requests once, plus a manual fallback where possible |
-| blocked | explain, deep-link to Settings (`Linking.openSettings()`), and keep the manual fallback |
+| blocked | explain and deep-link to Settings (`Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)` / `UIApplication.openSettingsURLString`), keeping the manual fallback |
+
+Ask with the platform API — `rememberLauncherForActivityResult(RequestPermission())` on Compose, `.requestAuthorization` on iOS — never a custom dialog pretending to be the system one.
 
 Manual fallbacks that keep the app usable:
 
@@ -145,23 +171,48 @@ Manual fallbacks that keep the app usable:
 
 The motion layer must consume the environment, not re-detect it.
 
-```ts
-export const motionFor = (env: AppEnvironment) => {
-  if (env.reducedMotion) return { duration: 0.15, y: 0, stagger: 0, parallax: false, scrub: false };
-  if (env.tier === "low" || env.lowPower) return { duration: 0.2, y: 8, stagger: 0.02, parallax: false, scrub: false };
-  if (env.tier === "mid") return { duration: 0.3, y: 16, stagger: 0.04, parallax: false, scrub: false };
-  return { duration: 0.45, y: 24, stagger: 0.06, parallax: true, scrub: true };
-};
+```kotlin
+data class MotionProfile(
+    val durationMs: Int,
+    val offsetDp: Int,
+    val staggerMs: Int,
+    val parallax: Boolean,
+    val scrub: Boolean,
+)
+
+fun motionFor(env: AppEnvironment): MotionProfile = when {
+    env.reducedMotion -> MotionProfile(150, 0, 0, false, false)
+    env.tier == Tier.LOW || env.lowPower -> MotionProfile(200, 8, 20, false, false)
+    env.tier == Tier.MID -> MotionProfile(300, 16, 40, false, false)
+    else -> MotionProfile(450, 24, 60, true, true)
+}
+```
+
+```swift
+struct MotionProfile {
+    var duration: Double
+    var offset: CGFloat
+    var stagger: Double
+    var parallax: Bool
+    var scrub: Bool
+}
+
+func motionFor(_ env: AppEnvironment) -> MotionProfile {
+    if env.reducedMotion { return .init(duration: 0.15, offset: 0, stagger: 0, parallax: false, scrub: false) }
+    if env.tier == .low || env.lowPower { return .init(duration: 0.2, offset: 8, stagger: 0.02, parallax: false, scrub: false) }
+    if env.tier == .mid { return .init(duration: 0.3, offset: 16, stagger: 0.04, parallax: false, scrub: false) }
+    return .init(duration: 0.45, offset: 24, stagger: 0.06, parallax: true, scrub: true)
+}
 ```
 
 Rules:
 
-- Pause timelines when the screen is not focused (`useIsFocused`, `visibilitychange`).
-- Cancel on unmount; no orphan `requestAnimationFrame` loops.
-- Animate `transform` and `opacity`; never animate `width`, `height`, `top`, or `margin` in a list.
+- Pause animations when the screen is not visible (Compose lifecycle `repeatOnLifecycle`, SwiftUI `scenePhase`, GSAP `visibilitychange` on web).
+- Cancel on disposal / `onDisappear`; no orphaned animation loops.
+- Animate `transform` and `opacity` (`graphicsLayer` / `.scaleEffect` + `.opacity`); never animate `width`, `height`, `top`, or `margin` in a list.
 - Do not start an entrance animation on every focus — only the first mount, and only above the fold.
 - Keep the reduce-motion path *readable*: all content visible, no zero-opacity leftovers.
-- On web, GSAP `matchMedia` plus `ScrollTrigger` cleanup; on RN, Reanimated `useReducedMotion()`.
+- Compose: respect `LocalMotionDurationScale` automatically by using the standard animation APIs. SwiftUI: honour `accessibilityReduceMotion` in every custom `withAnimation`.
 
 ## 7. Native surface adaptation
 
@@ -173,7 +224,7 @@ Add these only when they serve the core loop; each one is a store declaration an
 | Live Activity / ongoing notification | a time-boxed live state (delivery, workout, timer) | iOS ActivityKit requires a push token and a clear end state; Android foreground service must declare its type |
 | Dynamic Island | same as Live Activity, compact | do not duplicate the full UI |
 | App shortcuts / quick actions | 2–4 repeat actions | long-press menu; also expose in-app |
-| Deep links / universal links | sharing, notifications, web-to-app | one router table, tested cold-start and warm-start; handle deleted content |
+| Deep links / universal links | sharing, notifications, web-to-app | one routing table, tested cold-start and warm-start; handle deleted content |
 | Share extension | receiving links/photos into the app | iOS extension target; Android `ACTION_SEND` |
 | Haptics | confirmations, toggles, errors | respect the system haptics setting; never on scroll |
 | Background refresh | sync that must happen without opening | declare a reason; budget battery; show last-sync time |
@@ -189,10 +240,14 @@ Add these only when they serve the core loop; each one is a store declaration an
 
 ## 9. Feature flags and staged rollout
 
-```ts
-type Flag = { key: string; enabled: boolean; rollout: number; minVersion?: string };
-const bucket = hash(userId ?? deviceId) % 100;
-const on = flag.enabled && bucket < flag.rollout;
+```kotlin
+data class Flag(val key: String, val enabled: Boolean, val rollout: Int, val minVersion: String? = null)
+
+fun isOn(flag: Flag, userId: String, appVersion: String): Boolean {
+    if (!flag.enabled) return false
+    if (flag.minVersion != null && appVersion < flag.minVersion) return false
+    return (stableHash(userId) % 100) < flag.rollout
+}
 ```
 
 - Default **off** for anything that touches payments, health, or permissions.

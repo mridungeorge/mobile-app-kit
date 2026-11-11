@@ -15,11 +15,20 @@ How the router and seven agents hand off, how to resume, and how to run this wit
 ## 1. State machine
 
 ```
-INTAKE → PROFILE → PRD → DESIGN → BUILD → MOTION → COMPLIANCE ─┬→ RELEASE → REVIEW → DONE
-                                                                └→ RELEASE (parallel)
+QUESTIONNAIRE → INTAKE → PROFILE → PREVIEW → APPROVAL → PRD → DESIGN → BUILD
+   → MOTION → COMPLIANCE → RELEASE → REVIEW → DONE
+PREVIEW ─(changes requested)→ INTAKE (apply, re-route, regenerate)
 ```
 
-Phase 0 is a script, not an agent: `node scripts/route-idea.mjs --json "<idea>" > .mobile/00-profile.json`. It runs before PRD and can be re-run for the same cost as editing a file. If `confidence` is `low`, answer its `clarify` questions or force an archetype before continuing.
+Phases Q and 0 are scripts, not agents:
+
+```bash
+node scripts/questionnaire.mjs                   # .mobile/00-intake.json + 00-profile.json
+node scripts/generate-preview.mjs --dir .mobile  # .mobile/preview/index.html
+node scripts/review-preview.mjs --dir .mobile --approve   # .mobile/00-approval.json
+```
+
+The router can be re-run for the same cost as editing a file. If `confidence` is `low`, answer its `clarify` questions or force an archetype before continuing. Phase 1 is gated on `00-approval.json` having `status: approved`; change requests go back through `review-preview.mjs`, which updates intake/profile and regenerates the preview.
 
 Gate conditions are in `SKILL.md`. A gate fail returns to the owning agent, not forward. Cap loops at two attempts per gate; on the third, stop and report what's blocking rather than grinding.
 
@@ -29,7 +38,8 @@ Every transition appends to `.mobile/STATE.md`:
 # State
 stage: BUILD
 updated: 2026-11-10T09:12:00Z
-profile: health-fitness (confidence high) — stack expo, motion restrained
+profile: health-fitness (confidence high) — stack native (Kotlin/Compose + SwiftUI), motion restrained
+gateP: passed — preview approved 2026-11-10T09:02:00Z
 gate1: passed — 9 screens, subscription model, no accounts
 gate2: passed — neutral tokens, accent blue, 6 motion recipes
 open:
@@ -42,6 +52,19 @@ next: motion-director
 ## 2. Artifact contracts
 
 Each file is a contract: the next agent reads only these, not the whole conversation. Keep them short and specific.
+
+**`00-intake.json`**
+```
+idea · audience · problem · platforms · monetisation · accounts · ugc · ai
+sensitiveData · permissions[] · offline · backend · design · team · timeline
+mustHave · notes · changeRequests[]
+```
+
+**`00-approval.json`**
+```
+schema · status (approved | changes-requested) · decidedAt · source
+checklist[] · changeRequests · appliedChanges · history[]
+```
 
 **`00-profile.json`**
 ```
@@ -78,10 +101,10 @@ Accessibility notes · adaptive breakpoints
 **`03-build-log.md`**
 ```
 # Build
-Stack + versions (from 00-profile, or the documented override) · Scaffold command · Folder map
+Stack + versions (from 00-profile, or the documented override) · Scaffold command (native-android | native-ios) · Folder map
 Screens implemented (with file paths) · Known gaps
 Adaptive UI implemented (tiers, permissions, offline) · Env vars / secrets needed
-How to run
+How to run (Gradle/Android Studio or XcodeGen/Xcode)
 ```
 
 **`04-motion.md`**

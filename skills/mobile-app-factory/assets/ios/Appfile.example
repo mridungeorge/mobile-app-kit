@@ -1,0 +1,5 @@
+# Copy to fastlane/Appfile and set values (or use env vars in CI).
+app_identifier("com.example.app") # Bundle ID
+apple_id(ENV["APPLE_ID"] || "you@example.com")
+team_id(ENV["APPLE_TEAM_ID"] || "REPLACE_TEAM_ID")
+itc_team_id(ENV["ITC_TEAM_ID"] || "REPLACE_ITC_TEAM_ID")

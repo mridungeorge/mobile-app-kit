@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ backup rules. Narrow this to the data you actually want backed up. -->
+<full-backup-content>
+    <include domain="sharedpref" path="." />
+</full-backup-content>

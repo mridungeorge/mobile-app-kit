@@ -1,13 +1,13 @@
 ---
 name: mobile-app-factory
-description: Takes an app idea from one sentence to a submitted iOS App Store and Google Play release, with a Rune-grade design system (calm neutral surfaces, hairline borders, spring motion) and production UI. It routes the idea to one of 14 archetypes first, so stack, screens, permissions, privacy declarations, review risks and motion budget adapt to the app rather than following a fixed template. Use this whenever the user wants to build, design, scaffold, ship, publish, or get approved a mobile app — including phrases like "make me an app", "mobile app", "React Native", "Expo", "Flutter", "Kotlin Multiplatform", "App Store", "Play Store", "app store metadata", "TestFlight", "12 testers", "privacy manifest", "data safety", "app icon", "screenshots", "ASO", or "why was my app rejected". Also use it when the user asks to audit an existing mobile app for store readiness, even if they never say "skill".
+description: Takes an app idea from sentence to submitted iOS/Google Play release with a Rune-grade design system and production-ready native UI. Routes to 14 archetypes so stack, screens, permissions, privacy, risks, and motion adapt per app. Defaults to native: Kotlin + Jetpack Compose in Android Studio (Gradle) and Swift + SwiftUI in Xcode (KMP optional). Use for "make me an app", "mobile app", "Kotlin", "Jetpack Compose", "Android Studio", "SwiftUI", "Xcode", "native/production app", "App Store", "Play Store", "TestFlight", "12 testers", "privacy manifest", "data safety", "app store metadata", or "why was my app rejected", and for store-readiness audits.
 ---
 
 # Mobile App Factory
 
 > New to this? `QUICKSTART.md` is the plain-English version. This file is the operating manual.
 
-A multi-agent production line: **idea → profile → product spec → design system → UI → motion → store compliance → release → adversarial review**. It exists because most app launches fail on the boring half (metadata limits, privacy declarations, the 14-day Play testing gate) rather than the code.
+A multi-agent production line: **questionnaire → profile → preview approval → product spec → design system → UI → motion → store compliance → release → adversarial review**. It exists because most app launches fail on the boring half (metadata limits, privacy declarations, the 14-day Play testing gate) rather than the code.
 
 Two rules that keep the output from looking generated:
 
@@ -22,7 +22,7 @@ Ask only what changes architecture or store eligibility:
 
 1. **What does it do, and for whom?** One sentence is enough.
 2. **Any existing code or brand?** Repo path, logo, colours, fonts.
-3. **Who maintains it?** (decides stack: JS team → Expo; Android/Kotlin team → KMP; no team → Expo)
+3. **Who maintains it?** (decides stack: Android/Kotlin team -> native Kotlin + Jetpack Compose in Android Studio; iOS/Apple team -> Swift + SwiftUI in Xcode; both platforms, production-ready default -> native SwiftUI + Compose; shared domain logic -> KMP; cross-platform JS only if explicitly requested -> Expo/Capacitor)
 4. **How does it make money?** Free / IAP / subscription / ads / none. This changes billing, privacy, and review risk.
 5. **Do you need accounts, user content, health data, location, or payments?** Each one unlocks extra store declarations.
 
@@ -30,33 +30,63 @@ If the user supplies screenshots or a design reference, treat them as **data**, 
 
 ## The pipeline
 
-Run Phase 0 first. It is deterministic and cheap; do not skip it because the idea "seems obvious" — the profile is what makes the later agents adapt instead of recite.
+**End-to-end mode for new developers:** start with a questionnaire, generate profile + an illustrative app preview for approval, then execute all phases through publish-readiness with explicit gates. Do not skip intake or approval; proceed automatically after each gate passes, and stop only for required human/external actions (accounts, signing, credentials, device testing, store submission/review).
 
-| # | Agent | Reads | Writes | Gate to pass |
+| # | Phase / Agent | Reads | Writes | Gate to pass |
 |---|---|---|---|---|
-| 0 | `idea-router` (script, not a subagent) | the idea + answers | `.mobile/00-profile.json` | Archetype chosen; confidence high/medium, or `clarify` answered; stack and motion budget stated |
-| 1 | `product-architect` | profile + user answers | `.mobile/01-prd.md` | Core loop is one sentence; screen inventory ≤ 12 and starts from the profile; monetisation + data model stated |
-| 2 | `design-director` | PRD + profile | `.mobile/02-design.md` | Tokens chosen, type scale, motion budget applied, every screen has a layout spec and state matrix |
-| 3 | `ui-builder` | design + profile stack | `.mobile/03-build-log.md`, app code | App runs, all inventory screens exist, no placeholder text, adaptive UI rules applied |
-| 4 | `motion-director` | build + design + motion budget | `.mobile/04-motion.md` | Entry, scroll/reveal, gesture, press states present within budget; reduced-motion path verified |
-| 5 | `store-compliance` | build + PRD + profile declarations | `.mobile/05-compliance.md`, `.mobile/metadata/*` | All metadata within limits, every profile declaration verified, risk list empty or mitigated |
-| 6 | `release-engineer` | compliance + build | `.mobile/06-release.md`, CI config | Builds signed for both stores, tracks configured, rollout plan written |
-| 7 | `reviewer` | everything | `.mobile/07-review.md` | Verdict PASS, or a blocking list that goes back to the owning agent |
+| Q | `questionnaire` (script/interactive intake) | user's idea + answers | `.mobile/00-intake.json`, `.mobile/00-intake.md` | Requirements captured (idea, audience, platforms, core features, accounts/data/payments/permissions, design/timeline) |
+| 0 | `idea-router` (script) | intake/idea + answers | `.mobile/00-profile.json` | Archetype chosen; confidence resolved (or clarified); stack/screens/permissions/risks/motion budget set |
+| P | `preview-and-approval` (script + review) | intake + profile (+ PRD/design if available) | `.mobile/preview/index.html`, `.mobile/00-approval.json` | User reviews illustrative app flow/look and explicitly approves or requests changes (iterate intake/profile/preview until approved) |
+| 1 | `product-architect` | approved intake/profile | `.mobile/01-prd.md` | Core loop is one sentence; screen inventory <= 12 and aligned to profile; monetisation + data model stated |
+| 2 | `design-director` | PRD + profile | `.mobile/02-design.md` | Tokens, type, states, adaptive behavior, and motion plan defined per screen |
+| 3 | `ui-builder` | design + profile stack | `.mobile/03-build-log.md`, app code | Native/target app runs, all inventory screens exist, no placeholders, states and navigation wired |
+| 4 | `motion-director` | build + design + motion budget | `.mobile/04-motion.md` | Motion implemented within budget; reduced-motion path verified |
+| 5 | `store-compliance` | build + PRD + profile declarations | `.mobile/05-compliance.md`, `.mobile/metadata/*` | Metadata/declarations/privacy/data-safety aligned to actual app/SDK behavior |
+| 6 | `release-engineer` | compliance + build | `.mobile/06-release.md`, CI config | Signed release builds/config, tracks/rollout/rollback plan, store submission steps documented |
+| 7 | `reviewer` | everything | `.mobile/07-review.md` | Verdict PASS or blocking list routed to owning phase/agent |
 
-### Phase 0 — route the idea
+### Phase Q — questionnaire (start here)
 
 ```bash
-node scripts/route-idea.mjs --json "<the idea>" > .mobile/00-profile.json
-node scripts/route-idea.mjs --summary "<the idea>"   # human check
+node scripts/questionnaire.mjs
+# writes .mobile/00-intake.json, .mobile/00-intake.md, .mobile/00-profile.json
 ```
 
-The router scores keywords across 14 archetypes and emits stack, screens, permissions, iOS/Play declarations, review risks, age-rating floor, motion budget, QA focus and metadata hints. If `confidence` is `low`, ask the `clarify` questions and re-run with `--archetype`, `--stack`, `--monetisation`, `--accounts`, `--ugc`, `--ai` or `--offline`. Hand-edit the profile if the idea is unusual; downstream agents treat it as input, not verdict.
+Use non-interactive mode when answers are already known:
+```bash
+node scripts/questionnaire.mjs --non-interactive --idea "..." --platforms both --monetisation free --accounts no
+```
 
-Full archetype catalogue and override rules: `references/idea-router.md`. Template for hand-editing: `assets/project-profile.template.json`.
+### Phase 0 — route/refine the idea
+
+```bash
+node scripts/route-idea.mjs --summary "<the idea>"
+# re-run with overrides if needed: --archetype --stack --monetisation --accounts/--no-accounts --ugc --ai --offline
+```
+
+### Phase P — illustrative preview & approval
+
+Run from the skill directory, or replace `scripts/` with the absolute skill path
+(`~/.claude/skills/mobile-app-factory/scripts/...`) when working in the user's project.
+
+```bash
+node scripts/generate-preview.mjs --dir .mobile
+# open .mobile/preview/index.html, fill the checklist, download feedback.json
+node scripts/review-preview.mjs --dir .mobile --from-feedback .mobile/preview/feedback.json
+# or, without the exported file:
+node scripts/review-preview.mjs --dir .mobile --approve
+node scripts/review-preview.mjs --dir .mobile --request-changes "Add settings, drop paywall" --remove-screen paywall
+```
+
+- This preview is an **illustrative display of app flow/screens** for user approval and change requests (structure, screens, priorities, tone), not the final production UI.
+- `review-preview.mjs` applies change requests to the intake/profile, regenerates the preview, and writes `.mobile/00-approval.json`. Loop until `status: approved`; Phase 1 cannot start before that.
+- Optional concept/architecture visualization: [Anatomy](https://github.com/wheresryan22/anatomy) can generate interactive explanatory figures for technical concepts/flows; use it as a complement, not as an app UI mockup replacement.
 
 Agent prompt files live in `agents/`. Read the file, then spawn a subagent with that content as its brief (or adopt the role inline if subagents are unavailable).
 
-**Parallelism that is safe:** 5 and 6 can run concurrently once 3 lands. 4 must follow 3. 2 must follow 1. Never parallelise agents that write the same file.
+**Parallelism that is safe:** 5 and 6 can run concurrently once 3 lands. 4 must follow 3. 2 must follow 1. Never parallelise agents that write the same file. Preview approval (P) must complete before implementation (3).
+
+**Never hand back an AI-fixable gap.** Before claiming completion, run `node scripts/readiness-report.mjs --dir .mobile --strict`; it checks the actual files and separates remaining AI work from human/external actions. The boundary, the "must do without asking" list and the handoff format are in `references/gap-closure.md`.
 
 ## Running it
 
@@ -86,11 +116,11 @@ Full spec: `references/design-language.md`. The essentials:
 - **Motion**: springs, not arbitrary easing. `snap 250ms`, `settle 300ms`, `reflow 400ms`, `glide 320ms`, `morph 300ms/bounce .16`, `pop 250ms/bounce .15`. Utilities never exceed 400ms.
 - **Reduce Motion**: replace travel with a 150ms fade. Never leave a screen unreadable when animation is off.
 
-Tokens are bundled and ready to copy: `assets/design-tokens.json`, `assets/rn/theme.ts`, `assets/rn/motion.ts`, `assets/web/tokens.css`. Component starting points: `assets/rn/components/` (Surface, Button, ListRow, Sheet, Reveal, TextField, Switch, SegmentedControl, EmptyState).
+Tokens are bundled and ready to copy: `assets/design-tokens.json` for the native starters, `assets/rn/theme.ts`, `assets/rn/motion.ts`, `assets/web/tokens.css` for the prototype paths. Component starting points: `assets/rn/components/` (Surface, Button, ListRow, Sheet, Reveal, TextField, Switch, SegmentedControl, EmptyState). The Android starter maps the tokens into `ui/theme/`, the iOS starter into `DesignSystem/Theme.swift`.
 
 ## Motion
 
-Use the `motion-experiences` skill for the animation layer. On web/Capacitor builds that means GSAP + react-bits; on React Native it means Reanimated mapped to the same spring tokens. On Flutter, `flutter_animate` + `Curves` constants from the same timing table. The rule is identical across stacks: **entry, reveal on scroll, one hero flourish, press feedback, and a reduced-motion fallback**.
+Use the `motion-experiences` skill for the animation layer. On native builds that means Compose animation APIs and SwiftUI springs mapped to the same spring tokens; on web/Capacitor it means GSAP + react-bits, on React Native Reanimated, on Flutter `flutter_animate` + `Curves`. The rule is identical across stacks: **entry, reveal on scroll, one hero flourish, press feedback, and a reduced-motion fallback**.
 
 The profile's `motionBudget` is the ceiling: `restrained` for fintech, health records, B2B and utilities (fades and press feedback only); `standard` for productivity, commerce, social, travel and delivery; `expressive` for games, media, kids and camera. Never spend `expressive` motion on a checkout, a medical record, or a data-entry form. Motion is per-screen; the budget is not a quota.
 
@@ -101,24 +131,28 @@ Full rules and code: `references/adaptive-ui.md`. The short version:
 - Detect a capability tier once (`low` / `mid` / `high`) from memory, cores and low-power state; branch on measured capability, never on device model names.
 - User preferences veto capability: Reduce Motion, Bold Text, font scale, screen reader, RTL, theme override. Test at 200% text.
 - Every permission has four states — undetermined, granted, denied, blocked — and a manual fallback (postcode instead of GPS, photo import instead of camera).
-- Offline is a first-class state: SQLite write queue, idempotency keys, optimistic UI, visible last-sync time. Never a modal offline screen in a field app.
+- Offline is a first-class state: Room / SwiftData write queue, idempotency keys, optimistic UI, visible last-sync time. Never a modal offline screen in a field app.
 - Add native surfaces only when they serve the loop: widgets, Live Activities, deep links, haptics, background refresh. Each one is a declaration and a QA surface.
 - Feature flags fail closed, work offline, and are removed within two releases.
 
 ## Stack selection
 
-The profile chooses the default; override it when the team or the idea demands it. Full comparison and repo list: `references/stacks-and-repos.md`.
+**Default for production-ready apps: native.** Android ships as **Kotlin + Jetpack Compose** built in **Android Studio (Gradle, AAB, Play App Signing)**. iOS ships as **Swift + SwiftUI** built in **Xcode (Archive, TestFlight/App Store Connect)**. This is the "proper app" path — full platform APIs, best performance, store-native behavior, and no Expo Go runtime.
 
-| Situation | Stack | Scaffold |
+The profile chooses the default; override it only when the team or idea demands it. Full comparison and repo list: `references/stacks-and-repos.md`.
+
+| Situation | Stack | Toolchain / Scaffold |
 |---|---|---|
-| JS/web team, fastest to both stores | Expo + React Native | `npx create-expo-app@latest --template blank-typescript` then `scripts/new-app.sh` |
-| Design-heavy custom UI | Flutter | `flutter create --org com.x app` |
-| Android/Kotlin team | KMP + Compose Multiplatform | `Kotlin/KMP-App-Template` |
-| Web app that needs a shell | Ionic + Capacitor | `npm create @capacitor/app` |
-| Premium native, two teams | SwiftUI + Jetpack Compose | Xcode + Android Studio |
+| **Production native, both stores (default)** | SwiftUI (iOS) + Jetpack Compose / Kotlin (Android) | Xcode + Android Studio; `scripts/new-app.sh native-android` / `native-ios` generate the buildable project plus docs and CI |
+| Android-only, Kotlin team | Kotlin + Jetpack Compose | Android Studio, Gradle, `minSdk`/`targetSdk` per Play policy |
+| iOS-only, Apple team | Swift + SwiftUI | Xcode, Swift Package Manager, App Store Connect |
+| Shared domain logic, native UI | KMP + Compose Multiplatform / SwiftUI | Android Studio + Xcode, shared Kotlin modules |
+| Design-heavy custom UI, one codebase | Flutter | `flutter create --org com.x app` |
+| Existing web app shell (explicit request) | Ionic + Capacitor | `npm create @capacitor/app` |
+| JS team, rapid cross-platform prototype (not default) | Expo + React Native | `npx create-expo-app@latest` (dev builds/EAS, not Expo Go for production) |
 | Game | Unity or Godot | Unity Hub / Godot project |
 
-Whatever the stack: pick **one** UI system and stay in it (Tamagui / react-native-reusables / NativeWind for RN; Material 3 for Flutter/Compose). Mixing kits is the fastest way to a UI that reads as assembled rather than designed. Component-by-component mapping from the Rune kit to each stack: `references/component-map.md`.
+Whatever the stack: pick **one** UI system and stay in it (Material 3 / Compose for Android, platform-native SwiftUI for iOS, Material 3 for Flutter). Mixing kits is the fastest way to a UI that reads as assembled rather than designed. Component-by-component mapping from the Rune kit to each stack: `references/component-map.md`. Native release/build guidance: `references/native-android-release.md`, `references/native-ios-release.md`, `references/ios-app-store.md`, `references/google-play.md`, `references/mobile-testing.md`.
 
 ## Store compliance (the part that rejects people)
 
@@ -147,13 +181,17 @@ Budget **2–4 weeks** of calendar time for the Play gate alone. Start closed te
 
 ```
 .mobile/
-  00-profile.json                          # archetype, stack, screens, declarations, motion budget
-  01-prd.md            02-design.md        03-build-log.md
-  04-motion.md         05-compliance.md    06-release.md
+  00-intake.json  00-intake.md            # questionnaire answers
+  00-profile.json                         # archetype, stack, screens, declarations, motion budget
+  00-approval.json                        # preview decision + checklist + change history
+  preview/index.html                      # illustrative preview for approval
+  01-prd.md            02-design.md       03-build-log.md
+  04-motion.md         05-compliance.md   06-release.md
   07-review.md         STATE.md
   metadata/
     ios.json  android.json  listing.md  assets-checklist.md
   screenshots/          # generated, correct sizes, real UI
+android/ or ios/        # buildable native project (scaffold-native.mjs output)
 ```
 
 `scripts/validate-metadata.mjs` checks character limits, required fields, asset dimensions and rating completeness before submission:
@@ -162,11 +200,13 @@ Budget **2–4 weeks** of calendar time for the Play gate alone. Start closed te
 node scripts/validate-metadata.mjs .mobile/metadata
 ```
 
-`scripts/route-idea.mjs` produces `00-profile.json`. The profile is the contract that makes phases 1–7 adaptive; when it changes, note the change in `STATE.md`.
+`scripts/questionnaire.mjs` produces the intake and the first profile; `scripts/route-idea.mjs` (re)produces `00-profile.json`. The profile is the contract that makes phases 1–7 adaptive; when it changes, note the change in `STATE.md`. `scripts/review-preview.mjs` keeps `00-approval.json` in sync with what the user actually approved.
 
 ## Definition of done
 
 - [ ] Profile exists and every later artifact is consistent with its archetype, stack, declarations and motion budget
+- [ ] Questionnaire completed and the preview approved in `.mobile/00-approval.json` (status `approved`)
+- [ ] `readiness-report.mjs --strict` passes: no AI-fixable item is left open
 - [ ] App launches cold in under 2s on a mid-range device; no red screens, no TODO copy
 - [ ] Every screen in the profile-derived inventory implemented, empty/loading/error states included
 - [ ] Adaptive UI verified: low tier, 200% text, Reduce Motion, both themes, offline, each permission denied
@@ -182,6 +222,7 @@ node scripts/validate-metadata.mjs .mobile/metadata
 |---|---|
 | `QUICKSTART.md` | You want the plain-English path from idea to submission |
 | `references/idea-router.md` | Choosing an archetype, overriding the profile, understanding per-archetype rules |
+| `references/gap-closure.md` | What the factory automates, what only a human can do, and the handoff format |
 | `references/design-language.md` | Choosing colours, type, spacing, component anatomy, motion values |
 | `references/component-map.md` | Translating Rune components to RN / Flutter / SwiftUI / Compose |
 | `references/adaptive-ui.md` | Tiers, preferences, offline, permissions, native surfaces, adaptive QA |
@@ -190,6 +231,9 @@ node scripts/validate-metadata.mjs .mobile/metadata
 | `references/stacks-and-repos.md` | Picking a framework/UI kit; repo shortlist with stars |
 | `references/ios-app-store.md` | Apple submission, review guidelines, rejection risks |
 | `references/google-play.md` | Play submission, testing gate, policy declarations |
+| `references/native-android-release.md` | Gradle signing, AAB, Play Console track-by-track release |
+| `references/native-ios-release.md` | Xcode signing, Archive, TestFlight, App Store Connect |
+| `references/mobile-testing.md` | Unit/UI/E2E strategy, device matrix, release QA |
 | `references/metadata-and-assets.md` | Character limits, icon/screenshot specs, listing copy formulas |
 | `references/orchestration.md` | Resume points, artifact contracts, subagent prompts |
 | `assets/` | Tokens and component starting points to copy into the project |
@@ -197,8 +241,16 @@ node scripts/validate-metadata.mjs .mobile/metadata
 | `assets/store-metadata.template.json` | Starting point for `.mobile/metadata/metadata.json`; validates clean |
 | `assets/ios/PrivacyInfo.xcprivacy` | Starting privacy manifest; delete unused categories |
 | `assets/android/data-safety-worksheet.md` | Play data-safety form, SDK inventory, permission justifications |
-| `assets/ci/expo-eas.json` | EAS build/submit profiles to copy as `eas.json` |
+| `assets/android/project/` | Buildable Kotlin + Compose Gradle starter (app module, theme, HomeScreen, tests) |
+| `assets/ios/project/` | Buildable SwiftUI + XcodeGen starter (sources, PrivacyInfo, assets, XCTest) |
+| `assets/ci/android-release.yml` `assets/ci/ios-release.yml` | Native CI starters: lint/test/signed AAB and TestFlight |
+| `assets/ci/expo-eas.json` | EAS build/submit profiles to copy as `eas.json` (prototype path only) |
 | `scripts/route-idea.mjs` | Classify the idea into an adaptive profile |
-| `scripts/check-skill.mjs` | Audit the skill itself: structure, paths, archetypes, metadata template |
-| `scripts/new-app.sh` | Scaffold an Expo app with tokens pre-installed |
+| `scripts/questionnaire.mjs` | Requirements intake; writes intake + profile + STATE |
+| `scripts/generate-preview.mjs` | Illustrative, interactive preview with exportable feedback |
+| `scripts/review-preview.mjs` | Apply change requests / record approval; regenerates preview |
+| `scripts/scaffold-native.mjs` | Copy the Android/iOS starter and substitute package/bundle ids |
+| `scripts/readiness-report.mjs` | AI-fixable vs human/external gap report; `--strict` for the final gate |
+| `scripts/check-skill.mjs` | Audit the skill itself: structure, paths, archetypes, metadata, pipeline smoke test |
+| `scripts/new-app.sh` | Scaffold native Android/iOS projects (Expo only when explicitly requested) |
 | `scripts/validate-metadata.mjs` | Pre-submission metadata lint |

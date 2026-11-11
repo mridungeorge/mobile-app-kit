@@ -13,7 +13,7 @@
 //   --summary              emit a short human-readable summary
 //   --out <path>           write the profile JSON to a file
 //   --archetype <name>     force the primary archetype
-//   --stack <name>         expo | flutter | kmp | capacitor | native
+//   --stack <name>         native | android-native | ios-native | kmp | flutter | expo | capacitor
 //   --monetisation <name>  free | iap | subscription | ads | contract | none
 //   --accounts / --no-accounts
 //   --ugc / --no-ugc
@@ -35,7 +35,7 @@ const ARCHETYPES = {
       ["weather", 3], ["forecast", 2], ["air quality", 3], ["monitor", 1]
     ],
     coreLoop: "open the tool → perform the one task → save, copy, or share the result",
-    stack: { primary: "expo", ui: "nativewind", state: "zustand", data: "sqlite", backend: "none" },
+    stack: { primary: "native", ui: "swiftui-compose", state: "platform-state", data: "sqlite-room-coredata", backend: "none", android: "kotlin-jetpack-compose", ios: "swift-swiftui" },
     screens: ["home-tool", "history", "detail", "settings", "paywall"],
     dataSensitivity: [],
     permissions: [],
@@ -59,7 +59,7 @@ const ARCHETYPES = {
       ["blood pressure", 3], ["diabetes", 3], ["therapy", 2], ["habit", 1]
     ],
     coreLoop: "log or import a measurement → see today → see a trend → adjust",
-    stack: { primary: "expo", ui: "nativewind", state: "zustand", data: "sqlite", backend: "supabase" },
+    stack: { primary: "native", ui: "swiftui-compose", state: "platform-state", data: "sqlite-room-datastore", backend: "supabase", android: "kotlin-jetpack-compose", ios: "swift-swiftui" },
     screens: ["onboarding-consent", "today", "log-entry", "history", "trends", "detail", "settings", "export", "paywall"],
     dataSensitivity: ["health"],
     permissions: ["notifications", "health-kit"],
@@ -83,7 +83,7 @@ const ARCHETYPES = {
       ["neighbourhood", 1], ["club", 1], ["meetup", 1], ["fan", 1]
     ],
     coreLoop: "create or browse → interact → return for new content",
-    stack: { primary: "expo", ui: "nativewind", state: "tanstack-query", data: "supabase", backend: "supabase" },
+    stack: { primary: "native", ui: "swiftui-compose", state: "platform-state-network", data: "supabase-sdk", backend: "supabase", android: "kotlin-jetpack-compose", ios: "swift-swiftui" },
     screens: ["auth", "feed", "compose", "post-detail", "comments", "profile", "search", "notifications", "report-block", "settings"],
     dataSensitivity: ["account", "photos"],
     permissions: ["photos", "notifications"],
@@ -107,7 +107,7 @@ const ARCHETYPES = {
       ["furniture", 1], ["grocery", 2], ["takeaway", 1], ["menu", 1]
     ],
     coreLoop: "discover → detail → cart or booking → pay → track",
-    stack: { primary: "expo", ui: "nativewind", state: "tanstack-query", data: "postgres", backend: "shopify-or-medusa" },
+    stack: { primary: "native", ui: "swiftui-compose", state: "platform-state-network", data: "remote-api-cache", backend: "shopify-or-medusa", android: "kotlin-jetpack-compose", ios: "swift-swiftui" },
     screens: ["home", "category", "search", "product", "cart", "checkout", "confirmation", "orders", "order-detail", "account", "addresses", "support"],
     dataSensitivity: ["payment", "address", "purchase-history"],
     permissions: ["notifications"],
@@ -130,7 +130,7 @@ const ARCHETYPES = {
       ["learn to play", 1], ["course", 1], ["lecture", 1], ["dj", 2], ["lo-fi", 2], ["white noise", 1]
     ],
     coreLoop: "browse → play or read → resume → collect",
-    stack: { primary: "expo", ui: "nativewind", state: "zustand", data: "sqlite", backend: "cdn" },
+    stack: { primary: "native", ui: "swiftui-compose", state: "platform-state", data: "sqlite-room-coredata", backend: "cdn", android: "kotlin-jetpack-compose", ios: "swift-swiftui" },
     screens: ["home", "library", "player-reader", "queue", "search", "detail", "downloads", "settings", "paywall"],
     dataSensitivity: ["account", "consumption-history"],
     permissions: ["notifications", "background-audio"],
@@ -153,7 +153,7 @@ const ARCHETYPES = {
       ["journal with ai", 3], ["voice note", 1], ["vision", 1], ["rag", 2], ["agent", 2], ["copilot", 3]
     ],
     coreLoop: "prompt or capture → generated result → refine → save or export",
-    stack: { primary: "expo", ui: "nativewind", state: "tanstack-query", data: "sqlite", backend: "serverless-proxy" },
+    stack: { primary: "native", ui: "swiftui-compose", state: "platform-state-network", data: "sqlite-room-coredata", backend: "serverless-proxy", android: "kotlin-jetpack-compose", ios: "swift-swiftui" },
     screens: ["onboarding-disclosure", "compose-chat", "result", "history", "detail", "settings", "usage-limits", "paywall"],
     dataSensitivity: ["prompts", "account"],
     permissions: ["notifications"],
@@ -176,7 +176,7 @@ const ARCHETYPES = {
       ["net worth", 3], ["subscriptions tracker", 2], ["split bill", 2], ["remittance", 3], ["fintech", 3]
     ],
     coreLoop: "connect or enter → categorise → see balance or trend → act or export",
-    stack: { primary: "expo", ui: "nativewind", state: "tanstack-query", data: "sqlite-encrypted", backend: "bank-api" },
+    stack: { primary: "native", ui: "swiftui-compose", state: "platform-state-network", data: "encrypted-sqlite-room-keystore", backend: "bank-api", android: "kotlin-jetpack-compose", ios: "swift-swiftui" },
     screens: ["onboarding-kyc", "accounts", "transactions", "detail", "budgets", "trends", "settings", "security", "export", "support"],
     dataSensitivity: ["financial", "identity", "authentication"],
     permissions: ["notifications", "biometrics"],
@@ -199,7 +199,7 @@ const ARCHETYPES = {
       ["flashcard", 2], ["reward chart", 3], ["screen time", 3]
     ],
     coreLoop: "child completes an activity → earns progress → parent sees it",
-    stack: { primary: "expo", ui: "nativewind", state: "zustand", data: "sqlite", backend: "none" },
+    stack: { primary: "native", ui: "swiftui-compose", state: "platform-state", data: "sqlite-room-coredata", backend: "none", android: "kotlin-jetpack-compose", ios: "swift-swiftui" },
     screens: ["parent-gate", "child-home", "activity", "reward-progress", "parent-dashboard", "settings", "privacy-notice"],
     dataSensitivity: ["children", "account"],
     permissions: ["notifications"],
@@ -222,7 +222,7 @@ const ARCHETYPES = {
       ["parking", 2], ["ev charging", 2], ["geocach", 2], ["road trip", 3]
     ],
     coreLoop: "choose a place → see it on map or list → save or navigate → use offline",
-    stack: { primary: "expo", ui: "nativewind", state: "zustand", data: "sqlite", backend: "maplibre" },
+    stack: { primary: "native", ui: "swiftui-compose", state: "platform-state", data: "sqlite-room-coredata", backend: "maplibre", android: "kotlin-jetpack-compose", ios: "swift-swiftui" },
     screens: ["onboarding-location", "discover", "map", "place-detail", "itinerary", "saved", "offline-downloads", "settings"],
     dataSensitivity: ["location", "travel-plans"],
     permissions: ["location-when-in-use", "notifications"],
@@ -246,7 +246,7 @@ const ARCHETYPES = {
       ["sso", 2], ["saml", 2], ["mdm", 2], ["managed google play", 3]
     ],
     coreLoop: "sign in → receive assignment → capture evidence → sync → report",
-    stack: { primary: "expo", ui: "nativewind", state: "tanstack-query", data: "sqlite-offline-queue", backend: "enterprise-api" },
+    stack: { primary: "native", ui: "swiftui-compose", state: "platform-state-network", data: "offline-queue-room-coredata", backend: "enterprise-api", android: "kotlin-jetpack-compose", ios: "swift-swiftui" },
     screens: ["sso-login", "assignments", "job-detail", "capture", "sync-status", "history", "profile", "settings"],
     dataSensitivity: ["employee", "customer", "site"],
     permissions: ["camera", "location", "notifications"],
@@ -270,7 +270,7 @@ const ARCHETYPES = {
       ["species", 3], ["bird", 1], ["bird identifier", 3], ["plant identifier", 3], ["plant", 1], ["insect", 2], ["mushroom", 2], ["visual search", 3]
     ],
     coreLoop: "capture → process or edit → save and share",
-    stack: { primary: "expo", ui: "nativewind", state: "zustand", data: "sqlite", backend: "on-device-ml" },
+    stack: { primary: "native", ui: "swiftui-compose", state: "platform-state", data: "sqlite-room-coredata", backend: "on-device-ml", android: "kotlin-jetpack-compose", ios: "swift-swiftui" },
     screens: ["camera", "review", "editor", "export-share", "gallery", "settings", "paywall"],
     dataSensitivity: ["photos", "documents"],
     permissions: ["camera", "photos"],
@@ -315,7 +315,7 @@ const ARCHETYPES = {
       ["speed dating", 3], ["lgbtq", 2], ["polyamory", 3], ["wingman", 2]
     ],
     coreLoop: "build a profile → discover → match → chat → meet safely",
-    stack: { primary: "expo", ui: "nativewind", state: "tanstack-query", data: "supabase", backend: "supabase" },
+    stack: { primary: "native", ui: "swiftui-compose", state: "platform-state-network", data: "supabase-sdk", backend: "supabase", android: "kotlin-jetpack-compose", ios: "swift-swiftui" },
     screens: ["onboarding-verification", "profile-builder", "discover", "match", "chat", "report-block", "safety-centre", "settings", "paywall"],
     dataSensitivity: ["identity", "photos", "location", "sexual-orientation"],
     permissions: ["photos", "notifications", "location-coarse"],
@@ -338,7 +338,7 @@ const ARCHETYPES = {
       ["driver earnings", 3], ["uber for", 3], ["on demand", 2], ["sos", 1]
     ],
     coreLoop: "request → match → track live → complete → rate",
-    stack: { primary: "expo", ui: "nativewind", state: "tanstack-query", data: "postgres", backend: "realtime" },
+    stack: { primary: "native", ui: "swiftui-compose", state: "platform-state-network", data: "remote-api-cache", backend: "realtime", android: "kotlin-jetpack-compose", ios: "swift-swiftui" },
     screens: ["role-select", "request", "tracking", "chat-call", "history", "receipt", "driver-mode", "earnings", "settings"],
     dataSensitivity: ["location", "payment", "identity"],
     permissions: ["location-background", "notifications", "camera"],
@@ -353,12 +353,14 @@ const ARCHETYPES = {
 };
 
 const STACK_PRESETS = {
-  expo: { primary: "expo", ui: "nativewind" },
-  flutter: { primary: "flutter", ui: "material-3" },
-  kmp: { primary: "kmp", ui: "compose-multiplatform" },
-  capacitor: { primary: "capacitor", ui: "web" },
-  native: { primary: "swiftui-compose", ui: "platform-native" },
-  unity: { primary: "unity", ui: "unity-ui" }
+  native: { primary: "native", ui: "swiftui-compose", androidToolchain: "android-studio-gradle-kotlin", iosToolchain: "xcode-swiftui", build: "gradle-xcode" },
+  "android-native": { primary: "android-native", ui: "jetpack-compose", androidToolchain: "android-studio-gradle-kotlin", build: "gradle" },
+  "ios-native": { primary: "ios-native", ui: "swiftui", iosToolchain: "xcode-swiftui", build: "xcode" },
+  kmp: { primary: "kmp", ui: "compose-multiplatform", androidToolchain: "android-studio-gradle-kotlin", iosToolchain: "xcode-swiftui", build: "gradle-xcode" },
+  flutter: { primary: "flutter", ui: "material-3", build: "flutter-gradle-xcode" },
+  expo: { primary: "expo", ui: "nativewind", build: "eas", note: "cross-platform JS; not a native Kotlin/Swift codebase" },
+  capacitor: { primary: "capacitor", ui: "web", build: "capacitor-gradle-xcode" },
+  unity: { primary: "unity", ui: "unity-ui", build: "unity" }
 };
 
 const MONETISATION_PAYMENTS = {
@@ -447,7 +449,7 @@ function help() {
   node scripts/route-idea.mjs --json "marketplace for dog walkers" > .mobile/00-profile.json
   node scripts/route-idea.mjs --summary "offline bird identifier"
 
-Flags: --json --summary --out <path> --archetype <name> --stack <expo|flutter|kmp|capacitor|native|unity>
+Flags: --json --summary --out <path> --archetype <name> --stack <native|android-native|ios-native|kmp|flutter|expo|capacitor|unity>
        --monetisation <free|iap|subscription|ads|contract|none> --accounts --no-accounts
        --ugc --no-ugc --ai --no-ai --offline
 

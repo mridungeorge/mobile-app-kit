@@ -19,7 +19,7 @@ The router is deliberately deterministic — keyword and flag scoring, no model 
   "archetype": "health-fitness",
   "secondary": ["media"],
   "confidence": "high",
-  "stack": { "primary": "expo", "ui": "nativewind", "state": "zustand", "data": "sqlite", "backend": "supabase" },
+  "stack": { "primary": "native", "ui": "swiftui-compose", "state": "platform-state", "data": "sqlite-room-datastore", "backend": "supabase", "android": "kotlin-jetpack-compose", "ios": "swift-swiftui" },
   "screens": ["onboarding", "today", "log-entry", "history", "trends", "settings"],
   "dataSensitivity": ["health"],
   "permissions": ["notifications"],
@@ -43,10 +43,10 @@ The router is deliberately deterministic — keyword and flag scoring, no model 
 |---|---|
 | 1 product-architect | start from the archetype's core loop and screen set instead of inventing one; size the inventory to the archetype's ≤ 12 ceiling |
 | 2 design-director | pick the motion budget, density (data-dense vs calm), and which screen patterns apply |
-| 3 ui-builder | choose stack, UI kit, state and persistence from `stack`; scaffold only the listed screens |
+| 3 ui-builder | choose stack, UI kit, state and persistence from `stack`; scaffold the native project (`scaffold-native.mjs`) and only the listed screens |
 | 4 motion-director | cap flourish count and animation intensity by `motionBudget`; choose gesture vocabulary for the archetype |
 | 5 store-compliance | copy `permissions`, `ios.declarations`, `android.declarations`, `reviewRisks`, `ageRatingFloor` into the compliance file and verify each one |
-| 6 release-engineer | pick CI recipe (EAS / Gradle / Xcode Cloud), track plan, and whether a 14-day Play test is mandatory |
+| 6 release-engineer | pick CI recipe (Gradle / Xcode Cloud / Fastlane), track plan, and whether a 14-day Play test is mandatory |
 | 7 reviewer | run `qaFocus` as the test checklist; block on any unmitigated `reviewRisks` |
 
 ## Pipeline switches
@@ -85,7 +85,7 @@ Each block lists: **core loop**, default stack, screen set, sensitive data, perm
 Calculator, converter, scanner, notes, timer, offline reference, file tool.
 
 - **Core loop**: open → do the one thing → result is saved or shareable.
-- **Stack**: Expo + NativeWind + Zustand + SQLite/AsyncStorage; no backend unless sync is requested.
+- **Stack**: native — Kotlin + Jetpack Compose (Android) and Swift + SwiftUI (iOS); Room/Core Data or SQLDelight for storage; no backend unless sync is requested. Expo prototype only if explicitly requested.
 - **Screens**: onboarding (optional, ≤3 cards), home/tool, history, detail, settings, paywall (if IAP).
 - **Sensitive data**: none by default; scans may contain personal documents.
 - **Permissions**: camera (scanner), notifications (timer), files.
@@ -101,7 +101,7 @@ Calculator, converter, scanner, notes, timer, offline reference, file tool.
 Sleep, workouts, nutrition, symptom logs, meditation, cycle tracking, rehab.
 
 - **Core loop**: log or import a measurement → see today → see a trend → adjust.
-- **Stack**: Expo + NativeWind + Zustand + SQLite + optional Supabase; HealthKit / Health Connect adapters.
+- **Stack**: native + Room/Core Data for local history + optional Supabase; HealthKit / Health Connect adapters written per platform.
 - **Screens**: onboarding + consent, today, log entry, history, trends/charts, detail, settings, export, paywall.
 - **Sensitive data**: health, biometric, sleep, reproductive.
 - **Permissions**: notifications, HealthKit/Health Connect read+write, motion & fitness, camera (meal photos).
@@ -117,7 +117,7 @@ Sleep, workouts, nutrition, symptom logs, meditation, cycle tracking, rehab.
 Feeds, communities, photo sharing, reviews, forums, dating-adjacent.
 
 - **Core loop**: create or browse → interact → return for new content.
-- **Stack**: Expo + Expo Router + TanStack Query + Supabase/Firebase; image CDN; push.
+- **Stack**: native + platform HTTP client or Ktor/URLSession + Supabase/Firebase; image CDN; APNs/FCM push.
 - **Screens**: auth, feed, compose, post detail, comments, profile, search, notifications, report/block, moderation queue (if creator tools), settings.
 - **Sensitive data**: account, contacts (optional), precise location (optional), photos.
 - **Permissions**: photos, camera, notifications, contacts (optional), location (optional).
@@ -133,7 +133,7 @@ Feeds, communities, photo sharing, reviews, forums, dating-adjacent.
 Storefronts, DTC brands, multi-vendor marketplaces, bookings with payment.
 
 - **Core loop**: discover → product/service detail → cart or booking → pay → track.
-- **Stack**: Expo + Expo Router + TanStack Query + Stripe/RevenueCat + Shopify/Medusa backend.
+- **Stack**: native + StoreKit 2 / Play Billing via RevenueCat (optional) + Shopify/Medusa backend. Digital goods must use in-app purchase on iOS.
 - **Screens**: home, category, search, product, cart, checkout, order confirmation, orders, order detail, account, addresses, support, paywall/loyalty.
 - **Sensitive data**: payment, address, purchase history.
 - **Permissions**: notifications, camera (barcode/returns), location (store finder, optional).
@@ -149,7 +149,7 @@ Storefronts, DTC brands, multi-vendor marketplaces, bookings with payment.
 Music, podcasts, video, reading, photo galleries, streaming.
 
 - **Core loop**: browse → play/read → resume → collect.
-- **Stack**: Expo + expo-av/expo-video + Zustand + SQLite; background audio config; CDN.
+- **Stack**: native + Media3/ExoPlayer (Android) and AVPlayer/AVKit (iOS) + Room/Core Data; background audio config; CDN.
 - **Screens**: home, library, player/reader, queue, search, detail, downloads, settings, paywall.
 - **Sensitive data**: account, listening/reading history.
 - **Permissions**: notifications, background audio, photos (import), storage.
@@ -165,7 +165,7 @@ Music, podcasts, video, reading, photo galleries, streaming.
 Chat, writing helpers, journaling with AI, image generation, summarisation.
 
 - **Core loop**: prompt or capture → generated result → refine → save/export.
-- **Stack**: Expo + Expo Router + TanStack Query + serverless proxy; never ship provider keys in the app.
+- **Stack**: native + a serverless proxy (Cloudflare Workers / Supabase Edge Functions); never ship provider keys in the app.
 - **Screens**: onboarding + AI disclosure, chat/compose, result, history, detail, settings, usage/limits, paywall.
 - **Sensitive data**: prompts may contain anything — treat as high sensitivity; add a "don't enter sensitive data" notice.
 - **Permissions**: microphone (voice), photos (vision), notifications.
@@ -181,7 +181,7 @@ Chat, writing helpers, journaling with AI, image generation, summarisation.
 Banking views, budgeting, expense tracking, invoicing, crypto portfolio (not custody).
 
 - **Core loop**: connect or enter → categorise → see balance/trend → act or export.
-- **Stack**: Expo + NativeWind + TanStack Query + SQLite (encrypted) + Plaid/Stripe/bank API.
+- **Stack**: native + encrypted Room/Core Data + Plaid/Stripe/bank API; biometrics via BiometricPrompt / LocalAuthentication.
 - **Screens**: onboarding + KYC (if required), accounts, transactions, detail, budgets, trends, settings, security, export, support.
 - **Sensitive data**: financial, identity, authentication.
 - **Permissions**: notifications, biometrics/Face ID, camera (receipts/cheque).
@@ -197,7 +197,7 @@ Banking views, budgeting, expense tracking, invoicing, crypto portfolio (not cus
 Tutoring, bedtime, chores, parental controls, child-facing games.
 
 - **Core loop**: child does an activity → earns progress → parent sees it.
-- **Stack**: Expo + NativeWind + SQLite; offline-first; COPPA/GDPR-K compliant analytics (or none).
+- **Stack**: native + Room/Core Data / SwiftData; offline-first; COPPA/GDPR-K compliant analytics (or none).
 - **Screens**: parent gate, child home, activity, reward/progress, parent dashboard, settings, privacy notice.
 - **Sensitive data**: children's data — highest sensitivity.
 - **Permissions**: notifications (parent only), camera (optional, never required).
@@ -213,7 +213,7 @@ Tutoring, bedtime, chores, parental controls, child-facing games.
 Trip planners, guides, transit, navigation, local discovery.
 
 - **Core loop**: choose a place → see it on a map/list → save or navigate → use offline.
-- **Stack**: Expo + MapLibre/Mapbox + TanStack Query + SQLite; offline tiles.
+- **Stack**: native + MapLibre/Mapbox SDK for each platform + Room/Core Data; offline tile packs.
 - **Screens**: onboarding (location rationale), discover, map, place detail, itinerary, saved, offline downloads, settings.
 - **Sensitive data**: precise location, travel plans.
 - **Permissions**: location (when-in-use, optional precise), notifications (trip reminders), camera.
@@ -229,7 +229,7 @@ Trip planners, guides, transit, navigation, local discovery.
 Field ops, inspections, inventory, CRM, shift work, logistics.
 
 - **Core loop**: sign in → receive assignment → capture evidence → sync → report.
-- **Stack**: Expo + Expo Router + TanStack Query + SQLite (offline queue) + SSO (OIDC/SAML via proxy).
+- **Stack**: native + Room/Core Data (offline queue) + SSO via AppAuth/MSAL or Okta OIDC/SAML through the customer's IdP.
 - **Screens**: SSO login, today/assignments, job detail, capture (photo/signature/scan), sync status, history, profile, settings, admin (optional web).
 - **Sensitive data**: employee, customer, site, and sometimes health/safety data.
 - **Permissions**: camera, location (job geofence), notifications, Bluetooth (sensors), files.
@@ -245,7 +245,7 @@ Field ops, inspections, inventory, CRM, shift work, logistics.
 Scanner, editor, filters, OCR, AR try-on.
 
 - **Core loop**: capture → process/edit → save/share.
-- **Stack**: Expo + Skia/GL filters or native module + SQLite; on-device ML where possible.
+- **Stack**: native + CameraX / AVFoundation capture + Core Image / Android graphics for filters; on-device ML Kit / Vision where possible.
 - **Screens**: camera, review, editor, export/share, gallery, settings, paywall.
 - **Sensitive data**: photos, possibly documents/identity.
 - **Permissions**: camera, photos, microphone (video).
@@ -261,7 +261,7 @@ Scanner, editor, filters, OCR, AR try-on.
 Casual, puzzle, arcade, narrative.
 
 - **Core loop**: session → challenge → reward → next session.
-- **Stack**: Unity, Godot, or React Native Skia for simple 2D; not the default Expo pipeline.
+- **Stack**: Unity or Godot for 3D/render-heavy work; SpriteKit/SceneKit or Jetpack Compose Canvas for simple 2D. Not the native app pipeline, and not Expo.
 - **Screens**: title, tutorial, play, pause, results, shop, settings, leaderboard (if any).
 - **Sensitive data**: account, purchase history, gameplay analytics.
 - **Permissions**: notifications, Game Center/Play Games.
@@ -277,7 +277,7 @@ Casual, puzzle, arcade, narrative.
 Matchmaking, friendship, community meetups.
 
 - **Core loop**: profile → discover → match → chat → meet.
-- **Stack**: Expo + Expo Router + Supabase + image moderation + push.
+- **Stack**: native + Supabase/Firebase + server-side image moderation + APNs/FCM push.
 - **Screens**: onboarding + verification, profile builder, discover, match, chat, report/block, safety centre, settings, paywall.
 - **Sensitive data**: identity, photos, precise location, sexual orientation (special category).
 - **Permissions**: photos, camera, location (optional, coarse by default), notifications.
@@ -293,7 +293,7 @@ Matchmaking, friendship, community meetups.
 Courier, food delivery, ride-hailing, last-mile tracking.
 
 - **Core loop**: request → match → track live → complete → rate.
-- **Stack**: Expo + Mapbox/MapLibre + push + realtime (Supabase/Firebase) + Stripe Connect.
+- **Stack**: native + Maps SDK + push + realtime (Supabase/Firebase) + Stripe Connect for payouts.
 - **Screens**: role select, request, tracking, chat/call, history, receipt, driver/runner mode, earnings, settings.
 - **Sensitive data**: precise location, payment, identity (drivers).
 - **Permissions**: location (background for drivers), notifications, camera (proof of delivery), phone.
@@ -319,7 +319,7 @@ The point of the router is that these do **not** share a route:
 | | Sleep tracker | Dog-walker marketplace | Kids phonics |
 |---|---|---|---|
 | Archetype | `health-fitness` | `commerce-marketplace` | `kids-family` |
-| Stack | Expo, SQLite, Supabase | Expo, TanStack Query, Postgres, Shopify/Medusa | Expo, SQLite, no backend |
+| Stack | Kotlin/Compose + SwiftUI, Room/Core Data, Supabase | Native + StoreKit/Play Billing, Postgres, Shopify/Medusa | Kotlin/Compose + SwiftUI, Room/Core Data, no backend |
 | Screens | today, log, trends, export | home, product, cart, checkout, orders | parent gate, child home, activity, parent dashboard |
 | Permissions | notifications, HealthKit | notifications | none (parent notifications optional) |
 | Declarations | HealthKit, privacy manifest, data safety | 3.1.1 payments, tracking, account deletion | Kids Category, Families, 5.1.4 |

@@ -2,17 +2,18 @@
 
 Star counts are a **November 2026 GitHub snapshot** — a popularity signal, not a quality score. Anything under ~6 months since last push deserves suspicion for a new build.
 
-The decision table is a fallback for when the idea is unusual or the team overrides the profile. By default the stack comes from `.mobile/00-profile.json`, which already encodes the archetype's sensible choice (for example: Expo for most consumer apps, Unity for games, enterprise API + offline queue for B2B field work).
+The decision table is a fallback for when the idea is unusual or the team overrides the profile. By default the stack comes from `.mobile/00-profile.json`, which already encodes the archetype's sensible choice — **native (Kotlin + Jetpack Compose / Swift + SwiftUI) for almost every consumer and B2B app**, Unity for games, and native plus an offline queue for B2B field work. Expo appears only when the team explicitly asks for a cross-platform JS prototype.
 
 ## Contents
 1. Decision table
-2. Expo / React Native stack
-3. Flutter stack
-4. Kotlin Multiplatform stack
-5. Native iOS / Android
-6. Web-to-app (Ionic / Capacitor)
-7. Library map by job
-8. What not to use for a new app in 2026
+2. Native Android — Kotlin + Jetpack Compose
+3. Native iOS — Swift + SwiftUI
+4. Kotlin Multiplatform
+5. Expo / React Native (prototype)
+6. Flutter
+7. Web-to-app (Ionic / Capacitor)
+8. Library map by job
+9. What not to use for a new app in 2026
 
 ---
 
@@ -20,18 +21,108 @@ The decision table is a fallback for when the idea is unusual or the team overri
 
 | Constraint | Choose | Reason |
 |---|---|---|
-| Team knows TypeScript/React | **Expo** | One codebase, EAS builds both stores, largest UI ecosystem |
-| Design is the product (custom motion, brand) | **Flutter** | Own renderer, identical output, strong implicit animation API |
-| Existing Android app, Kotlin team | **KMP + Compose Multiplatform** | Share domain logic, adopt UI incrementally |
-| Deep OS integration, two teams, budget | **SwiftUI + Compose** | Day-one API access, best platform feel |
-| Existing web app, need a store presence fast | **Ionic + Capacitor** | Reuse the web build; native shell only |
-| Enterprise Microsoft shop | **.NET MAUI** | C#/XAML, Visual Studio tooling |
+| **Production-ready, both stores (default)** | **SwiftUI + Jetpack Compose (Kotlin)** | Proper native apps, full platform APIs, best performance/review fit, built in Xcode + Android Studio |
+| Android-only or Android-first team | **Kotlin + Jetpack Compose** | Native Android, Gradle toolchain, Play-ready AAB/signing, deep OS integration |
+| iOS-only or Apple-first team | **Swift + SwiftUI** | Native iOS, Xcode/Archive/TestFlight, best platform feel |
+| Shared business logic, native UI | **KMP + Compose Multiplatform / SwiftUI** | Share domain/data while keeping production-native UI where needed |
+| Design-heavy custom UI, single codebase | **Flutter** | Own renderer, consistent output |
+| Existing web app, store shell needed | **Ionic + Capacitor** | Reuse web build; ensure it feels app-like (not a thin wrapper) |
+| JS team, rapid prototype (explicit) | **Expo + React Native** | Fast iteration; for production use dev builds/EAS, not Expo Go |
 
-Speed to first submission, roughly: Expo 1× · Flutter 1.2× · KMP 1.5× · native 2×.
+For "proper" production apps, prefer native toolchains (Android Studio/Gradle, Xcode) over Expo Go-style runtime workflows.
 
 ---
 
-## 2. Expo / React Native
+## 2. Native Android — Kotlin + Jetpack Compose
+
+**Scaffold**
+
+```bash
+# From this skill: buildable project, version catalog, theme, HomeScreen, tests
+./scripts/new-app.sh native-android "Night Notes" com.example.nightnotes
+
+# Then, once, to create the Gradle wrapper
+cd "Night Notes/android" && gradle wrapper --gradle-version 8.13
+./gradlew :app:assembleDebug
+```
+
+**Core repos and libraries**
+| Repo / library | ⭐ | Use |
+|---|---|---|
+| `android/compose-samples` | 23.6k | Compose patterns, all the official samples |
+| `android/nowinandroid` | 18.5k | Production architecture reference: modules, offline-first, tests |
+| `wasabeef/awesome-android-ui` | 58.4k | Component inspiration (port to Compose, do not copy views) |
+| `InsertKoinIO/koin` | 10.0k | DI (or Hilt if the team already uses Dagger) |
+| `square/retrofit` + `Kotlin/kotlinx.serialization` | 43.4k / 6.0k | Networking + models |
+| `coil-kt/coil` | 11.4k | Image loading, memory-safe by default |
+| `androidx.room` | — | Persistence; required for offline queues |
+| `androidx.work` | — | Background sync with declared constraints |
+| `androidx.navigation` (compose) | — | One nav graph, typed routes |
+| `androidx.camera` (CameraX) | — | Capture without fighting the camera API |
+| `googlemaps/android-maps-compose` | — | Maps in Compose |
+| `RevenueCat/purchases-android` | 0.6k | Subscriptions across Play Billing changes |
+| `getsentry/sentry-android` | — | Crash + ANR reporting with release health |
+
+**Rules**: Compose-only for new screens (no XML layouts mixed in), Material 3 theming driven by the design tokens copied into the generated project's `docs/` folder, `compileSdk`/`targetSdk` kept at the current Play requirement, R8 on for release with a written ProGuard rationale.
+
+---
+
+## 3. Native iOS — Swift + SwiftUI
+
+**Scaffold**
+
+```bash
+# From this skill: SwiftUI sources, XcodeGen project.yml, PrivacyInfo, assets, XCTest
+./scripts/new-app.sh native-ios "Night Notes" com.example.nightnotes
+
+# On macOS
+cd "Night Notes/ios" && brew install xcodegen && xcodegen generate && open *.xcodeproj
+```
+
+**Core repos and libraries**
+| Repo / library | ⭐ | Use |
+|---|---|---|
+| `vsouza/awesome-ios` | 53.9k | Curated index of libraries and learning material |
+| `dkhamsing/open-source-ios-apps` | 53.2k | Real apps to read for structure |
+| `pointfreeco/swift-composable-architecture` | 15.0k | State management for large apps; skip for small ones |
+| `Alamofire/Alamofire` | 42.1k | Networking (or plain `URLSession` + async/await) |
+| `onevcat/Kingfisher` / `kean/Nuke` | 23.9k / 8.1k | Image loading and cache |
+| `RevenueCat/purchases-ios` | 2.6k | StoreKit 2 subscriptions, receipt validation |
+| `getsentry/sentry-cocoa` | 0.9k | Crash reporting |
+| SwiftData / Core Data | — | Persistence; SwiftData for new apps, Core Data for migrations |
+| SwiftUI `NavigationStack`, `Observation` | — | Native navigation and state |
+
+**Rules**: SwiftUI-first, no UIKit view controllers except where a system feature requires them (camera picker, Mail composer). `PrivacyInfo.xcprivacy` in every target and extension. Deployment target set deliberately, not copied from a tutorial. Signing, capabilities and Archive stay in Xcode or CI — never in the repo.
+
+---
+
+## 4. Kotlin Multiplatform
+
+**Scaffold**
+
+```bash
+# Gradle-based; use the JetBrains wizard for a new project
+# https://kmp.jetbrains.com
+```
+
+**Core repos**
+| Repo | ⭐ | Use |
+|---|---|---|
+| `JetBrains/compose-multiplatform` | 16.9k | Shared Compose UI across Android/iOS/desktop |
+| `JetBrains/kotlin` | 50.1k | Language + KMP toolchain |
+| `ktorio/ktor` | 13.4k | Shared HTTP client |
+| `cashapp/sqldelight` | 6.2k | Shared SQL with platform drivers |
+| `android/compose-samples` | 23.6k | Compose patterns |
+| `InsertKoinIO/koin` | 10.0k | DI across platforms |
+| `Kotlin/kotlinx.serialization` | 6.0k | Shared models |
+
+Use KMP when the domain logic is the expensive part. Keep navigation and platform chrome native if you want App Store reviewers to see a "real" iOS app; shared Compose UI is acceptable but needs extra attention to iOS gestures and typography.
+
+---
+
+## 5. Expo / React Native (prototype)
+
+Explicit request only. This is the fast path to a cross-platform prototype, not the production-native path.
 
 **Scaffold**
 
@@ -41,7 +132,7 @@ cd my-app
 npx expo install expo-router react-native-safe-area-context react-native-screens
 ```
 
-Then run `scripts/new-app.sh` from this skill to drop in tokens and components.
+Then run `scripts/new-app.sh expo <name>` from this skill to drop in tokens and components.
 
 **Core repos**
 | Repo | ⭐ | Use |
@@ -68,52 +159,31 @@ Then run `scripts/new-app.sh` from this skill to drop in tokens and components.
 
 ---
 
-## 3. Flutter
+## 6. Flutter
 
 **Scaffold**
 
 ```bash
-flutter create --org com.yourco --platforms ios,android my_app
+flutter create --org com.example --platforms=ios,android my_app
+cd my_app
+flutter pub add flutter_riverpod go_router dio
 ```
 
-**Repos**
+**Core repos**
 | Repo | ⭐ | Use |
 |---|---|---|
-| `flutter/flutter` | 181.1k | Framework |
-| `flutter/samples` | 19.3k | Official patterns incl. adaptive layouts |
-| `mitesh77/Best-Flutter-UI-Templates` | 22.9k | Complete screen templates to learn from |
-| `Solido/awesome-flutter` | 61.9k | Library index |
-| `flutter/gallery` (archived) | 6.6k | Material 3 reference |
+| `flutter/flutter` | 173.6k | Framework + engine |
+| `rrousselGit/riverpod` | 6.4k | State + DI |
+| `felangel/bloc` | 12.1k | Event-driven state for large apps |
+| `flutter/packages` | 2.9k | Official `go_router`, `camera`, `url_launcher` |
+| `jonataslaw/getx` | 6.1k | All-in-one; fast to start, hard to maintain |
+| `VeryGoodOpenSource/very_good_cli` | 2.8k | Project scaffold + tests + CI |
 
-**UI approach**: Material 3 as the base, then `ThemeData` overriding `ColorScheme` to the neutral ramp + one accent, `TextTheme` to the 13/14 body scale, and `PageTransitionsTheme` to platform-native. Motion via `AnimationController` or `flutter_animate` with durations from the motion table. Avoid shipping Cupertino and Material widgets mixed on the same screen.
-
----
-
-## 4. Kotlin Multiplatform
-
-| Repo | ⭐ | Use |
-|---|---|---|
-| `JetBrains/compose-multiplatform` | 19.5k | Shared Compose UI |
-| `Kotlin/KMP-App-Template` | 702 | Official shared-UI starter |
-| `android/nowinandroid` | 22.1k | Architecture reference (Material 3, adaptive) |
-| `android/compose-samples` | 23.6k | Compose patterns |
-| `InsertKoinIO/koin` | 10.0k | DI across platforms |
-| `Kotlin/kotlinx.serialization` | 6.0k | Shared models |
-
-Use KMP when the domain logic is the expensive part. Keep navigation and platform chrome native if you want App Store reviewers to see a "real" iOS app; shared Compose UI is acceptable but needs extra attention to iOS gestures and typography.
+Flutter is the answer for a design-heavy product that must look identical on both platforms and the team already knows Dart. It is not the answer for a native-feeling utility.
 
 ---
 
-## 5. Native
-
-**iOS**: SwiftUI + `pointfreeco/swift-composable-architecture` (15.0k) for large apps; `vsouza/awesome-ios` (53.9k) and `dkhamsing/open-source-ios-apps` (53.2k) for patterns.
-**Android**: Compose + `android/nowinandroid` architecture; `wasabeef/awesome-android-ui` (58.4k) for components.
-
-Native is the right answer when: camera/AR/health/Wallet/Bluetooth are core, or when the app must feel indistinguishable from system apps. It is the wrong answer for a 6-week MVP with one developer.
-
----
-
-## 6. Web-to-app
+## 7. Web-to-app
 
 `ionic-team/ionic-framework` (52.7k) + `ionic-team/capacitor` (17.1k). Good when the web app already exists and the native needs are push, camera, files, and a store listing. Watch out for: 60fps scrolling on low-end Android, safe-area handling, and Apple 4.2 (a wrapped website gets rejected — it must feel app-like).
 
@@ -121,31 +191,33 @@ This is also the only mobile path where **GSAP and react-bits** run natively (se
 
 ---
 
-## 7. Library map by job
+## 8. Library map by job
 
-| Job | Expo/RN | Flutter | KMP |
-|---|---|---|---|
-| Navigation | `react-navigation` (24.5k) or Expo Router | `go_router` | Compose Navigation / Voyager |
-| Server state | `TanStack/query` (50.5k) | `riverpod` + dio | Ktor + SQLDelight |
-| Animation | `software-mansion/react-native-reanimated` (11.1k) | `flutter_animate` / implicit | Compose `animate*AsState` |
-| Gestures | `react-native-gesture-handler` | built-in | Compose gestures |
-| Lists | `Shopify/flash-list` (7.2k) | `ListView.builder` | `LazyColumn` |
-| Sheets | `gorhom/react-native-bottom-sheet` (9.1k) | `showModalBottomSheet` | Material3 `ModalBottomSheet` |
-| Icons | `oblador/react-native-vector-icons` (17.9k) | `lucide_icons` | `material-icons-extended` |
-| Motion assets | `lottie-react-native` (17.2k) | `lottie` | `lottie-compose` |
-| Camera | `margelo/react-native-vision-camera` (9.7k) | `camera` | CameraX |
-| Maps | `react-native-maps` (16.0k) | `google_maps_flutter` | Google Maps KMP |
-| Purchases | `RevenueCat/react-native-purchases` (1.2k) | `purchases_flutter` | RevenueCat KMP |
-| Crash/analytics | `getsentry/sentry-react-native` (1.8k) | `sentry_flutter` | Sentry KMP |
-| E2E | `mobile-dev-inc/Maestro` (16.4k) | integration_test | Compose UI test |
-| Build/submit | `expo/eas-cli` (1.4k), `fastlane/fastlane` (42.4k) | fastlane | fastlane |
+| Job | Android (Kotlin) | iOS (Swift) | Expo/RN | Flutter | KMP |
+|---|---|---|---|---|---|
+| Navigation | Compose Navigation / typed routes | `NavigationStack` | `react-navigation` (24.5k) or Expo Router | `go_router` | Compose Navigation / Voyager |
+| Server state | Retrofit/Ktor + Flow | async/await `URLSession` | `TanStack/query` (50.5k) | `riverpod` + dio | Ktor |
+| Local data | Room | SwiftData / Core Data | SQLite | drift / sqflite | SQLDelight |
+| Animation | Compose `animate*AsState` | `withAnimation` / `.animation` | `react-native-reanimated` (11.1k) | `flutter_animate` | Compose animation |
+| Gestures | Compose gestures | SwiftUI gestures | `react-native-gesture-handler` | built-in | Compose gestures |
+| Lists | `LazyColumn` | `LazyVStack` / `List` | `Shopify/flash-list` (7.2k) | `ListView.builder` | `LazyColumn` |
+| Sheets | Material3 `ModalBottomSheet` | `.sheet` / `.presentationDetents` | `gorhom/react-native-bottom-sheet` (9.1k) | `showModalBottomSheet` | Material3 sheet |
+| Icons | `material-icons-extended` | SF Symbols | `oblador/react-native-vector-icons` (17.9k) | `lucide_icons` | Compose icons |
+| Motion assets | `lottie-compose` | Lottie-iOS | `lottie-react-native` (17.2k) | `lottie` | `lottie-compose` |
+| Camera | CameraX | AVFoundation | `margelo/react-native-vision-camera` (9.7k) | `camera` | CameraX |
+| Maps | Maps Compose | MapKit / Maps SDK | `react-native-maps` (16.0k) | `google_maps_flutter` | Google Maps KMP |
+| Purchases | Play Billing / RevenueCat | StoreKit 2 / RevenueCat | `RevenueCat/react-native-purchases` (1.2k) | `purchases_flutter` | RevenueCat KMP |
+| Crash/analytics | `getsentry/sentry-android` | `getsentry/sentry-cocoa` | `getsentry/sentry-react-native` (1.8k) | `sentry_flutter` | Sentry KMP |
+| E2E | Compose UI test / Maestro (16.4k) | XCUITest / Maestro | `mobile-dev-inc/Maestro` | integration_test | Compose UI test |
+| Build/submit | Gradle + fastlane (42.4k) | Xcode Cloud / fastlane | `expo/eas-cli` (1.4k), fastlane | fastlane | fastlane |
 
 ---
 
-## 8. What not to use for a new app in 2026
+## 9. What not to use for a new app in 2026
 
 - **Cordova / PhoneGap** — unmaintained relative to Capacitor.
 - **Xamarin.Forms** — end of life; .NET MAUI is the successor.
 - **React Native without Expo for a new app** — you inherit native config work EAS already solved.
 - **Any UI kit last pushed before 2025** — RN/Flutter internals move; old kits break on new architecture.
 - **Three UI kits in one app** — the result reads as assembled; reviewers and users both notice.
+- **Expo Go as the shipping runtime** — it is a development shell. Production needs a dev build/EAS build or a native project.
