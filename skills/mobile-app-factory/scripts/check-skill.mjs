@@ -26,6 +26,8 @@ const required = [
   "SKILL.md",
   "QUICKSTART.md",
   "references/idea-router.md",
+  "references/archetypes.md",
+  "references/definition-of-done.md",
   "references/design-language.md",
   "references/component-map.md",
   "references/adaptive-ui.md",
@@ -126,12 +128,12 @@ else ok.push(`references: ${seen.size} unique paths checked, all resolve`);
 
 // Archetype vocabulary must match the router
 const { ARCHETYPE_ORDER } = await import("./route-idea.mjs");
-const routerRef = readFileSync(join(root, "references/idea-router.md"), "utf8");
+const routerRef = readFileSync(join(root, "references/archetypes.md"), "utf8");
 const headings = [...routerRef.matchAll(/^### ([a-z0-9-]+)$/gm)].map((m) => m[1]);
 const missingInDoc = ARCHETYPE_ORDER.filter((a) => !headings.includes(a));
 const missingInScript = headings.filter((a) => !ARCHETYPE_ORDER.includes(a));
-if (missingInDoc.length) errors.push(`archetypes in script but not idea-router.md: ${missingInDoc.join(", ")}`);
-if (missingInScript.length) errors.push(`archetypes in idea-router.md but not script: ${missingInScript.join(", ")}`);
+if (missingInDoc.length) errors.push(`archetypes in script but not references/archetypes.md: ${missingInDoc.join(", ")}`);
+if (missingInScript.length) errors.push(`archetypes in references/archetypes.md but not script: ${missingInScript.join(", ")}`);
 if (!missingInDoc.length && !missingInScript.length) ok.push(`archetypes: ${ARCHETYPE_ORDER.length} match between router and reference`);
 
 // Metadata template must validate clean
