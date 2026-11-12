@@ -1,0 +1,62 @@
+name: audit
+
+# The kit audits itself. Run it on every push and pull request, on all three
+# desktop platforms: the Windows job is what catches CRLF regressions in
+# `gradlew`, and the macOS/Linux jobs are what catch a CRLF shebang breaking.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: audit (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Structure, frontmatter, references, archetypes, metadata template, router
+      # smoke cases, all 14 profiles, the intake → preview → approval → readiness
+      # pipeline, both native templates (including the Gradle wrapper binary) and
+      # every image the README references.
+      - name: Skill audit
+        run: node skills/mobile-app-factory/scripts/check-skill.mjs
+
+      - name: Shell helpers parse
+        if: runner.os != 'Windows'
+        run: |
+          for f in install.sh skills/mobile-app-factory/scripts/*.sh; do
+            bash -n "$f" || exit 1
+          done
+
+      # A CRLF shebang breaks on Linux, macOS and every CI runner. .gitattributes
+      # should make this impossible; this step proves it stayed that way.
+      - name: Wrapper and helper scripts are LF
+        if: runner.os != 'Windows'
+        run: |
+          for f in skills/mobile-app-factory/assets/android/project/gradlew \
+                   skills/mobile-app-factory/scripts/*.sh \
+                   install.sh; do
+            if grep -q $'\r' "$f"; then
+              echo "CRLF line endings in $f"
+              exit 1
+            fi
+          done
+
+      - name: Promo renderer scripts parse
+        run: |
+          node --check promo/render.mjs
+          node --check promo/browser.mjs
+          node --check promo/shot-preview.mjs

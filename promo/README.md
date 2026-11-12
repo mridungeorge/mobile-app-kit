@@ -9,7 +9,10 @@ promo.css        shared tokens and components (phone, rail, chips, approval gate
 index.html       the animated 1080×1350 page; exposes window.__seek(t)
 banner.html      the static 1600×800 README hero
 fonts/           Inter, subset to latin, inlined at build time
+browser.mjs      shared Chrome discovery, puppeteer resolution and launch flags
 render.mjs       frame-by-frame renderer + ffmpeg encode
+shot-preview.mjs screenshots the real generated preview page for the README
+package.json     devDependencies + npm scripts for every artefact
 ```
 
 ## What the animation says
@@ -45,10 +48,26 @@ and the Preview node index, so moving the rail timing cannot desynchronise the c
 
 ## Render
 
+Install once, then every artefact is one command:
+
 ```bash
-node promo/render.mjs --banner            # docs/banner.png   1600×800
-node promo/render.mjs --still 3.6 --name beat.png   # the approval-gate moment
-node promo/render.mjs                     # mp4 + poster + gif
+cd promo
+npm install
+
+npm run banner          # docs/banner.png   1600×800
+npm run still           # promo/.build/beat.png   the approval-gate moment (t = 3.6s)
+npm run render          # docs/promo.mp4 + docs/poster.png + docs/promo.gif
+npm run preview-shot    # docs/preview.png  the real generated preview page
+npm run all             # banner + video + preview shot, in that order
+```
+
+Or call the scripts directly from the repo root:
+
+```bash
+node promo/render.mjs --banner
+node promo/render.mjs --still 3.6 --name beat.png
+node promo/render.mjs
+node promo/shot-preview.mjs --idea "a marketplace for local dog walkers"
 ```
 
 Environment:
@@ -56,12 +75,13 @@ Environment:
 | Requirement | Default |
 |---|---|
 | `puppeteer-core` + Chrome/Chromium | `CHROME_PATH`, a local Chrome/Edge install, or `--chrome` |
-| `ffmpeg` with `libx264` | `node_modules/ffmpeg-static`, `ffmpeg-static` in the temp tool dir, or `--ffmpeg` / `FFMPEG` |
+| `ffmpeg` with `libx264` | `promo/node_modules/ffmpeg-static`, a repo-root install, or `--ffmpeg` / `FFMPEG` |
 
-```bash
-npm install --no-save puppeteer-core ffmpeg-static
-CHROME_PATH="/path/to/chrome" node promo/render.mjs
-```
+`browser.mjs` owns Chrome discovery for both scripts, so a machine that can render the video can also
+re-shoot the preview screenshot. Explicit paths always win over autodetection.
+
+On Windows, Chrome and Edge are auto-detected from `Program Files` and `%LOCALAPPDATA%`,
+`ffmpeg-static` resolves to `ffmpeg.exe`, and pages are loaded through `pathToFileURL`.
 
 On a machine where Chromium needs a local library path (common in sandboxes), prefix the command:
 
@@ -71,9 +91,6 @@ NODE_PATH=$(npm root -g) \
 node promo/render.mjs
 ```
 
-On Windows, `CHROME_PATH` is auto-detected from the standard `Program Files` and `%LOCALAPPDATA%`
-locations, `ffmpeg-static` resolves to `ffmpeg.exe`, and pages are loaded through `pathToFileURL`.
-
 ## Output contract
 
 | File | Format | Notes |
@@ -82,12 +99,19 @@ locations, `ffmpeg-static` resolves to `ffmpeg.exe`, and pages are loaded throug
 | `docs/promo.mp4` | 1080×1350 H.264 High, yuv420p, 30fps, 8.4s | Instagram 4:5 feed; `+faststart` for streaming |
 | `docs/poster.png` | 1080×1350 PNG | The settled frame (t = 8.2s), used as the post cover |
 | `docs/promo.gif` | 720×900, 12fps, 128 colours | README inline animation, ~1.9 MB |
+| `docs/preview.png` | 1400×1000 @2x PNG | Screenshot of the generated preview page |
 
 Instagram accepts the MP4 directly. The poster is the frame to pick if it asks for a cover image.
 
 ## Preview screenshot
 
-`docs/preview.png` is not part of the promo render — it is a real screenshot of
-`.mobile/preview/index.html` produced by the skill itself (questionnaire → generate-preview →
-headless Chrome at 1400×1000 @2x). Re-shoot it whenever the preview UI changes materially, otherwise
-the README advertises a screen that no longer exists.
+`docs/preview.png` is not a mockup and not hand-edited. `shot-preview.mjs` runs the skill's own
+`questionnaire.mjs` and `generate-preview.mjs` into a throwaway directory, opens the resulting
+`.mobile/preview/index.html` in headless Chrome at 1400×1000 @2x and captures it, then deletes the
+temporary project. Re-run it whenever the preview UI changes materially, otherwise the README
+advertises a screen that no longer exists.
+
+```bash
+node promo/shot-preview.mjs                          # the default sleep-tracker intake
+node promo/shot-preview.mjs --idea "..." --out docs/preview.png
+```

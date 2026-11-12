@@ -17,6 +17,11 @@ fi
 
 mkdir -p "$DEST"
 
+if ! command -v node >/dev/null 2>&1; then
+  echo "error: node (>= 18) is required — the factory scripts and the self-audit are Node" >&2
+  exit 1
+fi
+
 for skill in mobile-app-factory motion-experiences; do
   if [[ -d "$DEST/$skill" ]]; then
     echo "→ Replacing existing $DEST/$skill"
@@ -26,6 +31,11 @@ for skill in mobile-app-factory motion-experiences; do
   fi
   cp -R "$SRC/$skill" "$DEST/$skill"
 done
+
+# `cp -R` preserves modes on POSIX, but a checkout from a filesystem without
+# executable bits (Windows, some CI caches) leaves the helpers unusable.
+chmod +x "$DEST/mobile-app-factory/scripts/"*.sh 2>/dev/null || true
+chmod +x "$DEST/mobile-app-factory/assets/android/project/gradlew" 2>/dev/null || true
 
 echo
 echo "Installed:"

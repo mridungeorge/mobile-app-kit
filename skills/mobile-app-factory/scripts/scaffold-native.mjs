@@ -16,8 +16,8 @@
 //   __PACKAGE_PATH__   Android package as a directory path
 //   __BUNDLE_ID__      iOS bundle identifier
 
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { join, resolve, dirname, relative, sep } from "node:path";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync, chmodSync } from "node:fs";
+import { join, resolve, dirname, relative, sep, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -71,7 +71,18 @@ function kebabCase(input) {
     .toLowerCase() || "app";
 }
 
-function isProbablyText(buffer) {
+// Extensions that are always copied byte-for-byte. A `.jar` is a ZIP: it happens to
+// contain NUL bytes in its first 4 KB today, but relying on that is luck. Decoding a
+// binary as UTF-8 and re-encoding it silently corrupts the file, so the extension is
+// checked first and the NUL scan is only the fallback for unknown types.
+const BINARY_EXT = new Set([
+  ".jar", ".aar", ".zip", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".pdf",
+  ".woff", ".woff2", ".ttf", ".otf", ".mp4", ".mov", ".mp3",
+  ".keystore", ".jks", ".p12", ".p8",
+]);
+
+function isProbablyText(fileName, buffer) {
+  if (BINARY_EXT.has(extname(fileName).toLowerCase())) return false;
   const sample = buffer.subarray(0, Math.min(buffer.length, 4096));
   for (const byte of sample) if (byte === 0) return false;
   return true;
@@ -96,7 +107,7 @@ function copyTree(src, dest, tokens) {
       continue;
     }
     const buffer = readFileSync(from);
-    if (isProbablyText(buffer)) {
+    if (isProbablyText(entry, buffer)) {
       writeFileSync(to, substitute(buffer.toString("utf8"), tokens));
     } else {
       writeFileSync(to, buffer);
@@ -155,12 +166,25 @@ function main() {
 
   copyTree(template, out, tokens);
 
+  // writeFileSync gives 0644. On macOS/Linux that makes `./gradlew` fail with
+  // "permission denied", which looks like a broken project rather than a file mode.
+  if (opts.platform === "android") {
+    const gradlew = join(out, "gradlew");
+    if (existsSync(gradlew)) {
+      try {
+        chmodSync(gradlew, 0o755);
+      } catch {
+        /* Windows has no executable bit; ignore */
+      }
+    }
+  }
+
   console.log(`Scaffolded ${opts.platform} project: ${out}`);
   console.log(`  project: ${projectName}`);
   console.log(`  ${opts.platform === "android" ? "applicationId" : "bundle id"}: ${pkg}`);
   if (opts.platform === "android") {
-    console.log("\nNext: cd into the project and run `gradle wrapper --gradle-version 8.13` once,");
-    console.log("then `./gradlew :app:assembleDebug` or open the folder in Android Studio.");
+    console.log("\nNext: `./gradlew :app:assembleDebug` (the Gradle wrapper is included, so no");
+    console.log("local Gradle install is needed), or open the folder in Android Studio.");
   } else {
     console.log("\nNext: `brew install xcodegen && xcodegen generate && open *.xcodeproj` (macOS),");
     console.log("or create an Xcode project from the same Sources/ folder.");

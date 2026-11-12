@@ -38,12 +38,10 @@ For "proper" production apps, prefer native toolchains (Android Studio/Gradle, X
 **Scaffold**
 
 ```bash
-# From this skill: buildable project, version catalog, theme, HomeScreen, tests
+# Buildable project: version catalog, theme, HomeScreen, tests, Gradle wrapper
 ./scripts/new-app.sh native-android "Night Notes" com.example.nightnotes
 
-# Then, once, to create the Gradle wrapper
-cd "Night Notes/android" && gradle wrapper --gradle-version 8.13
-./gradlew :app:assembleDebug
+cd "Night Notes/android" && ./gradlew :app:assembleDebug
 ```
 
 **Core repos and libraries**

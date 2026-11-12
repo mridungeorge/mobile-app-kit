@@ -127,7 +127,7 @@ cd mobile-app-kit
 ./install.sh
 ```
 
-The installer copies both skills into `~/.claude/skills/` and runs the self-audit. Set `CLAUDE_SKILLS_DIR` to install elsewhere.
+The installer copies both skills into `~/.claude/skills/`, restores the executable bit on the shell helpers and the Gradle wrapper, and runs the self-audit. It needs **Node 18+** and fails early if `node` is missing. Set `CLAUDE_SKILLS_DIR` to install elsewhere.
 
 ## Use it (end-to-end for new developers)
 
@@ -164,11 +164,11 @@ For proper native projects — not Expo Go, not a wrapper:
 Each helper generates the actual project, not just notes: `android/` or `ios/` plus `.mobile/` state, design tokens, release/testing docs, and CI starters. Open the project in **Android Studio** / **Xcode**, or build from the command line:
 
 ```bash
-cd "Night Notes/android" && gradle wrapper --gradle-version 8.13 && ./gradlew :app:assembleDebug
+cd "Night Notes/android" && ./gradlew :app:assembleDebug
 cd "Night Notes/ios" && brew install xcodegen && xcodegen generate && open *.xcodeproj   # macOS
 ```
 
-The Android starter ships a version catalog, Material 3 theme wired to the design tokens, a `HomeScreen`, unit + instrumented tests, backup rules and an adaptive icon. The iOS starter ships a `Theme.swift` mapped to the same tokens, `PrivacyInfo.xcprivacy`, an asset catalog and an XCTest target. Both substitute your app name, package and bundle id — no `__PLACEHOLDER__` tokens survive.
+The Android starter ships the Gradle wrapper (`gradlew`, `gradlew.bat`, `gradle/wrapper/`), so a machine with a JDK 17 and no Gradle install can build it. It also ships a version catalog, Material 3 theme wired to the design tokens, a `HomeScreen`, unit + instrumented tests, backup rules and an adaptive icon. The iOS starter ships a `Theme.swift` mapped to the same tokens, `PrivacyInfo.xcprivacy`, an asset catalog and an XCTest target. Both substitute your app name, package and bundle id — no `__PLACEHOLDER__` tokens survive.
 
 ## Run the reference page
 
@@ -193,6 +193,7 @@ skills/mobile-app-factory/
     project-profile.template.json    hand-editable .mobile/00-profile.json
     design-tokens.json               platform-neutral tokens
     android/project/                 buildable Kotlin + Compose Gradle starter
+                                     (incl. the Gradle wrapper — no Gradle install needed)
     android/data-safety-worksheet.md Play data-safety form + SDK inventory
     ios/project/                     buildable SwiftUI + XcodeGen starter
     ios/PrivacyInfo.xcprivacy        privacy manifest starter
@@ -214,6 +215,8 @@ skills/mobile-app-factory/
     readiness-report.mjs             AI-fixable vs human/external gap report
     check-skill.mjs                  self-audit + end-to-end pipeline smoke test
     new-app.sh                       scaffold native Android/iOS (Expo explicit only)
+    new-android-app.sh               full Android project + docs + CI starter
+    new-ios-app.sh                   full iOS project + docs + Fastlane + CI starter
     validate-metadata.mjs            zero-dependency store metadata linter
   evals/prompts.md               trigger + quality test prompts
 
@@ -224,8 +227,10 @@ skills/motion-experiences/
   evals/prompts.md
 
 motion-demo/                     React 19 + Vite reference page
-promo/                           source for the banner and the promo video
+promo/                           source for the banner, the promo video and the preview shot
 docs/                            rendered artwork
+.github/workflows/audit.yml      self-audit on Linux, macOS and Windows
+.gitattributes                   LF everywhere; gradlew stays executable-safe, *.bat CRLF
 RESEARCH-mobile-app-2026.md      the dated research behind the store rules
 install.sh                       install both skills globally
 ```
@@ -272,11 +277,13 @@ node skills/mobile-app-factory/scripts/check-skill.mjs
   ✓ router: 8/8 smoke cases classified correctly
   ✓ profiles: all archetypes emit a complete profile with ≤ 12 screens
   ✓ pipeline: intake → preview → changes → approval → readiness report
-  ✓ native templates: Android + iOS scaffold and substitute cleanly
+  ✓ native templates: Android + iOS scaffold, substitute and keep the Gradle wrapper binary intact
   ✓ readme: 3 referenced image(s) exist
 
 PASS — 10 checks passed, 0 warnings, 0 errors
 ```
+
+The same audit runs in CI on **Linux, macOS and Windows** (`.github/workflows/audit.yml`), so a CRLF `gradlew`, a broken shell helper or a stale artwork reference fails the build instead of shipping.
 
 The store metadata linter has no dependencies and runs against real listing copy:
 
@@ -299,23 +306,29 @@ It checks the real artifacts and separates **AI-fixable leftovers** (missing PRD
 The banner, the animated promo and the preview screenshot in this README are generated from source, not screenshots of a mockup. Both promo pages share [`promo/promo.css`](promo/promo.css), so the artwork and the reference page cannot drift apart.
 
 ```bash
-node promo/render.mjs --banner     # docs/banner.png   (1600×800)
-node promo/render.mjs              # docs/promo.mp4    (1080×1350, 8.4s, H.264)
-                                   # docs/poster.png   (cover frame)
-                                   # docs/promo.gif    (README animation)
+cd promo && npm install          # puppeteer-core + ffmpeg-static, once
+
+npm run banner                   # docs/banner.png   (1600×800)
+npm run render                   # docs/promo.mp4    (1080×1350, 8.4s, H.264)
+                                 # docs/poster.png   (cover frame)
+                                 # docs/promo.gif    (README animation)
+npm run preview-shot             # docs/preview.png  (the real generated preview page)
+npm run all                      # all of the above, in order
 ```
 
 The animation is rendered frame by frame from a deterministic `window.__seek(t)`, so a re-render is repeatable and a still can be checked at any beat:
 
 ```bash
-node promo/render.mjs --still 3.6 --name beat.png   # the approval-gate moment
+npm run still                                      # promo/.build/beat.png, the approval gate
+node promo/render.mjs --still 5.2 --name beat.png  # any other beat
 ```
 
-Needs `puppeteer-core` with a Chrome/Chromium binary and an `ffmpeg` with `libx264`:
+`docs/preview.png` is not a mockup: `shot-preview.mjs` runs the skill's own questionnaire and preview generator into a temp directory and screenshots the result, so the README cannot advertise a preview UI that no longer exists.
+
+Both scripts share [`promo/browser.mjs`](promo/browser.mjs) for Chrome discovery, so one environment renders everything. Chrome/Edge is auto-detected on macOS, Linux and Windows; set `CHROME_PATH` or pass `--chrome` to override:
 
 ```bash
-npm install --no-save puppeteer-core ffmpeg-static
-export CHROME_PATH="/path/to/chrome"     # or set CHROME_PATH / pass --chrome
+CHROME_PATH="/path/to/chrome" node promo/render.mjs
 ```
 
 | File | Size | Use |

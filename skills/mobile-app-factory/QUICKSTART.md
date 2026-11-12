@@ -130,8 +130,7 @@ Android:
 
 ```bash
 cd "Night Notes/android"
-gradle wrapper --gradle-version 8.13   # one-time
-./gradlew :app:assembleDebug
+./gradlew :app:assembleDebug   # wrapper included; only a JDK 17 is required
 ```
 
 iOS (macOS):
@@ -194,7 +193,7 @@ feedback, and a reduce-motion path.
 | Scripts cannot be found | Run them from the skill folder, or use the absolute path `~/.claude/skills/mobile-app-factory/scripts/...`. |
 | Router says `confidence: low` | Add the closest archetype explicitly: `--archetype fintech`, or answer its `clarify` questions. |
 | Preview never approves | Run `review-preview.mjs --dir .mobile --approve`; Phase 1 is gated on `00-approval.json`. |
-| Android build fails on `gradlew` | Run `gradle wrapper --gradle-version 8.13` once inside `android/`. |
+| Android build fails on `gradlew` | Check `JAVA_HOME` points at a JDK 17. The wrapper is included, so Gradle itself does not need installing. On macOS/Linux run `chmod +x gradlew` first. |
 | iOS project will not open | Run `xcodegen generate` inside `ios/` (macOS + XcodeGen required). |
 | App builds but looks generic | Re-read `references/design-language.md` and `references/component-map.md`; the usual cause is mixing two UI kits or using more than one accent. |
 | Animation is janky | Check the device tier in `references/adaptive-ui.md`; drop blur/parallax and animate only transform/opacity. |

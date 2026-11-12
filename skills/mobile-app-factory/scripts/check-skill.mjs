@@ -46,6 +46,10 @@ const required = [
   "assets/android/project/settings.gradle.kts",
   "assets/android/project/app/build.gradle.kts",
   "assets/android/project/gradle/libs.versions.toml",
+  "assets/android/project/gradlew",
+  "assets/android/project/gradlew.bat",
+  "assets/android/project/gradle/wrapper/gradle-wrapper.jar",
+  "assets/android/project/gradle/wrapper/gradle-wrapper.properties",
   "assets/ios/project/project.yml",
   "assets/ios/project/Sources/App.swift",
   "assets/ios/project/Resources/PrivacyInfo.xcprivacy",
@@ -215,6 +219,51 @@ try {
   if (!existsSync(iosProject)) throw new Error("iOS project.yml was not generated");
   if (!existsSync(join(temp, "ios", "Resources", "PrivacyInfo.xcprivacy"))) throw new Error("iOS PrivacyInfo missing");
 
+  // The Gradle wrapper is the only binary in either template. If the scaffolder ever
+  // decoded the .jar as UTF-8 it would be silently corrupted, and the project would
+  // fail with a confusing "invalid or corrupt jarfile". Compare bytes, not existence.
+  const wrapperDir = join(temp, "android", "gradle", "wrapper");
+  const wrapperJar = join(wrapperDir, "gradle-wrapper.jar");
+  const wrapperProps = join(wrapperDir, "gradle-wrapper.properties");
+  if (!existsSync(wrapperJar)) throw new Error("Gradle wrapper jar was not copied");
+  if (!existsSync(join(temp, "android", "gradlew"))) throw new Error("gradlew was not copied");
+  if (!existsSync(join(temp, "android", "gradlew.bat"))) throw new Error("gradlew.bat was not copied");
+  if (!existsSync(wrapperProps)) throw new Error("gradle-wrapper.properties was not copied");
+
+  const templateJar = readFileSync(join(root, "assets", "android", "project", "gradle", "wrapper", "gradle-wrapper.jar"));
+  if (Buffer.compare(templateJar, readFileSync(wrapperJar)) !== 0) {
+    throw new Error("Gradle wrapper jar changed during scaffolding — binary was not preserved");
+  }
+
+  const props = readFileSync(wrapperProps, "utf8");
+  if (!/^distributionUrl=https\\:\/\/services\.gradle\.org\/distributions\/gradle-[\d.]+-bin\.zip$/m.test(props)) {
+    throw new Error("gradle-wrapper.properties has no valid distributionUrl");
+  }
+
+  const gradlew = readFileSync(join(temp, "android", "gradlew"), "utf8");
+  if (!gradlew.startsWith("#!/bin/sh")) throw new Error("gradlew lost its shebang");
+  if (gradlew.includes("\r")) throw new Error("gradlew has CRLF line endings (breaks on Linux/macOS/CI)");
+
+  // XcodeGen fails late and confusingly on a malformed spec, so assert the keys the
+  // generated project actually depends on after substitution.
+  const projectYml = readFileSync(iosProject, "utf8");
+  const ymlExpectations = [
+    ["project name", "name: SmokeApp"],
+    ["bundle id", "PRODUCT_BUNDLE_IDENTIFIER: com.example.smoke"],
+    ["display name", "INFOPLIST_KEY_CFBundleDisplayName: Smoke App"],
+    ["app target", "type: application"],
+    ["test target", "type: bundle.unit-test"],
+    ["app icon", "ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon"],
+  ];
+  for (const [label, needle] of ymlExpectations) {
+    if (!projectYml.includes(needle)) throw new Error(`iOS project.yml missing ${label} (${needle})`);
+  }
+  for (const asset of ["AppIcon.appiconset", "AccentColor.colorset"]) {
+    if (!existsSync(join(temp, "ios", "Resources", "Assets.xcassets", asset, "Contents.json"))) {
+      throw new Error(`iOS asset catalog missing ${asset}`);
+    }
+  }
+
   const placeholders = ["__PROJECT_NAME__", "__APP_NAME__", "__APP_SLUG__", "__PACKAGE__", "__PACKAGE_PATH__", "__BUNDLE_ID__"];
   const files = readdirSync(temp, { recursive: true }).filter((entry) => typeof entry === "string")
     .map((entry) => join(temp, entry));
@@ -229,7 +278,7 @@ try {
     if (left) throw new Error(`placeholder ${left} left in ${file.replace(temp, "")}`);
   }
 
-  ok.push("native templates: Android + iOS scaffold and substitute cleanly");
+  ok.push("native templates: Android + iOS scaffold, substitute and keep the Gradle wrapper binary intact");
   rmSync(temp, { recursive: true, force: true });
 } catch (error) {
   errors.push(`native template smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
@@ -237,12 +286,12 @@ try {
 
 // README artwork: every image the repo README references must exist on disk, so the
 // hero banner and the animation cannot silently rot when the artwork is re-rendered.
+// Installed copies live at ~/.claude/skills/mobile-app-factory, where there is no repo
+// README — that is a normal install, not a warning worth showing to the user.
 try {
   const repoRoot = resolve(root, "..", "..");
   const readmePath = join(repoRoot, "README.md");
-  if (!existsSync(readmePath)) {
-    warnings.push("README.md not found at the repo root; skipped artwork check");
-  } else {
+  if (existsSync(readmePath)) {
     const readme = readFileSync(readmePath, "utf8");
     const assets = [...readme.matchAll(/src="((?:docs|promo)\/[^"]+\.(?:png|gif|jpg|jpeg|webp|svg|mp4))"/g)]
       .map((m) => m[1]);
@@ -250,6 +299,8 @@ try {
     if (missing.length) errors.push(...missing.map((a) => `README references missing artwork: ${a}`));
     else if (!assets.length) warnings.push("README references no artwork");
     else ok.push(`readme: ${new Set(assets).size} referenced image(s) exist`);
+  } else {
+    ok.push("readme: installed copy, no repo README to check");
   }
 } catch (error) {
   errors.push(`README artwork check failed: ${error.message}`);
