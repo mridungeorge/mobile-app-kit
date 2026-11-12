@@ -5,7 +5,7 @@ description: Takes an app idea from sentence to submitted iOS/Google Play releas
 
 # Mobile App Factory
 
-> New to this? `QUICKSTART.md` is the plain-English version. This file is the operating manual.
+> New to this? `QUICKSTART.md` is the plain-English version.
 
 A multi-agent production line: **questionnaire → profile → preview approval → PRD → design → UI → motion → compliance → release → adversarial review**. Most launches fail on the boring half — metadata limits, privacy declarations, the 14-day Play gate — not the code.
 
@@ -91,17 +91,17 @@ android/ or ios/          # buildable native project (scaffold-native.mjs)
 
 ## Pointers
 
-- **Design.** `references/design-language.md` holds the full Rune spec. Tokens ship in `assets/design-tokens.json`, `assets/rn/theme.ts`, `assets/web/tokens.css`; the starters map them into `ui/theme/` and `DesignSystem/Theme.swift`.
+- **Design.** `references/design-language.md`. Tokens ship in `assets/design-tokens.json`, `assets/rn/theme.ts`, `assets/web/tokens.css`; the starters map them into `ui/theme/` and `DesignSystem/Theme.swift`.
 - **Motion.** Use the `motion-experiences` skill: Compose animation and SwiftUI springs on native, GSAP + react-bits on web/Capacitor, Reanimated on RN. Entry, reveal, one hero flourish, press feedback, reduced-motion fallback — capped by `motionBudget`. Never `expressive` on a checkout, medical record or form.
 - **Stack.** Default: native SwiftUI + Jetpack Compose. Override via `references/stacks-and-repos.md`.
-- **Stores.** Read `references/ios-app-store.md` and `references/google-play.md` before writing metadata.
+- **Stores.** Before writing metadata or declarations, read `references/store-facts.md`. If its `verified_on` is older than `review_every_days`, re-verify the rows with web search before relying on them and tell the user which ones changed.
 
 ## Where to look
 
 - **Route:** `references/idea-router.md` (scoring, profile shape, skip switches) · `references/archetypes.md` (per-archetype loop, stack, screens, risks).
 - **Design:** `references/design-language.md` · `references/component-map.md` · `references/screen-patterns.md` · `references/ux-checklist.md` · `references/adaptive-ui.md`.
 - **Stacks:** `references/stacks-and-repos.md` for framework and UI-kit choice.
-- **Stores:** `references/ios-app-store.md` · `references/google-play.md` · `references/metadata-and-assets.md` · `references/native-android-release.md` · `references/native-ios-release.md`.
+- **Stores:** `references/store-facts.md` (dated rules + sources) · `references/ios-app-store.md` · `references/google-play.md` · `references/metadata-and-assets.md` · `references/native-android-release.md` · `references/native-ios-release.md`.
 - **Ship:** `references/mobile-testing.md` · `references/definition-of-done.md` · `references/orchestration.md` · `references/gap-closure.md`.
 - **Assets:** `assets/` (tokens, profile and metadata templates), `assets/android/project/` and `assets/ios/project/` (buildable starters), `assets/ci/` (release workflows).
 - **Scripts:** `scripts/questionnaire.mjs` · `scripts/route-idea.mjs` (`--fast`) · `scripts/generate-preview.mjs` · `scripts/review-preview.mjs` · `scripts/scaffold-native.mjs` · `scripts/readiness-report.mjs` (`--strict`) · `scripts/check-skill.mjs` · `scripts/validate-metadata.mjs` · `scripts/new-app.sh`.

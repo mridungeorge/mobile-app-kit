@@ -28,6 +28,7 @@ const required = [
   "references/idea-router.md",
   "references/archetypes.md",
   "references/definition-of-done.md",
+  "references/store-facts.md",
   "references/design-language.md",
   "references/component-map.md",
   "references/adaptive-ui.md",
@@ -135,6 +136,38 @@ const missingInScript = headings.filter((a) => !ARCHETYPE_ORDER.includes(a));
 if (missingInDoc.length) errors.push(`archetypes in script but not references/archetypes.md: ${missingInDoc.join(", ")}`);
 if (missingInScript.length) errors.push(`archetypes in references/archetypes.md but not script: ${missingInScript.join(", ")}`);
 if (!missingInDoc.length && !missingInScript.length) ok.push(`archetypes: ${ARCHETYPE_ORDER.length} match between router and reference`);
+
+// Store facts: every dated rule must carry a source, and the file must not go stale silently.
+// A stale file is a warning (the skill still works, the facts may not); an unsourced row is an
+// error, because an unsourced date is exactly the thing this file exists to prevent.
+try {
+  const factsPath = join(root, "references/store-facts.md");
+  const text = readFileSync(factsPath, "utf8");
+  const fm = text.match(/^---\n([\s\S]*?)\n---/);
+  if (!fm) throw new Error("no YAML frontmatter");
+  const verifiedOn = fm[1].match(/^verified_on:\s*(\d{4}-\d{2}-\d{2})\s*$/m)?.[1];
+  const everyDays = Number(fm[1].match(/^review_every_days:\s*(\d+)\s*$/m)?.[1] ?? NaN);
+  if (!verifiedOn) errors.push("store-facts.md frontmatter has no verified_on: YYYY-MM-DD");
+  if (!Number.isFinite(everyDays) || everyDays <= 0) errors.push("store-facts.md frontmatter has no positive review_every_days");
+
+  const rows = text.split("\n").filter((line) => /^\|\s/.test(line));
+  const bodyRows = rows.filter((line) => !/^\|\s*:?-{2,}/.test(line) && !/^\|\s*Rule\s*\|/i.test(line));
+  const unsourced = bodyRows.filter((line) => !/https?:\/\//.test(line));
+  if (unsourced.length) {
+    errors.push(...unsourced.map((row) => `store-facts row has no source URL: ${(row.split("|")[1] || row).trim().slice(0, 70)}`));
+  }
+
+  if (verifiedOn && Number.isFinite(everyDays)) {
+    const ageDays = Math.max(0, Math.floor((Date.now() - Date.parse(`${verifiedOn}T00:00:00Z`)) / 86_400_000));
+    if (ageDays > everyDays) {
+      warnings.push(`store-facts.md is ${ageDays} days old (verified_on ${verifiedOn}, review every ${everyDays}); re-verify the rows with web search`);
+    } else if (!unsourced.length) {
+      ok.push(`store-facts: ${bodyRows.length} dated rows sourced, verified ${ageDays} day(s) ago`);
+    }
+  }
+} catch (error) {
+  errors.push(`store-facts check failed: ${error.message}`);
+}
 
 // Metadata template must validate clean
 const temp = mkdtempSync(join(tmpdir(), "maf-check-"));
