@@ -254,6 +254,31 @@ try {
   if (!existsSync(iosProject)) throw new Error("iOS project.yml was not generated");
   if (!existsSync(join(temp, "ios", "Resources", "PrivacyInfo.xcprivacy"))) throw new Error("iOS PrivacyInfo missing");
 
+  // Native motion tokens ship inside both starters, so a generated app has the Rune
+  // spring values before anyone writes an animation. Assert the substituted file and
+  // the tokens themselves — an empty or truncated Motion.kt would still "exist".
+  const androidMotion = join(temp, "android", "app", "src", "main", "java", "com", "example", "smoke", "ui", "theme", "Motion.kt");
+  const iosMotion = join(temp, "ios", "Sources", "DesignSystem", "Motion.swift");
+  if (!existsSync(androidMotion)) throw new Error("Android Motion.kt was not scaffolded");
+  if (!existsSync(iosMotion)) throw new Error("iOS Motion.swift was not scaffolded");
+  const kotlinMotion = readFileSync(androidMotion, "utf8");
+  for (const [label, needle] of [
+    ["package", "package com.example.smoke.ui.theme"],
+    ["settle token", "SETTLE_MS = 300"],
+    ["reduced fade", "REDUCED_FADE_MS = 150"],
+    ["reduced-motion read", "ANIMATOR_DURATION_SCALE"],
+  ]) {
+    if (!kotlinMotion.includes(needle)) throw new Error(`Android Motion.kt missing ${label}`);
+  }
+  const swiftMotion = readFileSync(iosMotion, "utf8");
+  for (const [label, needle] of [
+    ["settle token", "settleDuration: Double = 0.30"],
+    ["morph bounce", "bounce: 0.16"],
+    ["reduced-motion env", "accessibilityReduceMotion"],
+  ]) {
+    if (!swiftMotion.includes(needle)) throw new Error(`iOS Motion.swift missing ${label}`);
+  }
+
   // The Gradle wrapper is the only binary in either template. If the scaffolder ever
   // decoded the .jar as UTF-8 it would be silently corrupted, and the project would
   // fail with a confusing "invalid or corrupt jarfile". Compare bytes, not existence.
@@ -313,7 +338,7 @@ try {
     if (left) throw new Error(`placeholder ${left} left in ${file.replace(temp, "")}`);
   }
 
-  ok.push("native templates: Android + iOS scaffold, substitute and keep the Gradle wrapper binary intact");
+  ok.push("native templates: Android + iOS scaffold, substitute ids, ship the Rune motion tokens, keep the Gradle wrapper binary intact");
   rmSync(temp, { recursive: true, force: true });
 } catch (error) {
   errors.push(`native template smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);

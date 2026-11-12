@@ -1,20 +1,22 @@
 ---
 name: motion-experiences
-description: Adds premium scroll animation and in-screen motion to web, mobile-web, and app UIs using GSAP (ScrollTrigger, timelines, Flip, SplitText) and React Bits components. Use this whenever the user asks for animations, "make it feel alive", scroll effects, parallax, reveal-on-scroll, page transitions, micro-interactions, hero animation, "premium feel", landing page motion, React Bits, GSAP, Lottie-style motion, or motion for a mobile app built with React Native, Expo, Flutter, or Capacitor. Also use it when reviewing UI that feels static, cheap, or "AI-generated" — motion is usually the missing layer.
+description: Adds premium scroll animation and in-screen motion to native, web and mobile-web UIs — SwiftUI and Jetpack Compose springs on native, GSAP (ScrollTrigger, timelines, Flip, SplitText) and React Bits on web. Use this whenever the user asks for animations, "make it feel alive", scroll effects, parallax, reveal-on-scroll, page transitions, micro-interactions, hero animation, "premium feel", landing page motion, React Bits, GSAP, Lottie-style motion, SwiftUI animation, Compose animation, native app motion, or motion for an app built with React Native, Expo, Flutter or Capacitor. Also use it when reviewing UI that feels static, cheap or "AI-generated" — motion is usually the missing layer.
 ---
 
 # Motion Experiences
 
 Motion is the difference between a UI that looks designed and one that looks generated. But most motion work fails for one of two reasons: **too much** (everything flying in, scroll-jacked, 12 effects per screen) or **the wrong layer** (animating layout properties until the page janks).
 
-This skill covers the two production stacks that actually ship:
+This skill covers every stack that actually ships, native first:
 
 | Target | Primary tool | Why |
 |---|---|---|
+| Native iOS/Android | **SwiftUI** `Animation.spring` and **Compose** `spring()` | The default stack for this kit; platform springs, platform reduced-motion, no bridge |
 | Web, PWA, Capacitor/Ionic apps | **GSAP** (+ ScrollTrigger, Flip, SplitText) and **React Bits** | Timeline control, scrubbing, interruption, DOM/canvas effects |
 | React Native / Expo | **Reanimated** | Runs on the UI thread; GSAP does not animate native views |
 | Flutter | implicit animations + `flutter_animate` | Same timing tokens |
-| Native iOS/Android | SwiftUI / Compose animation APIs | Same timing tokens |
+
+Native motion is in `references/native-motion.md`, and the token files ship inside the generated apps (`ui/theme/Motion.kt`, `DesignSystem/Motion.swift`). Read that file first whenever the app is Kotlin/Swift.
 
 The **timing language is shared** (from the Rune motion tokens): `instant 100ms`, `snap 250`, `settle 300`, `reflow 400`, `glide 320`, `morph 300/bounce .16`, `pop 250/bounce .15`, `drift 850`. If a stack can't express springs, approximate with these durations and `cubic-bezier(.2,.8,.2,1)` enter / `cubic-bezier(.4,0,1,1)` exit.
 
@@ -105,7 +107,7 @@ Curated picks by job: `references/react-bits-catalog.md`.
 - **Safe areas**: motion must respect `env(safe-area-inset-*)`; a sheet that animates from `translateY(100%)` must account for the home indicator.
 - **Reduced motion** is not optional: replace travel with a 150ms fade, keep the state change legible.
 
-React Native equivalents (Reanimated patterns, scroll reveals, gesture sheets): `references/mobile-motion.md`.
+React Native equivalents (Reanimated patterns, scroll reveals, gesture sheets): `references/mobile-motion.md`. Native SwiftUI/Compose implementations of all five jobs, mapped to the Rune spring tokens: `references/native-motion.md`.
 
 ## Recipes
 
@@ -150,6 +152,7 @@ Full code in `references/gsap-recipes.md`:
 
 | File | Use |
 |---|---|
+| `references/native-motion.md` | SwiftUI and Compose: token files, entry, reveal, shared-element flourish, press, reduced motion |
 | `references/react-bits-catalog.md` | Which component for which job, with install names |
 | `references/gsap-recipes.md` | Copy-paste GSAP + React patterns |
 | `references/mobile-motion.md` | Reanimated/Flutter mapping, gesture and scroll patterns |
