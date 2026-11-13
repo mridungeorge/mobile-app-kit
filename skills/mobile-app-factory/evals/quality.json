@@ -1,0 +1,138 @@
+{
+  "skill": "mobile-app-factory",
+  "version": 1,
+  "notes": "Each case runs in a fresh temp project. `assertions` are checked mechanically by scripts/run-evals.mjs; `judgement` keeps the human pass criteria from the original manual set. Types: file_exists, file_absent, file_matches, mentions_all, mentions_any, json_equals, json_max, response_matches, response_mentions_all.",
+  "cases": [
+    {
+      "id": "idea-to-prd",
+      "prompt": "A quiet app that helps me stop doomscrolling at night. Free, maybe a subscription later.",
+      "assertions": [
+        { "type": "file_exists", "path": ".mobile/00-profile.json", "label": "profile written before the PRD" },
+        { "type": "file_exists", "path": ".mobile/01-prd.md", "label": "PRD is a file, not a chat essay" },
+        { "type": "file_matches", "path": ".mobile/01-prd.md", "pattern": "(?i)core loop", "label": "one-sentence core loop" },
+        { "type": "json_max", "path": ".mobile/00-profile.json", "pointer": "screens", "max": 12, "label": "screen count <= 12" },
+        { "type": "file_matches", "path": ".mobile/01-prd.md", "pattern": "(?i)subscription|in-app purchase|iap|monetis", "label": "monetisation stated" },
+        { "type": "file_exists", "path": ".mobile/00-approval.json", "label": "preview approved before implementation" }
+      ],
+      "judgement": [
+        "Asks no more than 5 questions or states assumptions",
+        "Names the store risk (screen-time API, health claims, accounts)",
+        "Does not invent a backend without saying so"
+      ]
+    },
+    {
+      "id": "store-readiness",
+      "prompt": "Here's my app. Is it ready for the App Store and Play?",
+      "assertions": [
+        { "type": "file_exists", "path": ".mobile/05-compliance.md", "label": "compliance artifact exists" },
+        { "type": "file_exists", "path": ".mobile/07-review.md", "label": "reviewer verdict exists" },
+        { "type": "mentions_any", "path": ".mobile/05-compliance.md", "terms": ["privacy manifest", "data safety", "targetSdk", "target API"], "label": "checks the dated store rules" },
+        { "type": "file_matches", "path": ".mobile/07-review.md", "pattern": "(?i)blocker|PASS|FAIL", "label": "blocker list with owners, not a vibe check" }
+      ],
+      "judgement": [
+        "Reads the dependency list before declaring privacy answers",
+        "States the calendar cost of the Play tester gate",
+        "Runs readiness-report.mjs --strict and separates AI from human gaps",
+        "Does not declare 'no data collected' with analytics installed"
+      ]
+    },
+    {
+      "id": "metadata-lint",
+      "prompt": "Write and validate the store listing for Halcyon, a meditation timer.",
+      "assertions": [
+        { "type": "file_exists", "path": ".mobile/metadata/ios.json", "label": "iOS metadata written" },
+        { "type": "file_exists", "path": ".mobile/metadata/android.json", "label": "Play metadata written" },
+        { "type": "file_matches", "path": ".mobile/metadata/listing.md", "pattern": "(?i)halcyon", "label": "listing names the app" },
+        { "type": "file_matches", "path": ".mobile/metadata/ios.json", "pattern": "subtitle", "label": "subtitle field present" }
+      ],
+      "judgement": [
+        "Runs scripts/validate-metadata.mjs and reports zero errors",
+        "Name <= 30, subtitle <= 30, keywords <= 100, short description <= 80 with no CTA",
+        "Screenshots use real sizes (1320x2868 iOS, 1080x1920 Android)"
+      ]
+    },
+    {
+      "id": "design-drift",
+      "prompt": "Use Rune's design language for the settings screen.",
+      "assertions": [
+        { "type": "file_exists", "path": ".mobile/02-design.md", "label": "design artifact exists" },
+        { "type": "file_matches", "path": ".mobile/02-design.md", "pattern": "(?i)hairline|separator", "label": "hairlines, not shadows" },
+        { "type": "file_matches", "path": ".mobile/02-design.md", "pattern": "settle|snap|glide", "label": "motion tokens named" },
+        { "type": "file_matches", "path": ".mobile/02-design.md", "pattern": "4/8/12/16/24|4, 8, 12, 16, 24", "label": "Rune spacing scale" }
+      ],
+      "judgement": [
+        "One accent, neutral surfaces, 13-14px body",
+        "No glassmorphism, rainbow gradients or a second font",
+        "Reduce-motion path stated"
+      ]
+    },
+    {
+      "id": "routing-fintech",
+      "prompt": "Build a budgeting app that connects to my bank.",
+      "assertions": [
+        { "type": "file_exists", "path": ".mobile/00-profile.json", "label": "profile written" },
+        { "type": "json_equals", "path": ".mobile/00-profile.json", "pointer": "archetype", "value": "fintech", "label": "routes to fintech" },
+        { "type": "json_equals", "path": ".mobile/00-profile.json", "pointer": "motionBudget", "value": "restrained", "label": "restrained motion around money" }
+      ],
+      "judgement": [
+        "Financial declarations and 18+/Mature floor",
+        "Encrypted local store, biometrics",
+        "No playful money animation"
+      ]
+    },
+    {
+      "id": "routing-kids",
+      "prompt": "Build a kids phonics and bedtime app.",
+      "assertions": [
+        { "type": "json_equals", "path": ".mobile/00-profile.json", "pointer": "archetype", "value": "kids-family", "label": "routes to kids-family" },
+        { "type": "file_matches", "path": ".mobile/00-profile.json", "pattern": "(?i)parental|families", "label": "parental gate / Families category" }
+      ],
+      "judgement": [
+        "No third-party analytics in the child experience",
+        "Expressive-but-calm motion, no rapid flashing or reward loops"
+      ]
+    },
+    {
+      "id": "router-override",
+      "prompt": "It's a social app for hikers, but it must work offline and have no accounts.",
+      "assertions": [
+        { "type": "json_equals", "path": ".mobile/00-profile.json", "pointer": "archetype", "value": "social-ugc", "label": "keeps the UGC archetype" },
+        { "type": "json_equals", "path": ".mobile/00-profile.json", "pointer": "accounts", "value": false, "label": "honours --no-accounts" }
+      ],
+      "judgement": [
+        "Runs route-idea.mjs --no-accounts --offline (or edits the profile)",
+        "Keeps UGC report/block/moderation declarations despite no accounts",
+        "Notes the delta in STATE.md"
+      ]
+    },
+    {
+      "id": "adaptive-ui",
+      "prompt": "Test this app on a low-end Android, with Reduce Motion on, at 200% text, and with location denied.",
+      "assertions": [
+        { "type": "file_exists", "path": ".mobile/07-review.md", "label": "review artifact exists" },
+        { "type": "mentions_all", "path": ".mobile/07-review.md", "terms": ["200%", "Reduce Motion"], "label": "covers text scaling and Reduce Motion" },
+        { "type": "mentions_any", "path": ".mobile/07-review.md", "terms": ["location", "permission"], "label": "covers the denied-permission path" }
+      ],
+      "judgement": [
+        "Names the tier rules (fades only on low tier)",
+        "Shows a manual location fallback and the Settings path",
+        "Reports file/screen evidence, not a general statement"
+      ]
+    },
+    {
+      "id": "intake-preview-approval",
+      "prompt": "I want a quiet sleep tracker with white noise and weekly trends. Build it.",
+      "assertions": [
+        { "type": "file_exists", "path": ".mobile/00-intake.json", "label": "intake captured" },
+        { "type": "file_exists", "path": ".mobile/preview/index.html", "label": "preview generated" },
+        { "type": "file_exists", "path": ".mobile/00-approval.json", "label": "approval recorded" },
+        { "type": "file_matches", "path": ".mobile/00-approval.json", "pattern": "\"status\"\\s*:\\s*\"(approved|approved-fast)\"", "label": "status is approved" }
+      ],
+      "judgement": [
+        "Asks for approval before writing code",
+        "On 'add a settings screen and drop the paywall', review-preview.mjs updates profile and preview together",
+        "Says which actions remain human (accounts, signing, devices, store upload)"
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # iOS App Store — Requirements and Review
 
-Verified against Apple's own pages in November 2026. Apple changes these roughly twice a year; re-check `developer.apple.com/news/upcoming-requirements/` before a launch.
+Verified against Apple's own pages in November 2026. The dated rules live in `store-facts.md`; this file covers the account, metadata, assets, review guidelines and submission flow.
 
 ## Contents
 1. Account and programme
@@ -25,15 +25,10 @@ Verified against Apple's own pages in November 2026. Apple changes these roughly
 
 ## 2. Dated technical requirements
 
-| Requirement | Deadline / status |
-|---|---|
-| Built with **Xcode 26 or later**, SDK for **iOS 26** | Required since **28 Apr 2026** |
-| Minimum deployment target **iOS 13+** | Required since **9 Sep 2026** |
-| **Privacy manifest** `PrivacyInfo.xcprivacy` + third-party SDK signatures | Since **1 May 2024** |
-| **New age-rating system** (4+, 9+, 13+, 16+, 18+) and updated questionnaire | Live since **31 Jan 2026**; unanswered = blocked updates |
-| **DSA trader status** for EU distribution | Since **17 Feb 2025**; absent = removed from EU storefront |
-| Export compliance (encryption) declaration | Every submission |
-| App Tracking Transparency prompt before IDFA/cross-app tracking | Required |
+Do not repeat the numbers here — `store-facts.md` is the single source. It carries the SDK minimum,
+the deployment-target floor, the privacy-manifest date, the age-rating system and the EU DSA trader
+deadline, each with its official source and a `verified_on` stamp. Read it before every submission
+and re-verify it when the stamp is older than `review_every_days`.
 
 If a requirement is missed, the build is rejected at upload (not review) — check the "Upcoming Requirements" page first.
 
@@ -123,7 +118,7 @@ Screenshots must show the **shipped build**. Composite marketing images are allo
 3. Paywall without restore + terms links (3.1.2).
 4. "Sign in with Apple" missing when Google login exists (4.8).
 5. Privacy manifest missing for an SDK that touches required-reason APIs (upload-time rejection).
-6. Age-rating questions unanswered after the Jan 2026 migration.
+6. Age-rating questions unanswered after the migration to the five-tier system.
 
 ---
 
@@ -152,7 +147,7 @@ Plan for **one to three review cycles**. The most common cause of a second cycle
 
 ## 8. Pre-submission checklist
 
-- [ ] Builds with Xcode 26 / iOS 26 SDK; deployment target ≥ iOS 13
+- [ ] Builds meet every dated requirement in `store-facts.md` (SDK, deployment target, manifest, age rating, DSA)
 - [ ] `PrivacyInfo.xcprivacy` + SDK signatures; required-reason APIs declared
 - [ ] ATT implemented only if tracking; App Privacy answers match SDKs
 - [ ] Age rating questionnaire completed in the new system

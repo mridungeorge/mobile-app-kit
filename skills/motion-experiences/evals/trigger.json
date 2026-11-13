@@ -1,0 +1,107 @@
+{
+  "skill": "motion-experiences",
+  "version": 1,
+  "notes": "10 positive and 10 negative prompts. Positives span web, React Native and native. Negatives are near-misses: app building, store metadata, motion-graphics tools, and unrelated engineering.",
+  "prompts": [
+    {
+      "prompt": "This landing page feels dead. Add scroll animations.",
+      "should_trigger": true,
+      "why": "scroll motion"
+    },
+    {
+      "prompt": "Make the hero feel premium.",
+      "should_trigger": true,
+      "why": "hero motion"
+    },
+    {
+      "prompt": "Add reveal-on-scroll to these cards.",
+      "should_trigger": true,
+      "why": "reveal"
+    },
+    {
+      "prompt": "How do I use GSAP ScrollTrigger in React?",
+      "should_trigger": true,
+      "why": "GSAP"
+    },
+    {
+      "prompt": "Which React Bits component should I use for a text reveal?",
+      "should_trigger": true,
+      "why": "React Bits"
+    },
+    {
+      "prompt": "Animate a bottom sheet in React Native.",
+      "should_trigger": true,
+      "why": "Reanimated"
+    },
+    {
+      "prompt": "My GSAP animations replay on route change.",
+      "should_trigger": true,
+      "why": "motion debugging"
+    },
+    {
+      "prompt": "Add a SwiftUI spring animation to my iOS onboarding.",
+      "should_trigger": true,
+      "why": "native SwiftUI motion"
+    },
+    {
+      "prompt": "How do I animate list items in Jetpack Compose?",
+      "should_trigger": true,
+      "why": "native Compose motion"
+    },
+    {
+      "prompt": "The app feels static. Add micro-interactions and one hero animation.",
+      "should_trigger": true,
+      "why": "motion layer, unspecified stack"
+    },
+    {
+      "prompt": "Animate this SVG logo in After Effects.",
+      "should_trigger": false,
+      "why": "motion graphics tool, not UI code"
+    },
+    {
+      "prompt": "Set up a Postgres index for my backend.",
+      "should_trigger": false,
+      "why": "unrelated"
+    },
+    {
+      "prompt": "Build me a mobile app for booking dog walkers.",
+      "should_trigger": false,
+      "why": "mobile-app-factory"
+    },
+    {
+      "prompt": "Write App Store metadata for my recipe app.",
+      "should_trigger": false,
+      "why": "mobile-app-factory, store metadata"
+    },
+    {
+      "prompt": "Why was my app rejected for guideline 4.2?",
+      "should_trigger": false,
+      "why": "mobile-app-factory, review"
+    },
+    {
+      "prompt": "Design a logo for my bakery.",
+      "should_trigger": false,
+      "why": "brand/design skill"
+    },
+    {
+      "prompt": "Fix a memory leak in my Android service.",
+      "should_trigger": false,
+      "why": "native debugging, not motion"
+    },
+    {
+      "prompt": "Create a Figma prototype for a checkout flow.",
+      "should_trigger": false,
+      "why": "design tooling"
+    },
+    {
+      "prompt": "Write a Python script to resize images.",
+      "should_trigger": false,
+      "why": "unrelated"
+    },
+    {
+      "prompt": "Set up GitHub Actions CI for my repo.",
+      "should_trigger": false,
+      "why": "infra, not motion"
+    }
+  ]
+}

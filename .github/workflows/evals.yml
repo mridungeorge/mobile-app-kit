@@ -1,0 +1,63 @@
+name: evals
+
+# Trigger and quality evals call a real model, so they cost money and take minutes.
+# They run on demand only — never on push, never on pull_request. Use this when you
+# change a skill description or a reference and want the numbers before merging.
+on:
+  workflow_dispatch:
+    inputs:
+      skill:
+        description: 'Skill to evaluate (blank = all skills with evals)'
+        required: false
+        default: ''
+      mode:
+        description: 'trigger, quality, or both'
+        required: false
+        default: 'both'
+        type: choice
+        options: [both, trigger, quality]
+
+permissions:
+  contents: read
+
+jobs:
+  evals:
+    name: evals (${{ inputs.skill || 'all' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      # The eval files themselves are free to check, and they are checked in the
+      # regular audit too. This step catches a broken trigger/quality file before
+      # spending a cent on model calls.
+      - name: Validate eval files
+        run: node skills/mobile-app-factory/scripts/run-evals.mjs --validate
+
+      - name: Run evals
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          args=(--max-turns 8 --timeout 300)
+          if [ -n "${{ inputs.skill }}" ]; then args+=(--skill "${{ inputs.skill }}"); fi
+          case "${{ inputs.mode }}" in
+            trigger) args+=(--trigger) ;;
+            quality) args+=(--quality) ;;
+            *) args+=(--trigger --quality) ;;
+          esac
+          node skills/mobile-app-factory/scripts/run-evals.mjs "${args[@]}"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: skills/*/evals/results/
+          if-no-files-found: warn

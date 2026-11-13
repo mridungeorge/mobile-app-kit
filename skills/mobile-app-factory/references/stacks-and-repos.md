@@ -31,6 +31,10 @@ The decision table is a fallback for when the idea is unusual or the team overri
 
 For "proper" production apps, prefer native toolchains (Android Studio/Gradle, Xcode) over Expo Go-style runtime workflows.
 
+Whatever the stack: pick **one** UI system and stay in it (Material 3 / Compose for Android,
+platform-native SwiftUI for iOS, Material 3 for Flutter). Mixing kits is the fastest way to a UI
+that reads as assembled rather than designed.
+
 ---
 
 ## 2. Native Android — Kotlin + Jetpack Compose

@@ -4,7 +4,7 @@ Verified against Play Console Help in November 2026. Play policy is enforced by 
 
 ## Contents
 1. Account and verification
-2. The 12-tester / 14-day gate
+2. The closed-testing gate
 3. Dated technical requirements
 4. Store listing metadata
 5. App content declarations
@@ -20,16 +20,16 @@ Verified against Play Console Help in November 2026. Play policy is enforced by 
 - **US$25 one-time** registration fee.
 - **Identity verification**: government ID + address. **Organisation accounts need a D-U-N-S number**; verification can take days to weeks.
 - A payments profile is required to publish paid apps or IAP, and to receive payouts.
-- New **personal** accounts (created after 13 Nov 2023) must pass the closed-testing gate before production access. Organisation accounts are exempt from the tester count but still need app setup complete.
+- New **personal** accounts must pass the closed-testing gate before production access — the exact tester count and duration are in `store-facts.md`. Organisation accounts are exempt from the tester count but still need app setup complete.
 
 ---
 
-## 2. The 12-tester / 14-day gate
+## 2. The closed-testing gate
 
 Before you can apply for production:
 
 1. Complete **app setup** — every App content declaration and the store listing.
-2. Run a **closed test** with **at least 12 testers opted in continuously for the previous 14 days**.
+2. Run a **closed test** that meets Google's tester gate — count and duration in `store-facts.md`.
 3. Apply for production access and answer the questionnaire: about your closed test, your app, and your production readiness.
 4. Wait for Google's decision (often a few days, can be longer).
 
@@ -41,18 +41,15 @@ Recruit testers who match the future audience; Google asks what feedback you rec
 
 ## 3. Dated technical requirements
 
-| Requirement | Deadline / status |
-|---|---|
-| **targetSdk 36 (Android 16)** for new apps and updates | From **31 Aug 2026**; extension to **1 Nov 2026** available in Play Console |
-| Existing apps target API 35+ to stay discoverable | From 31 Aug 2026 |
-| **Android App Bundle (.aab)** | Required for new apps |
-| **Play App Signing** enrolled | Mandatory for new apps |
-| 64-bit native libraries | Required |
-| Data safety form | Mandatory, must match runtime behaviour |
-| Content rating (IARC questionnaire) | Mandatory per app |
-| Account deletion (in-app **and** web link) | Mandatory if accounts exist |
-| Privacy policy URL | Required for any app collecting data |
-| App access declaration (review credentials) | Mandatory if anything is gated |
+`store-facts.md` is the single source for the target API level, the tester gate and the signing
+rules, each with its official source and a `verified_on` stamp. Read it before every submission and
+re-verify when the stamp is older than `review_every_days`.
+
+Requirements that never change:
+
+- **64-bit native libraries** — required.
+- **Privacy policy URL** — required for any app that collects data.
+- **App access declaration** — review credentials mandatory if anything is gated.
 
 Wear OS / TV / Automotive / XR have their own, lower API floors — see Play Console Help if shipping those form factors.
 
@@ -153,7 +150,7 @@ Total calendar time from first build to public launch: **3–5 weeks** for a new
 
 ## 9. Pre-submission checklist
 
-- [ ] `targetSdkVersion 36`; AAB built; Play App Signing enabled
+- [ ] Target API level, AAB and Play App Signing match `store-facts.md`
 - [ ] App content declarations all green
 - [ ] Data safety matches installed SDKs exactly
 - [ ] Content rating completed
@@ -162,6 +159,6 @@ Total calendar time from first build to public launch: **3–5 weeks** for a new
 - [ ] Icon 512², feature graphic 1024×500, 2–8 screenshots
 - [ ] Name ≤ 30, short description ≤ 80, full description ≤ 4,000, no policy-banned claims
 - [ ] Sensitive-permission declarations filed where relevant
-- [ ] Closed test: 12 testers × 14 continuous days completed
+- [ ] Closed test: tester gate in `store-facts.md` satisfied
 - [ ] Pre-launch report reviewed (crashes, ANRs, accessibility)
 - [ ] Staged rollout plan agreed

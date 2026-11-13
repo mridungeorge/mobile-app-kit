@@ -26,6 +26,9 @@ const required = [
   "SKILL.md",
   "QUICKSTART.md",
   "references/idea-router.md",
+  "references/archetypes.md",
+  "references/definition-of-done.md",
+  "references/store-facts.md",
   "references/design-language.md",
   "references/component-map.md",
   "references/adaptive-ui.md",
@@ -78,6 +81,9 @@ const required = [
   "scripts/new-app.sh",
   "scripts/new-android-app.sh",
   "scripts/new-ios-app.sh",
+  "scripts/run-evals.mjs",
+  "evals/trigger.json",
+  "evals/quality.json",
   "evals/prompts.md"
 ];
 for (const path of required) must(path);
@@ -126,13 +132,45 @@ else ok.push(`references: ${seen.size} unique paths checked, all resolve`);
 
 // Archetype vocabulary must match the router
 const { ARCHETYPE_ORDER } = await import("./route-idea.mjs");
-const routerRef = readFileSync(join(root, "references/idea-router.md"), "utf8");
+const routerRef = readFileSync(join(root, "references/archetypes.md"), "utf8");
 const headings = [...routerRef.matchAll(/^### ([a-z0-9-]+)$/gm)].map((m) => m[1]);
 const missingInDoc = ARCHETYPE_ORDER.filter((a) => !headings.includes(a));
 const missingInScript = headings.filter((a) => !ARCHETYPE_ORDER.includes(a));
-if (missingInDoc.length) errors.push(`archetypes in script but not idea-router.md: ${missingInDoc.join(", ")}`);
-if (missingInScript.length) errors.push(`archetypes in idea-router.md but not script: ${missingInScript.join(", ")}`);
+if (missingInDoc.length) errors.push(`archetypes in script but not references/archetypes.md: ${missingInDoc.join(", ")}`);
+if (missingInScript.length) errors.push(`archetypes in references/archetypes.md but not script: ${missingInScript.join(", ")}`);
 if (!missingInDoc.length && !missingInScript.length) ok.push(`archetypes: ${ARCHETYPE_ORDER.length} match between router and reference`);
+
+// Store facts: every dated rule must carry a source, and the file must not go stale silently.
+// A stale file is a warning (the skill still works, the facts may not); an unsourced row is an
+// error, because an unsourced date is exactly the thing this file exists to prevent.
+try {
+  const factsPath = join(root, "references/store-facts.md");
+  const text = readFileSync(factsPath, "utf8");
+  const fm = text.match(/^---\n([\s\S]*?)\n---/);
+  if (!fm) throw new Error("no YAML frontmatter");
+  const verifiedOn = fm[1].match(/^verified_on:\s*(\d{4}-\d{2}-\d{2})\s*$/m)?.[1];
+  const everyDays = Number(fm[1].match(/^review_every_days:\s*(\d+)\s*$/m)?.[1] ?? NaN);
+  if (!verifiedOn) errors.push("store-facts.md frontmatter has no verified_on: YYYY-MM-DD");
+  if (!Number.isFinite(everyDays) || everyDays <= 0) errors.push("store-facts.md frontmatter has no positive review_every_days");
+
+  const rows = text.split("\n").filter((line) => /^\|\s/.test(line));
+  const bodyRows = rows.filter((line) => !/^\|\s*:?-{2,}/.test(line) && !/^\|\s*Rule\s*\|/i.test(line));
+  const unsourced = bodyRows.filter((line) => !/https?:\/\//.test(line));
+  if (unsourced.length) {
+    errors.push(...unsourced.map((row) => `store-facts row has no source URL: ${(row.split("|")[1] || row).trim().slice(0, 70)}`));
+  }
+
+  if (verifiedOn && Number.isFinite(everyDays)) {
+    const ageDays = Math.max(0, Math.floor((Date.now() - Date.parse(`${verifiedOn}T00:00:00Z`)) / 86_400_000));
+    if (ageDays > everyDays) {
+      warnings.push(`store-facts.md is ${ageDays} days old (verified_on ${verifiedOn}, review every ${everyDays}); re-verify the rows with web search`);
+    } else if (!unsourced.length) {
+      ok.push(`store-facts: ${bodyRows.length} dated rows sourced, verified ${ageDays} day(s) ago`);
+    }
+  }
+} catch (error) {
+  errors.push(`store-facts check failed: ${error.message}`);
+}
 
 // Metadata template must validate clean
 const temp = mkdtempSync(join(tmpdir(), "maf-check-"));
@@ -206,6 +244,130 @@ try {
   errors.push(`pipeline smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
 }
 
+// Size budget: a SKILL.md is loaded whenever the skill triggers, so it has a hard ceiling.
+// References are read on demand, so a fat one is only worth a warning.
+try {
+  const repoRoot = resolve(root, "..", "..");
+  const skillDirs = readdirSync(join(repoRoot, "skills")).filter((name) => existsSync(join(repoRoot, "skills", name, "SKILL.md")));
+  const tooBig = [];
+  const tooLong = [];
+  const fatRefs = [];
+  const longDescriptions = [];
+
+  for (const name of skillDirs) {
+    const skillPath = join(repoRoot, "skills", name, "SKILL.md");
+    const text = readFileSync(skillPath, "utf8");
+    const bytes = statSync(skillPath).size;
+    const lines = text.replace(/\n$/, "").split("\n").length;
+    if (bytes > 12 * 1024) tooBig.push(`${name}/SKILL.md is ${(bytes / 1024).toFixed(1)} KB (limit 12 KB)`);
+    if (lines > 300) tooLong.push(`${name}/SKILL.md is ${lines} lines (limit 300)`);
+
+    const description = text.match(/^---\r?\n[\s\S]*?^description:\s*(.+)$/m)?.[1]?.trim() ?? "";
+    if (description.length > 1024) longDescriptions.push(`${name}: description is ${description.length} chars (limit 1024)`);
+
+    const refDir = join(repoRoot, "skills", name, "references");
+    if (!existsSync(refDir)) continue;
+    for (const file of readdirSync(refDir).filter((entry) => entry.endsWith(".md"))) {
+      const size = statSync(join(refDir, file)).size;
+      if (size > 20 * 1024) fatRefs.push(`${name}/references/${file} is ${(size / 1024).toFixed(1)} KB (soft limit 20 KB)`);
+    }
+  }
+
+  errors.push(...tooBig, ...tooLong, ...longDescriptions);
+  warnings.push(...fatRefs);
+  if (!tooBig.length && !tooLong.length && !longDescriptions.length) {
+    ok.push(`size-budget: ${skillDirs.length} SKILL.md under 12 KB and 300 lines, every description under 1024 chars`);
+  }
+} catch (error) {
+  errors.push(`size-budget check failed: ${error.message}`);
+}
+
+// Repository licence and third-party attribution. The skill is installed as a copy, so a
+// missing LICENSE is only an error in the repo checkout, never in ~/.claude/skills.
+{
+  const repoRoot = resolve(root, "..", "..");
+  const licensePath = join(repoRoot, "LICENSE");
+  if (!existsSync(licensePath)) {
+    errors.push("LICENSE is missing at the repo root (MIT, © 2026 George Mridun)");
+  } else {
+    const text = readFileSync(licensePath, "utf8");
+    if (!/^MIT License/m.test(text)) errors.push("LICENSE does not start with \"MIT License\"");
+    if (!/Copyright \(c\) 2026 George Mridun/.test(text)) errors.push("LICENSE copyright line is not \"Copyright (c) 2026 George Mridun\"");
+    if (!existsSync(join(repoRoot, "NOTICE.md"))) errors.push("NOTICE.md is missing at the repo root");
+    else ok.push("licence: MIT LICENSE and NOTICE.md present");
+  }
+}
+
+// Eval sets: every skill with evals has a valid, 50/50 trigger set and a quality set
+// whose assertions are all checkable. Validation is offline — no model is called.
+try {
+  const output = execFileSync(process.execPath, [join(root, "scripts", "run-evals.mjs"), "--validate"], { stdio: "pipe", encoding: "utf8" });
+  const summary = output.trim().split("\n").pop() ?? "";
+  if (!/^PASS/.test(summary)) throw new Error(summary || "run-evals.mjs --validate did not pass");
+  const repoRoot = resolve(root, "..", "..");
+  const skillsWithEvals = readdirSync(join(repoRoot, "skills")).filter((name) => existsSync(join(repoRoot, "skills", name, "evals", "trigger.json")));
+  if (!skillsWithEvals.includes("mobile-app-factory") || !skillsWithEvals.includes("motion-experiences")) {
+    throw new Error(`expected evals for both skills, found: ${skillsWithEvals.join(", ") || "none"}`);
+  }
+  ok.push(`evals: ${skillsWithEvals.length} skill(s) with a 50/50 trigger set and checkable quality assertions`);
+} catch (error) {
+  errors.push(`evals validation failed: ${String(error.stdout || error.message).trim().split("\n").slice(-2).join(" ")}`);
+}
+
+// Portability: the kit is a SKILL.md package, not a Claude-only product. The eval runner must
+// detect a skill under each agent's own output format, and the installer must know each agent's
+// skills directory. All offline — `--self-test` calls no model.
+try {
+  const output = execFileSync(process.execPath, [join(root, "scripts", "run-evals.mjs"), "--self-test"], { stdio: "pipe", encoding: "utf8" });
+  const summary = output.trim().split("\n").pop() ?? "";
+  if (!/^PASS/.test(summary)) throw new Error(summary || "run-evals.mjs --self-test did not pass");
+
+  const repoRoot = resolve(root, "..", "..");
+  const installer = join(repoRoot, "install.sh");
+  if (!existsSync(installer)) throw new Error("install.sh is missing at the repo root");
+  const text = readFileSync(installer, "utf8");
+  const targets = [".claude/skills", ".agents/skills", ".config/opencode/skills"];
+  const missing = targets.filter((target) => !text.includes(target));
+  if (missing.length) throw new Error(`install.sh does not mention ${missing.join(", ")}`);
+
+  ok.push(`portability: agent adapters self-test, installer targets ${targets.join(", ")}`);
+} catch (error) {
+  errors.push(`portability check failed: ${String(error.stdout || error.message).trim().split("\n").slice(-2).join(" ")}`);
+}
+
+// Fast-path smoke test: --fast writes the three artifacts, records approved-fast with an
+// assumption for every intake answer, and the readiness report refuses to keep them quiet.
+try {
+  const temp = mkdtempSync(join(tmpdir(), "maf-fast-"));
+  execFileSync(process.execPath, [
+    join(root, "scripts", "route-idea.mjs"), "--fast", "--dir", temp,
+    "a quiet app that helps me stop doomscrolling at night, free with optional subscription"
+  ], { stdio: "pipe" });
+
+  const intake = JSON.parse(readFileSync(join(temp, "00-intake.json"), "utf8"));
+  const profile = JSON.parse(readFileSync(join(temp, "00-profile.json"), "utf8"));
+  const approval = JSON.parse(readFileSync(join(temp, "00-approval.json"), "utf8"));
+
+  if (approval.status !== "approved-fast") throw new Error(`approval status is "${approval.status}", expected approved-fast`);
+  if (intake.mode !== "fast") throw new Error("intake does not record the fast mode");
+  if (intake.monetisation !== "free with optional subscription") throw new Error(`monetisation not read from the idea: ${intake.monetisation}`);
+  if (!profile.intake || profile.intake.platforms !== intake.platforms) throw new Error("profile did not receive the intake answers");
+
+  const fields = ["idea", "platforms", "monetisation", "accounts", "ugc", "ai", "sensitiveData", "permissions", "offline", "backend", "audience", "design", "team", "timeline", "mustHave"];
+  const listed = new Set((approval.assumptions ?? []).map((row) => row.field));
+  const absent = fields.filter((field) => !listed.has(field));
+  if (absent.length) throw new Error(`no assumption recorded for: ${absent.join(", ")}`);
+
+  const report = JSON.parse(execFileSync(process.execPath, [join(root, "scripts", "readiness-report.mjs"), "--dir", temp, "--json"], { stdio: "pipe" }).toString());
+  if (!report.ai.some((item) => item.name === "Preview approved" && item.status === "pass")) throw new Error("readiness report does not accept approved-fast");
+  if ((report.assumptions ?? []).length !== approval.assumptions.length) throw new Error("readiness report dropped the assumptions");
+
+  ok.push(`fast path: --fast writes intake + profile + approved-fast with ${approval.assumptions.length} assumptions, and the report prints them`);
+  rmSync(temp, { recursive: true, force: true });
+} catch (error) {
+  errors.push(`fast-path smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
+}
+
 // Native starter smoke test: both templates copy, substitute and leave no placeholders.
 try {
   const temp = mkdtempSync(join(tmpdir(), "maf-native-"));
@@ -218,6 +380,31 @@ try {
   if (!existsSync(androidMain)) throw new Error("Android package path was not substituted");
   if (!existsSync(iosProject)) throw new Error("iOS project.yml was not generated");
   if (!existsSync(join(temp, "ios", "Resources", "PrivacyInfo.xcprivacy"))) throw new Error("iOS PrivacyInfo missing");
+
+  // Native motion tokens ship inside both starters, so a generated app has the Rune
+  // spring values before anyone writes an animation. Assert the substituted file and
+  // the tokens themselves — an empty or truncated Motion.kt would still "exist".
+  const androidMotion = join(temp, "android", "app", "src", "main", "java", "com", "example", "smoke", "ui", "theme", "Motion.kt");
+  const iosMotion = join(temp, "ios", "Sources", "DesignSystem", "Motion.swift");
+  if (!existsSync(androidMotion)) throw new Error("Android Motion.kt was not scaffolded");
+  if (!existsSync(iosMotion)) throw new Error("iOS Motion.swift was not scaffolded");
+  const kotlinMotion = readFileSync(androidMotion, "utf8");
+  for (const [label, needle] of [
+    ["package", "package com.example.smoke.ui.theme"],
+    ["settle token", "SETTLE_MS = 300"],
+    ["reduced fade", "REDUCED_FADE_MS = 150"],
+    ["reduced-motion read", "ANIMATOR_DURATION_SCALE"],
+  ]) {
+    if (!kotlinMotion.includes(needle)) throw new Error(`Android Motion.kt missing ${label}`);
+  }
+  const swiftMotion = readFileSync(iosMotion, "utf8");
+  for (const [label, needle] of [
+    ["settle token", "settleDuration: Double = 0.30"],
+    ["morph bounce", "bounce: 0.16"],
+    ["reduced-motion env", "accessibilityReduceMotion"],
+  ]) {
+    if (!swiftMotion.includes(needle)) throw new Error(`iOS Motion.swift missing ${label}`);
+  }
 
   // The Gradle wrapper is the only binary in either template. If the scaffolder ever
   // decoded the .jar as UTF-8 it would be silently corrupted, and the project would
@@ -278,7 +465,7 @@ try {
     if (left) throw new Error(`placeholder ${left} left in ${file.replace(temp, "")}`);
   }
 
-  ok.push("native templates: Android + iOS scaffold, substitute and keep the Gradle wrapper binary intact");
+  ok.push("native templates: Android + iOS scaffold, substitute ids, ship the Rune motion tokens, keep the Gradle wrapper binary intact");
   rmSync(temp, { recursive: true, force: true });
 } catch (error) {
   errors.push(`native template smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);

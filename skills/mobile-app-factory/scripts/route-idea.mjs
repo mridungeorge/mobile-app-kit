@@ -19,9 +19,11 @@
 //   --ugc / --no-ugc
 //   --ai / --no-ai
 //   --offline
+//   --fast --dir <path>    infer the intake, write intake/profile/approval, skip the gate
 //   --help
 
-import { writeFileSync } from "node:fs";
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 
 const ARCHETYPES = {
   "utility": {
@@ -424,6 +426,8 @@ function parseArgs(argv) {
       case "--summary": opts.summary = true; break;
       case "--help": case "-h": opts.help = true; break;
       case "--out": opts.out = next(); break;
+      case "--fast": opts.fast = true; break;
+      case "--dir": opts.dir = next(); break;
       case "--archetype": opts.archetype = next(); break;
       case "--stack": opts.stack = next(); break;
       case "--monetisation": case "--monetization": opts.monetisation = next(); break;
@@ -448,10 +452,12 @@ function help() {
   node scripts/route-idea.mjs "a sleep tracker with white noise"
   node scripts/route-idea.mjs --json "marketplace for dog walkers" > .mobile/00-profile.json
   node scripts/route-idea.mjs --summary "offline bird identifier"
+  node scripts/route-idea.mjs --fast "a quiet app to stop doomscrolling"   # skips the questionnaire and the preview gate
 
 Flags: --json --summary --out <path> --archetype <name> --stack <native|android-native|ios-native|kmp|flutter|expo|capacitor|unity>
        --monetisation <free|iap|subscription|ads|contract|none> --accounts --no-accounts
        --ugc --no-ugc --ai --no-ai --offline
+       --fast --dir <path>   write intake, profile and an approved-fast record with assumptions
 
 Archetypes: ${ARCHETYPE_ORDER.join(", ")}`;
 }
@@ -646,6 +652,166 @@ function summary(profile) {
   return lines.join("\n");
 }
 
+// ---------------------------------------------------------------------------
+// Fast path — infer the whole intake from the one-line idea
+// ---------------------------------------------------------------------------
+//
+// The questionnaire and the preview gate are right for a first-time builder and wrong
+// for someone who already knows what they are shipping. `--fast` writes the same three
+// artifacts the slow path produces, records the approval as "approved-fast", and lists
+// every inferred answer so nothing is silent.
+
+const FAST_DEFAULTS = {
+  audience: "general users of this app category",
+  design: "Rune: calm neutral surfaces, one accent, hairlines instead of shadows",
+  team: "both-native (Kotlin + SwiftUI)",
+  timeline: "MVP first, store-ready artifacts as it goes"
+};
+
+function platformsFromStack(stack) {
+  const primary = (stack && stack.primary) || "native";
+  if (primary === "android-native") return "android";
+  if (primary === "ios-native") return "ios";
+  return "both";
+}
+
+// The router takes monetisation from the archetype, never from the words. In fast mode the
+// one-line idea is the only input, so read it: "free with optional subscription" must not
+// become "one-time unlock" just because the idea landed in the utility archetype.
+function inferMonetisation(idea) {
+  const text = String(idea || "").toLowerCase();
+  if (/\bfree\b[^.]*\b(optional|premium|pro|subscription)\b|\boptional subscription\b|\bfreemium\b|\bpaid upgrade\b/.test(text)) {
+    return "free with optional subscription";
+  }
+  if (/\bsubscription\b|\bsubscribe\b|\bper month\b|\bmonthly\b/.test(text)) return "subscription";
+  if (/\bone[- ]time\b|\bpay once\b|\bpaid app\b|\bunlock once\b/.test(text)) return "one-time unlock";
+  if (/\bads?\b|\badvert\w*\b|\bad-supported\b/.test(text)) return "ads with consent";
+  if (/\bper[- ]seat\b|\bcontract\b|\benterprise\b/.test(text)) return "per-seat contract";
+  if (/\bfree\b|\bno charge\b/.test(text)) return "free";
+  return null;
+}
+
+function fastIntake(profile, opts) {
+  const platforms = platformsFromStack(profile.stack);
+  return {
+    version: 1,
+    createdAt: new Date().toISOString(),
+    mode: "fast",
+    idea: profile.idea,
+    audience: FAST_DEFAULTS.audience,
+    problem: profile.coreLoop,
+    platforms,
+    monetisation: opts.monetisation ?? inferMonetisation(profile.idea) ?? profile.monetisation,
+    accounts: profile.accounts,
+    ugc: profile.ugc,
+    ai: profile.aiGeneratedContent,
+    sensitiveData: profile.dataSensitivity.join(", ") || "none",
+    permissions: profile.permissions,
+    offline: Boolean(opts.offline),
+    backend: (profile.stack && profile.stack.backend) || "none",
+    design: FAST_DEFAULTS.design,
+    team: FAST_DEFAULTS.team,
+    timeline: FAST_DEFAULTS.timeline,
+    mustHave: profile.screens.slice(0, 3).join(", "),
+    notes: "Fast path: inferred from the one-line idea. Correct any assumption below before build.",
+    raw: null
+  };
+}
+
+function fastAssumptions(intake, profile, opts) {
+  const flagged = (value) => (value === undefined ? "inferred" : "flag");
+  return [
+    { field: "idea", value: intake.idea, origin: "user", why: "your prompt, unchanged" },
+    { field: "platforms", value: intake.platforms, origin: flagged(opts.stack), why: `router stack is ${profile.stack.primary}` },
+    { field: "monetisation", value: intake.monetisation, origin: opts.monetisation ? "flag" : inferMonetisation(profile.idea) ? "inferred" : "default", why: opts.monetisation ? "from --monetisation" : inferMonetisation(profile.idea) ? "read from the idea text" : "archetype default — pass --monetisation to override" },
+    { field: "accounts", value: intake.accounts, origin: flagged(opts.accounts), why: "archetype default unless the idea mentions accounts or login" },
+    { field: "ugc", value: intake.ugc, origin: flagged(opts.ugc), why: "archetype default unless the idea mentions sharing or community" },
+    { field: "ai", value: intake.ai, origin: flagged(opts.ai), why: "archetype default unless the idea mentions AI" },
+    { field: "sensitiveData", value: intake.sensitiveData, origin: "inferred", why: "from the archetype's data sensitivity" },
+    { field: "permissions", value: intake.permissions.join(", ") || "none", origin: "inferred", why: "from the archetype's permission set" },
+    { field: "offline", value: intake.offline, origin: opts.offline ? "flag" : "default", why: "default is online-capable; pass --offline to change" },
+    { field: "backend", value: intake.backend, origin: "inferred", why: "from the archetype's stack" },
+    { field: "audience", value: intake.audience, origin: "default", why: "questionnaire default — narrow it if you know the user" },
+    { field: "design", value: intake.design, origin: "default", why: "the kit's design language" },
+    { field: "team", value: intake.team, origin: "default", why: "default stack for this kit" },
+    { field: "timeline", value: intake.timeline, origin: "default", why: "fast path assumes you want to build now" },
+    { field: "mustHave", value: intake.mustHave, origin: "inferred", why: "first three screens from the routed profile" }
+  ];
+}
+
+function fastIntakeMarkdown(intake, assumptions) {
+  const rows = assumptions.map((row) => `| ${row.field} | ${String(row.value)} | ${row.origin} | ${row.why} |`);
+  return `# App Intake (fast path)
+
+- **Created:** ${intake.createdAt}
+- **Idea:** ${intake.idea}
+- **Mode:** fast — the questionnaire was skipped
+
+## Assumptions
+
+| Field | Value | Origin | Why |
+|---|---|---|---|
+${rows.join("\n")}
+
+Origin \`user\` came from your prompt, \`flag\` from a command-line flag, \`inferred\` from the
+router, and \`default\` is the kit's default. Correct anything that is wrong in
+\`00-intake.json\` and re-route, or run \`review-preview.mjs --request-changes\`.
+
+> External actions still required: developer accounts, signing keys/certificates, CI secrets, real-device testing, and store uploads/review.
+`;
+}
+
+function writeFastArtifacts(profile, opts) {
+  const dir = resolve(opts.dir || ".mobile");
+  mkdirSync(dir, { recursive: true });
+  const intake = fastIntake(profile, opts);
+  const assumptions = fastAssumptions(intake, profile, opts);
+  const now = new Date().toISOString();
+
+  writeFileSync(join(dir, "00-intake.json"), `${JSON.stringify({ ...intake, assumptions }, null, 2)}\n`);
+  writeFileSync(join(dir, "00-intake.md"), fastIntakeMarkdown(intake, assumptions));
+  writeFileSync(join(dir, "00-profile.json"), `${JSON.stringify({ ...profile, intake: {
+    audience: intake.audience, problem: intake.problem, platforms: intake.platforms,
+    backend: intake.backend, design: intake.design, team: intake.team,
+    timeline: intake.timeline, mustHave: intake.mustHave, notes: intake.notes,
+    sensitiveData: intake.sensitiveData, permissions: intake.permissions
+  } }, null, 2)}\n`);
+
+  const approvalPath = join(dir, "00-approval.json");
+  const prior = existsSync(approvalPath) ? JSON.parse(readFileSync(approvalPath, "utf8")) : null;
+  const record = {
+    schema: "mobile-app-factory/approval@1",
+    status: "approved-fast",
+    decidedAt: now,
+    source: "route-idea --fast",
+    appName: null,
+    checklist: [],
+    changeRequests: null,
+    appliedChanges: null,
+    assumptions,
+    history: [...((prior && prior.history) || []), ...(prior ? [{ status: prior.status, decidedAt: prior.decidedAt }] : [])]
+  };
+  writeFileSync(approvalPath, `${JSON.stringify(record, null, 2)}\n`);
+
+  const statePath = join(dir, "STATE.md");
+  if (!existsSync(statePath)) {
+    writeFileSync(statePath, `# State\nstage: FAST_PATH_APPROVED\nupdated: ${now}\nprofile: ${profile.archetype} (${profile.confidence})\nnext: Phase 1 — PRD, design spec, then build. Assumptions are recorded in 00-approval.json.\n`);
+  }
+
+  return { dir, intake, assumptions };
+}
+
+function assumptionsBlock(dir, assumptions) {
+  const width = Math.max(...assumptions.map((row) => row.field.length));
+  const lines = [
+    `Fast path — ${assumptions.length} answers inferred, written to ${dir}`,
+    ...assumptions.map((row) => `  ${row.field.padEnd(width)}  ${String(row.value)}  [${row.origin}]`),
+    "",
+    "These are assumptions, not answers. Correct 00-intake.json before the build if any is wrong."
+  ];
+  return lines.join("\n");
+}
+
 function main() {
   let opts;
   try {
@@ -670,12 +836,28 @@ function main() {
     process.exit(2);
   }
 
+  let fast = null;
+  if (opts.fast) {
+    try {
+      fast = writeFastArtifacts(profile, opts);
+    } catch (error) {
+      console.error(`error: could not write the fast-path artifacts (${error.message})`);
+      process.exit(2);
+    }
+  }
+
   const output = opts.json || opts.out || !process.stdout.isTTY ? JSON.stringify(profile, null, 2) : summary(profile);
   if (opts.out) {
     writeFileSync(opts.out, `${JSON.stringify(profile, null, 2)}\n`);
     console.error(`wrote ${opts.out}`);
   }
   console.log(opts.summary && !opts.out && !opts.json ? summary(profile) : output);
+  if (fast) {
+    // Keep stdout pure JSON when --json was asked for; the assumptions are a note to the human.
+    const block = assumptionsBlock(fast.dir, fast.assumptions);
+    if (opts.json || opts.out || !process.stdout.isTTY) console.error(`\n${block}`);
+    else console.log(`\n${block}`);
+  }
 }
 
 if (process.argv[1] && process.argv[1].endsWith("route-idea.mjs")) main();

@@ -1,0 +1,101 @@
+{
+  "skill": "motion-experiences",
+  "version": 1,
+  "notes": "Motion quality cases mostly produce code in the user's project, so assertions read the final response. `judgement` keeps the human criteria from the original manual set.",
+  "cases": [
+    {
+      "id": "landing-page-motion",
+      "prompt": "Add motion to my SaaS landing page. It currently has no animation.",
+      "assertions": [
+        { "type": "response_mentions_all", "terms": ["useGSAP", "matchMedia"], "label": "useGSAP + matchMedia, not raw useEffect" },
+        { "type": "response_matches", "pattern": "once", "label": "reveal uses once: true" },
+        { "type": "response_matches", "pattern": "(?i)reduced[- ]motion", "label": "reduced-motion branch stated" }
+      ],
+      "judgement": [
+        "Names the five jobs and picks a budget",
+        "Reveals 12-16px + fade",
+        "Restricts pinned sections to desktop widths",
+        "Animates transform/opacity only"
+      ]
+    },
+    {
+      "id": "component-choice",
+      "prompt": "I need a premium animated border on my primary CTA.",
+      "assertions": [
+        { "type": "response_matches", "pattern": "(?i)starborder", "label": "picks one border effect" },
+        { "type": "response_matches", "pattern": "(?i)canvas", "label": "explains the canvas cost" }
+      ],
+      "judgement": [
+        "One effect, not three",
+        "One per page",
+        "Keeps contrast and focus-visible styling"
+      ]
+    },
+    {
+      "id": "react-native-reveal",
+      "prompt": "Add scroll reveals to a React Native feed.",
+      "assertions": [
+        { "type": "response_mentions_all", "terms": ["Reanimated", "useAnimatedStyle"], "label": "Reanimated on the UI thread" },
+        { "type": "response_matches", "pattern": "(?i)reduceMotion|isReduceMotionEnabled", "label": "honours the OS reduce-motion flag" }
+      ],
+      "judgement": [
+        "Does not animate every row; virtualises and reveals once",
+        "Maps Rune tokens to withSpring",
+        "Never imports GSAP into React Native"
+      ]
+    },
+    {
+      "id": "performance-review",
+      "prompt": "My scroll animation janks on Android.",
+      "assertions": [
+        { "type": "response_mentions_all", "terms": ["will-change", "ScrollTrigger"], "label": "checks will-change and ScrollTrigger cleanup" },
+        { "type": "response_matches", "pattern": "(?i)width|top|filter", "label": "flags non-composited properties" }
+      ],
+      "judgement": [
+        "Checks image sizes and WebGL layers",
+        "Suggests narrow will-change removed after the animation"
+      ]
+    },
+    {
+      "id": "budget-aware-motion",
+      "prompt": "Add motion to this budgeting app, and also to this kids learning app.",
+      "assertions": [
+        { "type": "response_mentions_all", "terms": ["restrained", "expressive"], "label": "different budgets per app" },
+        { "type": "response_matches", "pattern": "(?i)reduce[- ]motion", "label": "reduced-motion path for both" }
+      ],
+      "judgement": [
+        "Budgeting app: press feedback, short fades, one count reveal, no confetti",
+        "Kids app: expressive but calm, no rapid flashing or variable-ratio reward loop",
+        "Reads .mobile/00-profile.json if present, otherwise states the budget"
+      ]
+    },
+    {
+      "id": "native-swiftui",
+      "prompt": "Add a spring entrance and press feedback to my SwiftUI onboarding screen.",
+      "assertions": [
+        { "type": "response_matches", "pattern": "Animation\\.spring|Motion\\.settle", "label": "uses SwiftUI springs, not ease curves" },
+        { "type": "response_matches", "pattern": "accessibilityReduceMotion", "label": "reads the reduce-motion environment" },
+        { "type": "response_matches", "pattern": "sensoryFeedback|RunePressStyle", "label": "press feedback with haptics" }
+      ],
+      "judgement": [
+        "Tokens come from DesignSystem/Motion.swift",
+        "No bounce on body text",
+        "One flourish per screen"
+      ]
+    },
+    {
+      "id": "native-compose",
+      "prompt": "Animate list item entry in my Jetpack Compose screen.",
+      "assertions": [
+        { "type": "response_matches", "pattern": "animateItem|AnimatedVisibility", "label": "uses the Compose animation API" },
+        { "type": "response_matches", "pattern": "spring\\(|Motion\\.settle", "label": "springs from the token file" },
+        { "type": "response_matches", "pattern": "ANIMATOR_DURATION_SCALE|reduced", "label": "reduced-motion path" }
+      ],
+      "judgement": [
+        "Does not animate every row on first paint",
+        "Uses transform/opacity, not layout properties",
+        "Stagger 24-40ms"
+      ]
+    }
+  ]
+}
