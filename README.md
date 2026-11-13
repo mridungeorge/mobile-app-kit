@@ -342,8 +342,8 @@ CHROME_PATH="/path/to/chrome" node promo/render.mjs
 
 ## Licence and credits
 
-This repository is private and unlicensed; all rights reserved by the author.
+MIT — see [`LICENSE`](LICENSE). Copyright © 2026 George Mridun.
 
-The React Bits components vendored into `motion-demo/src/components/reactbits/` are MIT + Commons Clause v1.0, © 2026 David Haz — see [`NOTICE.md`](motion-demo/src/components/reactbits/NOTICE.md). They are included as an integration demo; install fresh copies in a real project with `npx shadcn@latest add @react-bits/<Component>-TS-TW`.
+Third-party material is listed in [`NOTICE.md`](NOTICE.md): the React Bits components vendored into `motion-demo/src/components/reactbits/` (MIT + Commons Clause v1.0, © 2026 David Haz — included as an integration demo; install fresh copies in a real project with `npx shadcn@latest add @react-bits/<Component>-TS-TW`) and the Inter font used to render `docs/` (SIL OFL 1.1).
 
 The `RESEARCH-mobile-app-2026.md` report records the store-policy research and its dates; re-verify against Apple's App Review Guidelines and Google Play's policy centre before you submit, because the dates in it will age.

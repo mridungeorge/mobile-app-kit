@@ -244,6 +244,22 @@ try {
   errors.push(`pipeline smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
 }
 
+// Repository licence and third-party attribution. The skill is installed as a copy, so a
+// missing LICENSE is only an error in the repo checkout, never in ~/.claude/skills.
+{
+  const repoRoot = resolve(root, "..", "..");
+  const licensePath = join(repoRoot, "LICENSE");
+  if (!existsSync(licensePath)) {
+    errors.push("LICENSE is missing at the repo root (MIT, © 2026 George Mridun)");
+  } else {
+    const text = readFileSync(licensePath, "utf8");
+    if (!/^MIT License/m.test(text)) errors.push("LICENSE does not start with \"MIT License\"");
+    if (!/Copyright \(c\) 2026 George Mridun/.test(text)) errors.push("LICENSE copyright line is not \"Copyright (c) 2026 George Mridun\"");
+    if (!existsSync(join(repoRoot, "NOTICE.md"))) errors.push("NOTICE.md is missing at the repo root");
+    else ok.push("licence: MIT LICENSE and NOTICE.md present");
+  }
+}
+
 // Eval sets: every skill with evals has a valid, 50/50 trigger set and a quality set
 // whose assertions are all checkable. Validation is offline — no model is called.
 try {
