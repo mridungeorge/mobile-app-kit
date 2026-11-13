@@ -56,13 +56,30 @@ function listFiles(root) {
 
 function hasApproval(dir) {
   const path = join(dir, "00-approval.json");
-  if (!existsSync(path)) return bad("run review-preview.mjs --approve after the user approves the preview");
+  if (!existsSync(path)) return bad("run review-preview.mjs --approve after the user approves the preview, or route-idea.mjs --fast");
   try {
     const record = JSON.parse(readFileSync(path, "utf8"));
     if (record.status === "approved") return ok(`approved ${record.decidedAt || ""}`.trim());
+    if (record.status === "approved-fast") {
+      const count = Array.isArray(record.assumptions) ? record.assumptions.length : 0;
+      return ok(`approved-fast, ${count} assumption(s) listed below`);
+    }
     return bad(`preview status is "${record.status}" — re-approve before build`);
   } catch {
     return bad("00-approval.json is unreadable");
+  }
+}
+
+// Fast mode never showed the user a preview, so the assumptions it took must be visible
+// in the report. They are read from the approval record, which is the only source.
+function readAssumptions(dir) {
+  const path = join(dir, "00-approval.json");
+  if (!existsSync(path)) return [];
+  try {
+    const record = JSON.parse(readFileSync(path, "utf8"));
+    return Array.isArray(record.assumptions) ? record.assumptions : [];
+  } catch {
+    return [];
   }
 }
 
@@ -135,8 +152,7 @@ function checkLegal(dir) {
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.help) {
-    console.log("Usage: node scripts/readiness-report.mjs --dir .mobile [--strict] [--json]");
-    return;
+    console.log("Usage: node scripts/readiness-report.mjs --dir .mobile [--strict] [--json]");    return;
   }
   const dir = resolve(opts.dir);
   if (!existsSync(dir)) {
@@ -177,9 +193,10 @@ function main() {
 
   const missing = ai.filter((item) => item.status === "missing");
   const warns = ai.filter((item) => item.status === "warn");
+  const assumptions = readAssumptions(dir);
 
   if (opts.json) {
-    console.log(JSON.stringify({ dir, ai, human, missing: missing.length, warnings: warns.length }, null, 2));
+    console.log(JSON.stringify({ dir, ai, human, assumptions, missing: missing.length, warnings: warns.length }, null, 2));
   } else {
     console.log(`Mobile App Factory — readiness report\n${dir}\n`);
     console.log("AI-fixable pipeline items");
@@ -187,10 +204,17 @@ function main() {
       const mark = item.status === "pass" ? "✓" : item.status === "warn" ? "!" : "✗";
       console.log(`  ${mark} ${item.name}: ${item.detail}`);
     }
+    if (assumptions.length) {
+      console.log("\nAssumptions taken without asking (fast path) — check each one");
+      for (const row of assumptions) {
+        console.log(`  ? ${row.field}: ${row.value} (${row.origin}${row.why ? ` — ${row.why}` : ""})`);
+      }
+    }
     console.log("\nHuman / external actions (cannot be automated by the skill)");
     for (const item of human) console.log(`  → ${item.name}: ${item.detail}`);
     const verdict = missing.length ? "NOT READY" : "PIPELINE COMPLETE";
-    console.log(`\n${verdict} — ${ai.length - missing.length}/${ai.length} AI items done, ${warns.length} warning(s), ${human.length} human actions remaining.`);
+    const fastNote = assumptions.length ? `, ${assumptions.length} assumption(s) to confirm` : "";
+    console.log(`\n${verdict} — ${ai.length - missing.length}/${ai.length} AI items done, ${warns.length} warning(s)${fastNote}, ${human.length} human actions remaining.`);
     if (missing.length) console.log(`Fix next: ${missing.map((m) => m.name).join(", ")}`);
   }
 

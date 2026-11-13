@@ -260,6 +260,39 @@ try {
   errors.push(`evals validation failed: ${String(error.stdout || error.message).trim().split("\n").slice(-2).join(" ")}`);
 }
 
+// Fast-path smoke test: --fast writes the three artifacts, records approved-fast with an
+// assumption for every intake answer, and the readiness report refuses to keep them quiet.
+try {
+  const temp = mkdtempSync(join(tmpdir(), "maf-fast-"));
+  execFileSync(process.execPath, [
+    join(root, "scripts", "route-idea.mjs"), "--fast", "--dir", temp,
+    "a quiet app that helps me stop doomscrolling at night, free with optional subscription"
+  ], { stdio: "pipe" });
+
+  const intake = JSON.parse(readFileSync(join(temp, "00-intake.json"), "utf8"));
+  const profile = JSON.parse(readFileSync(join(temp, "00-profile.json"), "utf8"));
+  const approval = JSON.parse(readFileSync(join(temp, "00-approval.json"), "utf8"));
+
+  if (approval.status !== "approved-fast") throw new Error(`approval status is "${approval.status}", expected approved-fast`);
+  if (intake.mode !== "fast") throw new Error("intake does not record the fast mode");
+  if (intake.monetisation !== "free with optional subscription") throw new Error(`monetisation not read from the idea: ${intake.monetisation}`);
+  if (!profile.intake || profile.intake.platforms !== intake.platforms) throw new Error("profile did not receive the intake answers");
+
+  const fields = ["idea", "platforms", "monetisation", "accounts", "ugc", "ai", "sensitiveData", "permissions", "offline", "backend", "audience", "design", "team", "timeline", "mustHave"];
+  const listed = new Set((approval.assumptions ?? []).map((row) => row.field));
+  const absent = fields.filter((field) => !listed.has(field));
+  if (absent.length) throw new Error(`no assumption recorded for: ${absent.join(", ")}`);
+
+  const report = JSON.parse(execFileSync(process.execPath, [join(root, "scripts", "readiness-report.mjs"), "--dir", temp, "--json"], { stdio: "pipe" }).toString());
+  if (!report.ai.some((item) => item.name === "Preview approved" && item.status === "pass")) throw new Error("readiness report does not accept approved-fast");
+  if ((report.assumptions ?? []).length !== approval.assumptions.length) throw new Error("readiness report dropped the assumptions");
+
+  ok.push(`fast path: --fast writes intake + profile + approved-fast with ${approval.assumptions.length} assumptions, and the report prints them`);
+  rmSync(temp, { recursive: true, force: true });
+} catch (error) {
+  errors.push(`fast-path smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
+}
+
 // Native starter smoke test: both templates copy, substitute and leave no placeholders.
 try {
   const temp = mkdtempSync(join(tmpdir(), "maf-native-"));
