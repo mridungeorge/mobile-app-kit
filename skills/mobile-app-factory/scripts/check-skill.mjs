@@ -244,6 +244,44 @@ try {
   errors.push(`pipeline smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
 }
 
+// Size budget: a SKILL.md is loaded whenever the skill triggers, so it has a hard ceiling.
+// References are read on demand, so a fat one is only worth a warning.
+try {
+  const repoRoot = resolve(root, "..", "..");
+  const skillDirs = readdirSync(join(repoRoot, "skills")).filter((name) => existsSync(join(repoRoot, "skills", name, "SKILL.md")));
+  const tooBig = [];
+  const tooLong = [];
+  const fatRefs = [];
+  const longDescriptions = [];
+
+  for (const name of skillDirs) {
+    const skillPath = join(repoRoot, "skills", name, "SKILL.md");
+    const text = readFileSync(skillPath, "utf8");
+    const bytes = statSync(skillPath).size;
+    const lines = text.replace(/\n$/, "").split("\n").length;
+    if (bytes > 12 * 1024) tooBig.push(`${name}/SKILL.md is ${(bytes / 1024).toFixed(1)} KB (limit 12 KB)`);
+    if (lines > 300) tooLong.push(`${name}/SKILL.md is ${lines} lines (limit 300)`);
+
+    const description = text.match(/^---\r?\n[\s\S]*?^description:\s*(.+)$/m)?.[1]?.trim() ?? "";
+    if (description.length > 1024) longDescriptions.push(`${name}: description is ${description.length} chars (limit 1024)`);
+
+    const refDir = join(repoRoot, "skills", name, "references");
+    if (!existsSync(refDir)) continue;
+    for (const file of readdirSync(refDir).filter((entry) => entry.endsWith(".md"))) {
+      const size = statSync(join(refDir, file)).size;
+      if (size > 20 * 1024) fatRefs.push(`${name}/references/${file} is ${(size / 1024).toFixed(1)} KB (soft limit 20 KB)`);
+    }
+  }
+
+  errors.push(...tooBig, ...tooLong, ...longDescriptions);
+  warnings.push(...fatRefs);
+  if (!tooBig.length && !tooLong.length && !longDescriptions.length) {
+    ok.push(`size-budget: ${skillDirs.length} SKILL.md under 12 KB and 300 lines, every description under 1024 chars`);
+  }
+} catch (error) {
+  errors.push(`size-budget check failed: ${error.message}`);
+}
+
 // Repository licence and third-party attribution. The skill is installed as a copy, so a
 // missing LICENSE is only an error in the repo checkout, never in ~/.claude/skills.
 {
