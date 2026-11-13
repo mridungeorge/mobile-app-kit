@@ -60,3 +60,94 @@ jobs:
           node --check promo/render.mjs
           node --check promo/browser.mjs
           node --check promo/shot-preview.mjs
+
+  # The audit proves the starters scaffold. These jobs prove they compile: a template
+  # that only "exists" can still be broken for months without anyone noticing.
+  android-build:
+    name: android starter compiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Caches ~/.gradle and the wrapper distribution, keyed on the build files.
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Scaffold the Android starter
+        run: |
+          node skills/mobile-app-factory/scripts/scaffold-native.mjs \
+            --platform android --name "CI Smoke" --package com.example.cismoke \
+            --out "$RUNNER_TEMP/android"
+
+      - name: assembleDebug + lint
+        working-directory: ${{ runner.temp }}/android
+        run: ./gradlew --no-daemon --stacktrace assembleDebug lint
+
+  ios-build:
+    name: ios starter compiles
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Scaffold the iOS starter
+        run: |
+          node skills/mobile-app-factory/scripts/scaffold-native.mjs \
+            --platform ios --name "CI Smoke" --bundle-id com.example.cismoke \
+            --out "$RUNNER_TEMP/ios"
+
+      # The starter ships project.yml, not a checked-in .xcodeproj, so XcodeGen is
+      # what turns it into something xcodebuild can read.
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the Xcode project
+        working-directory: ${{ runner.temp }}/ios
+        run: xcodegen generate
+
+      - name: Build for the simulator
+        working-directory: ${{ runner.temp }}/ios
+        run: |
+          xcodebuild \
+            -project CISmoke.xcodeproj \
+            -scheme CISmoke \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+  motion-demo-build:
+    name: motion-demo builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: motion-demo/package-lock.json
+
+      - name: Install
+        working-directory: motion-demo
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: motion-demo
+        run: npx tsc --noEmit
+
+      - name: Build
+        working-directory: motion-demo
+        run: npx vite build
+

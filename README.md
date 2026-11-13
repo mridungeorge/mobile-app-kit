@@ -8,6 +8,7 @@
   <img src="https://img.shields.io/badge/Kotlin_%2B_Compose_%7C_Swift_%2B_SwiftUI-A376E9?style=flat-square" alt="Kotlin + Compose and Swift + SwiftUI">
   <img src="https://img.shields.io/badge/archetypes-14-4392F7?style=flat-square" alt="14 archetypes">
   <img src="https://img.shields.io/badge/self--audit-passing-11AE5B?style=flat-square" alt="Self-audit passing">
+  <a href="https://github.com/mridungeorge/mobile-app-kit/actions/workflows/audit.yml"><img src="https://github.com/mridungeorge/mobile-app-kit/actions/workflows/audit.yml/badge.svg" alt="audit"></a>
 </p>
 
 # Mobile App Factory
