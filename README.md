@@ -3,7 +3,7 @@
 </div>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Claude-Skills-D97757?style=flat-square" alt="Claude Skills">
+  <img src="https://img.shields.io/badge/SKILL.md-Claude_Code_%7C_OpenCode_%7C_Codex-D97757?style=flat-square" alt="SKILL.md skills for Claude Code, OpenCode and Codex">
   <img src="https://img.shields.io/badge/intake_%E2%86%92_preview_%E2%86%92_published-4392F7?style=flat-square" alt="Intake, preview, published">
   <img src="https://img.shields.io/badge/Kotlin_%2B_Compose_%7C_Swift_%2B_SwiftUI-A376E9?style=flat-square" alt="Kotlin + Compose and Swift + SwiftUI">
   <img src="https://img.shields.io/badge/archetypes-14-4392F7?style=flat-square" alt="14 archetypes">
@@ -13,7 +13,7 @@
 
 # Mobile App Factory
 
-**Two Claude skills that take an app idea from one sentence to a submitted iOS and Google Play release — native Kotlin + Jetpack Compose in Android Studio and Swift + SwiftUI in Xcode, with the design system, motion layer, privacy declarations and store compliance already in place.**
+**Two skills that take an app idea from one sentence to a submitted iOS and Google Play release — native Kotlin + Jetpack Compose in Android Studio and Swift + SwiftUI in Xcode, with the design system, motion layer, privacy declarations and store compliance already in place. They are plain `SKILL.md` packages, so they run in Claude Code, OpenCode, Codex or any agent that reads a skills directory.**
 
 You answer a questionnaire. You approve a preview. Then the pipeline takes over: product spec, design tokens, a real Gradle/Xcode project, motion, compliance, release and an adversarial review that refuses to pass with gaps it could have closed itself.
 
@@ -74,7 +74,15 @@ cd mobile-app-kit
 ./install.sh
 ```
 
-The installer copies both skills into `~/.claude/skills/`, restores the executable bit on the shell helpers and the Gradle wrapper, and runs the self-audit. It needs **Node 18+** and fails early if `node` is missing. Set `CLAUDE_SKILLS_DIR` to install elsewhere.
+The kit is plain `SKILL.md` plus Node scripts, so the same files work in Claude Code, OpenCode, Codex or any agent that reads a skills directory. The installer copies both skills to every target it finds:
+
+| Agent | Installed to |
+|---|---|
+| Claude Code | `~/.claude/skills/` |
+| Codex (user scope); also read by OpenCode | `~/.agents/skills/` |
+| OpenCode (own location) | `~/.config/opencode/skills/` — only when `~/.config/opencode` exists |
+
+`--target` takes `claude`, `agents`, `opencode` or `all` and may be repeated; `--dir <path>` adds an explicit destination, and `CLAUDE_SKILLS_DIR` still overrides the Claude path. The installer restores the executable bit on the shell helpers and the Gradle wrapper, prints every destination, then runs the self-audit. It needs **Node 18+** and fails early if `node` is missing.
 
 ## Use it (end-to-end for new developers)
 
@@ -90,7 +98,7 @@ node skills/mobile-app-factory/scripts/questionnaire.mjs
   <img src="docs/preview.png" alt="The generated preview page: app summary with stack and monetisation, the nine-screen list, an illustrative phone mockup, the per-screen spec with required states, and the approval checklist" width="100%">
 </div>
 
-**3) Continue the pipeline after approval** (PRD → design → native build → motion → compliance → release → review). In Claude:
+**3) Continue the pipeline after approval** (PRD → design → native build → motion → compliance → release → review). In Claude Code, OpenCode, Codex — whichever agent you use:
 > Use the **mobile-app-factory** skill. I've completed intake and approved the preview in `.mobile/`. Build **a production-ready native app** (Android: Kotlin + Jetpack Compose in Android Studio; iOS: Swift + SwiftUI in Xcode) and take it through to publish-readiness.
 
 When the app runs, add the motion layer:
@@ -120,7 +128,7 @@ One command, no dependencies:
 node skills/mobile-app-factory/scripts/check-skill.mjs
 ```
 
-Expected output — 15 checks, zero warnings, zero errors:
+Expected output — 16 checks, zero warnings, zero errors:
 
 ```
   ✓ structure: required files and all 7 agent briefs present
@@ -135,11 +143,12 @@ Expected output — 15 checks, zero warnings, zero errors:
   ✓ size-budget: 2 SKILL.md under 12 KB and 300 lines, every description under 1024 chars
   ✓ licence: MIT LICENSE and NOTICE.md present
   ✓ evals: 2 skill(s) with a 50/50 trigger set and checkable quality assertions
+  ✓ portability: agent adapters self-test, installer targets .claude/skills, .agents/skills, .config/opencode/skills
   ✓ fast path: --fast writes intake + profile + approved-fast with 15 assumptions, and the report prints them
   ✓ native templates: Android + iOS scaffold, substitute ids, ship the Rune motion tokens, keep the Gradle wrapper binary intact
   ✓ readme: 3 referenced image(s) exist
 
-PASS — 15 checks passed, 0 warnings, 0 errors
+PASS — 16 checks passed, 0 warnings, 0 errors
 ```
 
 The `store-facts` line counts days since `verified_on`, so that number grows as the file ages and you get a warning at 90 days. Everything else should match; a failure names the file to fix.
@@ -158,15 +167,15 @@ It checks the real artifacts and separates **AI-fixable leftovers** (missing PRD
 
 ## Eval results
 
-`evals/trigger.json` (20 prompts per skill: 10 that should trigger it, 10 near-misses that should not) and `evals/quality.json` (cases with machine-checkable assertions) are run by `scripts/run-evals.mjs`, which drives `claude -p` in a temp project holding only this kit and reports precision, recall and per-prompt pass/fail.
+`evals/trigger.json` (20 prompts per skill: 10 that should trigger it, 10 near-misses that should not) and `evals/quality.json` (cases with machine-checkable assertions) are run by `scripts/run-evals.mjs`, which drives a real agent CLI in a temp project holding only this kit and reports precision, recall and per-prompt pass/fail. It is not tied to one vendor: `--agent` picks `claude`, `opencode` or `codex`, `--cli-args "<command> {prompt}"` wraps any other CLI, and no API key is needed when that CLI is already signed in.
 
-**Last run: not measured — 2026-11-13.** The sets and the runner landed on this date, but the local CLI's OAuth session expired mid-run and no API key was set, so no results file was committed rather than a misleading one. The first real numbers come from the on-demand workflow:
+**Last run: not measured — 2026-11-13.** The sets and the runner landed on this date, but no completed run exists to commit: the local Claude Code login had expired, and running OpenCode from inside the authoring session restarted the agent's own server before a prompt returned. The first real numbers can come from any signed-in CLI:
 
 ```bash
-gh workflow run evals.yml -f mode=both    # needs the ANTHROPIC_API_KEY repo secret
+node skills/mobile-app-factory/scripts/run-evals.mjs --agent opencode --trigger
 ```
 
-Until that runs, treat the trigger descriptions as untested. The audit proves only that the eval files are well-formed.
+The on-demand workflow (`.github/workflows/evals.yml`) runs the same runner under Claude Code with an `ANTHROPIC_API_KEY` secret. Until a run lands, treat the trigger descriptions as untested: the audit proves only that the eval files are well-formed and that the runner recognises each agent's output (`--self-test`).
 
 ## Where the detail lives
 

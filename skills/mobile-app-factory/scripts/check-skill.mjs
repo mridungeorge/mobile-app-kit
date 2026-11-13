@@ -314,6 +314,27 @@ try {
   errors.push(`evals validation failed: ${String(error.stdout || error.message).trim().split("\n").slice(-2).join(" ")}`);
 }
 
+// Portability: the kit is a SKILL.md package, not a Claude-only product. The eval runner must
+// detect a skill under each agent's own output format, and the installer must know each agent's
+// skills directory. All offline — `--self-test` calls no model.
+try {
+  const output = execFileSync(process.execPath, [join(root, "scripts", "run-evals.mjs"), "--self-test"], { stdio: "pipe", encoding: "utf8" });
+  const summary = output.trim().split("\n").pop() ?? "";
+  if (!/^PASS/.test(summary)) throw new Error(summary || "run-evals.mjs --self-test did not pass");
+
+  const repoRoot = resolve(root, "..", "..");
+  const installer = join(repoRoot, "install.sh");
+  if (!existsSync(installer)) throw new Error("install.sh is missing at the repo root");
+  const text = readFileSync(installer, "utf8");
+  const targets = [".claude/skills", ".agents/skills", ".config/opencode/skills"];
+  const missing = targets.filter((target) => !text.includes(target));
+  if (missing.length) throw new Error(`install.sh does not mention ${missing.join(", ")}`);
+
+  ok.push(`portability: agent adapters self-test, installer targets ${targets.join(", ")}`);
+} catch (error) {
+  errors.push(`portability check failed: ${String(error.stdout || error.message).trim().split("\n").slice(-2).join(" ")}`);
+}
+
 // Fast-path smoke test: --fast writes the three artifacts, records approved-fast with an
 // assumption for every intake answer, and the readiness report refuses to keep them quiet.
 try {

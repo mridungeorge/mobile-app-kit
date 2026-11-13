@@ -1,17 +1,23 @@
 #!/usr/bin/env node
-// Trigger and quality evals for the skills in this repo, against a real `claude` CLI.
+// Trigger and quality evals for the skills in this repo, against a real agent CLI.
 //
 //   node scripts/run-evals.mjs                     # every skill, trigger + quality
 //   node scripts/run-evals.mjs --trigger           # trigger sets only (fast, cheap)
 //   node scripts/run-evals.mjs --skill mobile-app-factory --trigger
 //   node scripts/run-evals.mjs --quality --only idea-to-prd
+//   node scripts/run-evals.mjs --agent opencode    # claude (default) | opencode | codex
 //   node scripts/run-evals.mjs --validate          # check the eval files, call nothing
 //   node scripts/run-evals.mjs --dry-run           # print the plan, call nothing
+//   node scripts/run-evals.mjs --self-test         # check the agent adapters, call nothing
 //
-// How it works: each prompt runs in a fresh temp directory with this repo's skills copied to
-// `.claude/skills/`, so the only thing the model can invoke is this kit. A trigger pass means the
-// skill was actually invoked (the Skill tool, or a Read of its SKILL.md). A quality pass means every
-// assertion in `evals/quality.json` held.
+// How it works: each prompt runs in a fresh temp directory with this repo's skills copied into the
+// agent's own skills directory, so the only thing the model can invoke is this kit. A trigger pass
+// means the skill was actually invoked (a skill call, or a Read of its SKILL.md). A quality pass
+// means every assertion in `evals/quality.json` held.
+//
+// These are SKILL.md skills, not a Claude product: --agent picks a known CLI and --cli-args passes
+// any other command template ({prompt} is substituted). No API key is needed if the CLI is already
+// signed in to whatever model it uses.
 //
 // Results go to `skills/<skill>/evals/results/<YYYY-MM-DD>.json` (plus a `.md` summary).
 // Exit codes: 0 all requested evals passed, 1 a failure, 2 could not run (no CLI, no auth).
@@ -33,6 +39,7 @@ const opts = {
   trigger: false,
   quality: false,
   validate: false,
+  selfTest: false,
   dryRun: false,
   only: null,
   timeoutMs: 240_000,
@@ -41,6 +48,8 @@ const opts = {
   keep: false,
   debug: false,
   cli: null,
+  agent: "claude",
+  cliArgs: null,
 };
 
 for (let i = 2; i < process.argv.length; i++) {
@@ -49,6 +58,7 @@ for (let i = 2; i < process.argv.length; i++) {
   else if (arg === "--trigger") opts.trigger = true;
   else if (arg === "--quality") opts.quality = true;
   else if (arg === "--validate") opts.validate = true;
+  else if (arg === "--self-test") opts.selfTest = true;
   else if (arg === "--dry-run") opts.dryRun = true;
   else if (arg === "--only") opts.only = process.argv[++i];
   else if (arg === "--timeout") opts.timeoutMs = Number(process.argv[++i]) * 1000;
@@ -57,8 +67,10 @@ for (let i = 2; i < process.argv.length; i++) {
   else if (arg === "--keep") opts.keep = true;
   else if (arg === "--debug") opts.debug = true;
   else if (arg === "--cli") opts.cli = process.argv[++i];
+  else if (arg === "--agent") opts.agent = process.argv[++i];
+  else if (arg === "--cli-args") opts.cliArgs = process.argv[++i];
   else if (arg === "--help" || arg === "-h") {
-    console.log(readFileSync(fileURLToPath(import.meta.url), "utf8").split("\n").slice(1, 17).join("\n").replace(/^\/\/ ?/gm, ""));
+    console.log(readFileSync(fileURLToPath(import.meta.url), "utf8").split("\n").slice(1, 23).join("\n").replace(/^\/\/ ?/gm, ""));
     process.exit(0);
   } else {
     console.error(`unknown flag: ${arg}`);
@@ -141,26 +153,126 @@ function validate() {
   return problems.length;
 }
 
+// Mechanical checks for the agent adapters: no model, no CLI, no network. `check-skill.mjs`
+// runs this so a broken adapter fails the repo audit instead of only showing up in a live run.
+function selfTest() {
+  const problems = [];
+  const expect = (label, condition) => { if (!condition) problems.push(label); };
+
+  const viaSkill = detectInText('Skill "mobile-app-factory"');
+  expect('detects an OpenCode-style `Skill "<id>"` line',
+    viaSkill.some((hit) => hit.skill === "mobile-app-factory" && hit.via === "Skill"));
+
+  const viaOpenCodePath = detectInText("Read .opencode/skills/motion-experiences/SKILL.md");
+  expect("detects a `.opencode/skills/<id>/SKILL.md` path",
+    viaOpenCodePath.some((hit) => hit.skill === "motion-experiences" && hit.via === "path"));
+
+  const viaClaudePath = detectInText("/home/me/.claude/skills/mobile-app-factory/SKILL.md");
+  expect("detects a `.claude/skills/<id>/SKILL.md` path",
+    viaClaudePath.some((hit) => hit.skill === "mobile-app-factory" && hit.via === "path"));
+
+  expect("does not fire on text with no skill mention",
+    detectInText("I built a habit tracker and never loaded a skill.").length === 0);
+
+  const known = ["claude", "opencode", "codex"].map((name) => AGENTS[name]);
+  expect("every known agent has at least one skills directory",
+    known.every((agent) => Array.isArray(agent.skillsDirs) && agent.skillsDirs.length > 0));
+  expect("the known agents do not all share one skills directory",
+    new Set(known.map((agent) => agent.skillsDirs[0])).size === known.length);
+
+  for (const problem of problems) console.log(`  x ${problem}`);
+  console.log(`\n${problems.length ? "FAIL" : "PASS"} — runner self-test, ${problems.length} problem(s)`);
+  return problems.length;
+}
+
 // ---------------------------------------------------------------------------
 // CLI detection
 // ---------------------------------------------------------------------------
 
-function findCli() {
+// Each agent is a CLI plus the project directory it reads SKILL.md skills from.
+// Claude Code uses `.claude/skills`. OpenCode reads `.opencode/skills`, and also `.claude/skills`
+// and `.agents/skills` for compatibility. Codex reads `.agents/skills` at repo scope
+// (and `$HOME/.agents/skills` at user scope). None of them need a Claude account.
+const AGENTS = {
+  claude: {
+    label: "Claude Code",
+    bin: "claude",
+    skillsDirs: [".claude/skills"],
+    format: "stream-json",
+    isolateConfig: true,
+    keys: ["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"],
+    command: (prompt, { quality }) => {
+      const tools = quality
+        ? ["Skill", "Read", "Write", "Edit", "Bash", "Glob", "Grep", "TodoWrite", "WebSearch", "WebFetch"]
+        : ["Skill", "Read", "Glob", "Grep"];
+      const args = ["-p", prompt, "--output-format", "stream-json", "--verbose"];
+      for (const tool of tools) args.push("--allowedTools", tool);
+      if (opts.maxTurns) args.push("--max-turns", String(opts.maxTurns));
+      if (opts.model) args.push("--model", opts.model);
+      return args;
+    },
+  },
+  opencode: {
+    label: "OpenCode",
+    bin: "opencode",
+    skillsDirs: [".opencode/skills"],
+    format: "text",
+    isolateConfig: false,
+    keys: ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"],
+    command: (prompt) => ["run", prompt],
+  },
+  codex: {
+    label: "Codex CLI",
+    bin: "codex",
+    skillsDirs: [".agents/skills"],
+    format: "text",
+    isolateConfig: false,
+    keys: ["OPENAI_API_KEY"],
+    command: (prompt) => ["exec", prompt],
+  },
+  custom: {
+    label: "custom command",
+    bin: null,
+    // No documented convention, so write both shared locations.
+    skillsDirs: [".agents/skills", ".claude/skills"],
+    format: "text",
+    isolateConfig: false,
+    keys: [],
+    command: null,
+  },
+};
+
+function resolveAgent() {
+  if (opts.cliArgs) return AGENTS.custom;
+  const agent = AGENTS[opts.agent];
+  if (!agent) {
+    const known = Object.keys(AGENTS).filter((name) => name !== "custom").join(", ");
+    console.error(`unknown --agent "${opts.agent}" — use ${known}, or --cli-args "<command> {prompt}"`);
+    process.exit(2);
+  }
+  return agent;
+}
+
+function findCli(agent) {
   if (opts.cli) return opts.cli;
+  if (!agent.bin) return null;
   const probe = process.platform === "win32"
-    ? ["where", ["claude"]]
-    : ["which", ["claude"]];
+    ? ["where", [agent.bin]]
+    : ["which", [agent.bin]];
   try {
     const out = execFileSync(probe[0], probe[1], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
-    return out.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)[0] ?? null;
+    const candidates = out.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    if (process.platform !== "win32") return candidates[0] ?? null;
+    // `where` lists the extensionless npm shim first, which spawn() cannot execute.
+    const rank = (path) => (/\.exe$/i.test(path) ? 0 : /\.(cmd|bat)$/i.test(path) ? 1 : 2);
+    return candidates.sort((a, b) => rank(a) - rank(b))[0] ?? null;
   } catch {
     return null;
   }
 }
 
-function hasAuth() {
-  if (process.env.ANTHROPIC_API_KEY) return "ANTHROPIC_API_KEY";
-  if (process.env.CLAUDE_CODE_OAUTH_TOKEN) return "CLAUDE_CODE_OAUTH_TOKEN";
+function hasAuth(agent) {
+  for (const key of agent.keys ?? []) if (process.env[key]) return key;
   return null;
 }
 
@@ -207,16 +319,19 @@ function cleanup(dir) {
   }
 }
 
-function makeWorkspace(skill) {
+function makeWorkspace(skill, agent) {
   const dir = mkdtempSync(join(tmpdir(), `maf-evals-${skill}-`));
   const skillsDir = join(repoRoot, "skills");
-  mkdirSync(join(dir, ".claude", "skills"), { recursive: true });
-  for (const name of readdirSync(skillsDir)) {
-    if (!existsSync(join(skillsDir, name, "SKILL.md"))) continue;
-    cpSync(join(skillsDir, name), join(dir, ".claude", "skills", name), {
-      recursive: true,
-      filter: (source) => !/[\\/](node_modules|results|\.git)([\\/]|$)/.test(source),
-    });
+  const sources = readdirSync(skillsDir).filter((name) => existsSync(join(skillsDir, name, "SKILL.md")));
+  for (const target of agent.skillsDirs) {
+    const dest = join(dir, target);
+    mkdirSync(dest, { recursive: true });
+    for (const name of sources) {
+      cpSync(join(skillsDir, name), join(dest, name), {
+        recursive: true,
+        filter: (source) => !/[\\/](node_modules|results|\.git)([\\/]|$)/.test(source),
+      });
+    }
   }
   // A bare project, so the model has nothing else to read.
   writeFileSync(join(dir, "README.md"), "# Sandbox\n\nThis directory is empty on purpose: an eval harness.\n");
@@ -240,24 +355,40 @@ function makeEvalConfig() {
   return { dir, home, config };
 }
 
-function runPrompt(cli, prompt, cwd, { quality }) {
-  return new Promise((resolveRun) => {    const tools = quality
-      ? ["Skill", "Read", "Write", "Edit", "Bash", "Glob", "Grep", "TodoWrite", "WebSearch", "WebFetch"]
-      : ["Skill", "Read", "Glob", "Grep"];
-    const args = ["-p", prompt, "--output-format", "stream-json", "--verbose"];
-    for (const tool of tools) args.push("--allowedTools", tool);
-    if (opts.maxTurns) args.push("--max-turns", String(opts.maxTurns));
-    if (opts.model) args.push("--model", opts.model);
+// Text-only CLIs do not expose structured tool calls, so look for the skill's own file path in the
+// transcript. A miss is a false negative, not proof the skill was not used, and the results record
+// `detection: "path"` so nobody reads more into it than that.
+function detectInText(text) {
+  const hits = [];
+  const pathPattern = /(?:^|[\\/\s"'`])skills[\\/]([^\\/\s"'`]+)[\\/]SKILL\.md/gi;
+  let match;
+  while ((match = pathPattern.exec(text)) !== null) hits.push({ skill: match[1], via: "path" });
+  // OpenCode prints `Skill "<id>"` when it loads one.
+  const skillPattern = /\bSkill\s+["'`]([a-z0-9-]+)["'`]/gi;
+  while ((match = skillPattern.exec(text)) !== null) hits.push({ skill: match[1], via: "Skill" });
+  return hits;
+}
+
+function runPrompt(agent, cli, prompt, cwd, { quality }) {
+  return new Promise((resolveRun) => {
+    const args = opts.cliArgs
+      ? opts.cliArgs.trim().split(/\s+/).map((part) => part.replace("{prompt}", prompt))
+      : agent.command(prompt, { quality });
 
     const started = Date.now();
     const env = { ...process.env };
-    if (evalConfigDir) {
+    if (agent.isolateConfig && evalConfigDir) {
       env.CLAUDE_CONFIG_DIR = evalConfigDir.config;
       env.HOME = evalConfigDir.home;
       env.USERPROFILE = evalConfigDir.home;
       if (opts.debug) console.log(`    · env HOME=${env.HOME} CONFIG=${env.CLAUDE_CONFIG_DIR}`);
     }
-    const child = spawn(cli, args, { cwd, stdio: ["ignore", "pipe", "pipe"], env });
+    // Windows cannot spawn the npm .cmd shim directly; go through cmd.exe so the quoting of
+    // prompts (apostrophes, question marks, commas) is handled by the shell that owns the shim.
+    const [command, commandArgs] = process.platform === "win32" && /\.(cmd|bat)$/i.test(cli)
+      ? ["cmd.exe", ["/c", cli, ...args]]
+      : [cli, args];
+    const child = spawn(command, commandArgs, { cwd, stdio: ["ignore", "pipe", "pipe"], env });
     const invoked = [];
     let response = "";
     let stderr = "";
@@ -265,6 +396,7 @@ function runPrompt(cli, prompt, cwd, { quality }) {
     let skillCount = null;
     let limitHit = null;
     let buffer = "";
+    let raw = "";
 
     const handleLine = (line) => {
       if (!line.trim()) return;
@@ -280,7 +412,7 @@ function runPrompt(cli, prompt, cwd, { quality }) {
             const target = node.input?.skill ?? node.input?.name ?? node.input?.command;
             if (typeof target === "string") invoked.push({ skill: basename(String(target).replace(/\\/g, "/")), via: "Skill" });
           } else if (node.name === "Read" && typeof node.input?.file_path === "string") {
-            const match = node.input.file_path.replace(/\\/g, "/").match(/\.claude\/skills\/([^/]+)\/SKILL\.md$/);
+            const match = node.input.file_path.replace(/\\/g, "/").match(/(?:^|\/)skills\/([^/]+)\/SKILL\.md$/);
             if (match) invoked.push({ skill: match[1], via: "Read" });
           }
         }
@@ -312,7 +444,10 @@ function runPrompt(cli, prompt, cwd, { quality }) {
     };
 
     child.stdout.on("data", (chunk) => {
-      buffer += chunk.toString();
+      const text = chunk.toString();
+      raw += text;
+      if (agent.format !== "stream-json") return;
+      buffer += text;
       let index;
       while ((index = buffer.indexOf("\n")) !== -1) {
         handleLine(buffer.slice(0, index));
@@ -321,16 +456,44 @@ function runPrompt(cli, prompt, cwd, { quality }) {
     });
     child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
 
-    const timer = setTimeout(() => { timedOut = true; child.kill(); }, opts.timeoutMs);
+    const timer = setTimeout(() => {
+      timedOut = true;
+      // On Windows the child is cmd.exe wrapping the real CLI; kill the tree or the pipes stay
+      // open and the run hangs past its own timeout.
+      if (process.platform === "win32" && child.pid) {
+        try { execFileSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore" }); return; } catch { /* fall through */ }
+      }
+      child.kill();
+    }, opts.timeoutMs);
+    // Belt and braces: if the process tree survives the kill and never closes its pipes, resolve
+    // anyway so the harness cannot hang forever.
+    const hardStop = setTimeout(() => {
+      resolveRun({ invoked, response: raw, error: `timed out after ${opts.timeoutMs / 1000}s`, timedOut: true, skillCount, limit: limitHit, ms: Date.now() - started });
+    }, opts.timeoutMs + 15_000);
     child.on("error", (error) => {
       clearTimeout(timer);
-      resolveRun({ invoked, response, error: error.message, skillCount, limit: limitHit, ms: Date.now() - started });
+      clearTimeout(hardStop);
+      resolveRun({ invoked, response, error: error.message, spawnError: error.code ?? "spawn", skillCount, limit: limitHit, ms: Date.now() - started });
     });
     child.on("close", (code) => {
       clearTimeout(timer);
-      if (buffer.trim()) handleLine(buffer);
+      clearTimeout(hardStop);
+      if (agent.format === "stream-json") {
+        if (buffer.trim()) handleLine(buffer);
+      } else {
+        response = raw;
+        if (!invoked.length) invoked.push(...detectInText(`${raw}\n${stderr}`));
+      }
       const error = timedOut ? `timed out after ${opts.timeoutMs / 1000}s` : code === 0 ? null : `exit ${code}: ${stderr.trim().split("\n").slice(-2).join(" ").slice(0, 200)}`;
-      resolveRun({ invoked, response, error, skillCount, limit: limitHit, ms: Date.now() - started });
+      // A text CLI that is not signed in looks exactly like a skill that did not trigger.
+      // Treat auth and quota messages as "could not run", so no misleading results file is written.
+      if (!limitHit && code !== 0 && !invoked.length) {
+        const message = `${raw}\n${stderr}`.trim();
+        if (/not logged in|authenticat|unauthori[sz]ed|credit balance|quota|usage limit|rate limit|api key/i.test(message)) {
+          limitHit = message.split("\n").filter(Boolean).slice(-2).join(" ").slice(0, 200);
+        }
+      }
+      resolveRun({ invoked, response, error, timedOut, skillCount, limit: limitHit, ms: Date.now() - started });
     });
   });
 }
@@ -457,6 +620,7 @@ function mdSummary(result) {
 
 async function main() {
   if (opts.validate) process.exit(validate() ? 1 : 0);
+  if (opts.selfTest) process.exit(selfTest() ? 1 : 0);
 
   const skills = discoverSkills();
   if (!skills.length) {
@@ -475,14 +639,20 @@ async function main() {
     process.exit(0);
   }
 
-  const cli = findCli();
+  const agent = resolveAgent();
+  const cli = findCli(agent);
   if (!cli) {
-    console.error("SKIP — `claude` is not on PATH. Install Claude Code, or pass --cli <path>.");
+    const hint = agent.bin
+      ? `\`${agent.bin}\` is not on PATH. Install ${agent.label}, or pass --cli <path>.`
+      : "no command to run. Pass --cli <path> together with --cli-args.";
+    console.error(`SKIP — ${hint}`);
     process.exit(2);
   }
-  evalConfigDir = makeEvalConfig();
-  const auth = hasAuth();
-  if (!auth) {
+  if (agent.isolateConfig) evalConfigDir = makeEvalConfig();
+  const auth = hasAuth(agent);
+  // Only the Claude adapter can be probed cheaply in its own config dir; the others are
+  // checked on the first prompt, where an auth message aborts the run without a results file.
+  if (!auth && agent.isolateConfig) {
     const probe = await cliIsLoggedIn(cli);
     if (probe.limit) {
       if (evalConfigDir) cleanup(evalConfigDir.dir);
@@ -495,9 +665,11 @@ async function main() {
       process.exit(2);
     }
   }
-  console.log(`claude: ${cli}`);
+  console.log(`agent:  ${agent.label}${opts.cliArgs ? ` (${opts.cliArgs})` : ""}`);
+  console.log(`cli:    ${cli}`);
   console.log(`auth:   ${auth ?? "existing CLI login"}`);
-  console.log(`config: ${evalConfigDir.dir} (isolated home: only this kit's skills are visible)`);
+  if (evalConfigDir) console.log(`config: ${evalConfigDir.dir} (isolated home: only this kit's skills are visible)`);
+  console.log(`skills: ${agent.skillsDirs.join(", ")} in each sandbox`);
   if (!auth) console.log("note:   no API key in the environment; evals will use the CLI's own login.");
 
   const now = new Date();
@@ -509,8 +681,8 @@ async function main() {
   for (const skill of skills) {
     const trigger = loadJson(join(repoRoot, "skills", skill, "evals", "trigger.json"));
     const quality = loadJson(join(repoRoot, "skills", skill, "evals", "quality.json"));
-    const result = { skill, date, model: opts.model ?? null, auth: auth ?? "cli-login", environment: null, trigger: null, quality: null };
-    const workspace = makeWorkspace(skill);
+    const result = { skill, date, agent: agent.label, cli_format: agent.format, model: opts.model ?? null, auth: auth ?? "cli-login", environment: null, trigger: null, quality: null };
+    const workspace = makeWorkspace(skill, agent);
     console.log(`\n${skill} — sandbox ${workspace}`);
 
     try {
@@ -518,7 +690,9 @@ async function main() {
         const cases = [];
         for (const item of trigger.prompts) {
           if (opts.only && !item.prompt.includes(opts.only)) continue;
-          const run = await runPrompt(cli, item.prompt, workspace, { quality: false });
+          const run = await runPrompt(agent, cli, item.prompt, workspace, { quality: false });
+          if (run.spawnError) { aborted = `could not start ${cli}: ${run.error}`; break; }
+          if (run.timedOut) { aborted = `${cli} did not answer within ${opts.timeoutMs / 1000}s — raise --timeout or check the CLI`; break; }
           if (run.limit) { aborted = run.limit; break; }
           const hit = run.invoked.find((entry) => entry.skill === skill);
           const triggered = Boolean(hit);
@@ -540,7 +714,16 @@ async function main() {
         }
         if (cases.length) {
           result.trigger = { metrics: metrics(cases), cases };
-          result.environment = { skills_visible: cases[0].skills_visible, note: "temp project + isolated CLAUDE_CONFIG_DIR; the CLI may still expose account-synced skills, so a positive counts only when this skill is the one invoked" };
+          result.environment = {
+            skills_visible: cases[0].skills_visible,
+            skills_dir: agent.skillsDirs.join(", "),
+            detection: agent.format === "stream-json" ? "tool-call" : "path-in-transcript",
+            note: `${agent.label} in a temp project; a positive counts only when this skill is the one invoked. ${
+              agent.format === "stream-json"
+                ? "The CLI may still expose account-synced skills."
+                : "Text output is scanned for the skill's SKILL.md path, so a miss can be a false negative."
+            }`,
+          };
         }
       }
 
@@ -548,9 +731,11 @@ async function main() {
         const cases = [];
         for (const testCase of quality.cases) {
           if (opts.only && testCase.id !== opts.only) continue;
-          const caseWorkspace = makeWorkspace(skill);
+          const caseWorkspace = makeWorkspace(skill, agent);
           try {
-            const run = await runPrompt(cli, testCase.prompt, caseWorkspace, { quality: true });
+            const run = await runPrompt(agent, cli, testCase.prompt, caseWorkspace, { quality: true });
+            if (run.spawnError) { aborted = `could not start ${cli}: ${run.error}`; break; }
+            if (run.timedOut) { aborted = `${cli} did not answer within ${opts.timeoutMs / 1000}s — raise --timeout or check the CLI`; break; }
             if (run.limit) { aborted = run.limit; break; }
             const assertions = testCase.assertions.map((assertion) => checkAssertion(assertion, caseWorkspace, run.response));
             if (run.error) assertions.push({ label: "run completed", pass: false, detail: run.error });
@@ -583,8 +768,8 @@ async function main() {
 
   if (aborted) {
     if (evalConfigDir) cleanup(evalConfigDir.dir);
-    console.error(`\nABORTED — the CLI refused to run: ${aborted}`);
-    console.error("No results file was written. Re-run when the limit resets, or set ANTHROPIC_API_KEY.");
+    console.error(`\nABORTED — could not run the evals: ${aborted}`);
+    console.error("No results file was written. Sign the CLI in, raise its limit, or pass --cli/--agent.");
     process.exit(2);
   }
 
