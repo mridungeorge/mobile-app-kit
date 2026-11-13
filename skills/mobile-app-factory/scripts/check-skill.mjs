@@ -81,6 +81,9 @@ const required = [
   "scripts/new-app.sh",
   "scripts/new-android-app.sh",
   "scripts/new-ios-app.sh",
+  "scripts/run-evals.mjs",
+  "evals/trigger.json",
+  "evals/quality.json",
   "evals/prompts.md"
 ];
 for (const path of required) must(path);
@@ -239,6 +242,22 @@ try {
   rmSync(temp, { recursive: true, force: true });
 } catch (error) {
   errors.push(`pipeline smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
+}
+
+// Eval sets: every skill with evals has a valid, 50/50 trigger set and a quality set
+// whose assertions are all checkable. Validation is offline — no model is called.
+try {
+  const output = execFileSync(process.execPath, [join(root, "scripts", "run-evals.mjs"), "--validate"], { stdio: "pipe", encoding: "utf8" });
+  const summary = output.trim().split("\n").pop() ?? "";
+  if (!/^PASS/.test(summary)) throw new Error(summary || "run-evals.mjs --validate did not pass");
+  const repoRoot = resolve(root, "..", "..");
+  const skillsWithEvals = readdirSync(join(repoRoot, "skills")).filter((name) => existsSync(join(repoRoot, "skills", name, "evals", "trigger.json")));
+  if (!skillsWithEvals.includes("mobile-app-factory") || !skillsWithEvals.includes("motion-experiences")) {
+    throw new Error(`expected evals for both skills, found: ${skillsWithEvals.join(", ") || "none"}`);
+  }
+  ok.push(`evals: ${skillsWithEvals.length} skill(s) with a 50/50 trigger set and checkable quality assertions`);
+} catch (error) {
+  errors.push(`evals validation failed: ${String(error.stdout || error.message).trim().split("\n").slice(-2).join(" ")}`);
 }
 
 // Native starter smoke test: both templates copy, substitute and leave no placeholders.

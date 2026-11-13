@@ -1,0 +1,107 @@
+{
+  "skill": "mobile-app-factory",
+  "version": 1,
+  "notes": "10 positive and 10 negative prompts. Negatives are near-misses: adjacent skills (motion, brand, web) and unrelated engineering. Run with scripts/run-evals.mjs.",
+  "prompts": [
+    {
+      "prompt": "I want to build a habit tracker app and put it on both app stores.",
+      "should_trigger": true,
+      "why": "build + publish"
+    },
+    {
+      "prompt": "How do I get my app through Google Play's testing requirement?",
+      "should_trigger": true,
+      "why": "store gate"
+    },
+    {
+      "prompt": "Write App Store metadata for my recipe app.",
+      "should_trigger": true,
+      "why": "metadata"
+    },
+    {
+      "prompt": "My app got rejected under guideline 4.2, what do I change?",
+      "should_trigger": true,
+      "why": "review"
+    },
+    {
+      "prompt": "Design the onboarding flow for an iOS app.",
+      "should_trigger": true,
+      "why": "design, mobile"
+    },
+    {
+      "prompt": "Which native stack should I use, Kotlin or Swift first?",
+      "should_trigger": true,
+      "why": "stack selection"
+    },
+    {
+      "prompt": "Build me a Kotlin app with Jetpack Compose that tracks my expenses offline.",
+      "should_trigger": true,
+      "why": "explicit native Android build"
+    },
+    {
+      "prompt": "I need a TestFlight build and a privacy manifest for my SwiftUI app.",
+      "should_trigger": true,
+      "why": "iOS release + manifest"
+    },
+    {
+      "prompt": "My Play Console data safety form doesn't match the SDKs in my build. Help.",
+      "should_trigger": true,
+      "why": "declaration parity"
+    },
+    {
+      "prompt": "Take this app idea to a shippable release plan for iOS and Android.",
+      "should_trigger": true,
+      "why": "end-to-end pipeline"
+    },
+    {
+      "prompt": "Build me a website for my bakery.",
+      "should_trigger": false,
+      "why": "web, not a native app"
+    },
+    {
+      "prompt": "Design a logo for my bakery.",
+      "should_trigger": false,
+      "why": "brand/design skill"
+    },
+    {
+      "prompt": "Add React web animation to my analytics dashboard.",
+      "should_trigger": false,
+      "why": "motion-experiences, web"
+    },
+    {
+      "prompt": "Add GSAP scroll animations to my marketing landing page.",
+      "should_trigger": false,
+      "why": "motion-experiences, web"
+    },
+    {
+      "prompt": "Review this SwiftUI spring animation, it feels too bouncy.",
+      "should_trigger": false,
+      "why": "motion-experiences, native motion"
+    },
+    {
+      "prompt": "Fix this Python stack trace.",
+      "should_trigger": false,
+      "why": "unrelated"
+    },
+    {
+      "prompt": "Write a SQL query joining users and orders.",
+      "should_trigger": false,
+      "why": "unrelated"
+    },
+    {
+      "prompt": "Set up a Postgres index for my backend.",
+      "should_trigger": false,
+      "why": "backend, not an app"
+    },
+    {
+      "prompt": "Create a Figma component library for our design system.",
+      "should_trigger": false,
+      "why": "design tooling, not an app build"
+    },
+    {
+      "prompt": "Deploy this Node API to Railway.",
+      "should_trigger": false,
+      "why": "infra, not a store release"
+    }
+  ]
+}
