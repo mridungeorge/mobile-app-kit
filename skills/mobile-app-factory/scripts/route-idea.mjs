@@ -362,8 +362,8 @@ const STACK_PRESETS = {
   "android-native": { primary: "android-native", ui: "jetpack-compose", androidToolchain: "android-studio-gradle-kotlin", build: "gradle" },
   "ios-native": { primary: "ios-native", ui: "swiftui", iosToolchain: "xcode-swiftui", build: "xcode" },
   kmp: { primary: "kmp", ui: "compose-multiplatform", androidToolchain: "android-studio-gradle-kotlin", iosToolchain: "xcode-swiftui", build: "gradle-xcode" },
-  flutter: { primary: "flutter", ui: "material-3", build: "flutter-gradle-xcode" },
-  expo: { primary: "expo", ui: "nativewind", build: "eas", note: "cross-platform JS; not a native Kotlin/Swift codebase" },
+  flutter: { primary: "flutter", ui: "material-3", build: "flutter-gradle-xcode", note: "no Flutter starter in this kit: reference only (references/cross-platform-decision.md)" },
+  expo: { primary: "expo", ui: "nativewind", build: "eas", note: "cross-platform JS; starter in assets/expo/ (new-app.sh expo)" },
   capacitor: { primary: "capacitor", ui: "web", build: "capacitor-gradle-xcode" },
   unity: { primary: "unity", ui: "unity-ui", build: "unity" }
 };
@@ -518,6 +518,7 @@ export function routeIdea(idea, overrides = {}) {
     const preset = STACK_PRESETS[overrides.stack];
     if (!preset) throw new Error(`unknown stack "${overrides.stack}". Try: ${Object.keys(STACK_PRESETS).join(", ")}`);
     Object.assign(stack, preset);
+    stack.explicit = true; // the user chose it; never steer away (references/cross-platform-decision.md)
   }
   if (overrides.offline) stack.data = stack.data.includes("offline") ? stack.data : `${stack.data}-offline-queue`;
 

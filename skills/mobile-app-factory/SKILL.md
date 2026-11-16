@@ -104,9 +104,9 @@ android/ or ios/          # buildable native project (scaffold-native.mjs)
 
 - **Route:** `references/idea-router.md` (scoring, profile shape, skip switches) · `references/archetypes.md` (per-archetype loop, stack, screens, risks).
 - **Rebuild:** `references/rebuild-existing-app.md` (parity, listing, signing, entitlements, data) · `agents/00-migration-analyst.md` (the plan) · `scripts/inventory-existing.mjs` (what exists today).
-- **Modules (opt-in, `profile.modules`):** `assets/modules/billing/README.md` · `assets/modules/push/README.md` · `assets/modules/localization/README.md` · `assets/modules/deeplinks/README.md` · `assets/modules/analytics-crash/README.md` · `scripts/reconcile-declarations.mjs` (SDKs vs declarations, exit 1 on mismatch).
+- **Modules (opt-in, `profile.modules`):** `assets/modules/billing/README.md` · `assets/modules/push/README.md` · `assets/modules/localization/README.md` · `assets/modules/deeplinks/README.md` · `assets/modules/analytics-crash/README.md` · `scripts/enable-modules.mjs` · `scripts/reconcile-declarations.mjs` (SDKs vs declarations, exit 1 on mismatch).
 - **Design:** `references/design-language.md` · `references/component-map.md` · `references/screen-patterns.md` · `references/ux-checklist.md` · `references/adaptive-ui.md`.
-- **Stacks:** `references/stacks-and-repos.md` for framework and UI-kit choice.
+- **Stacks:** `references/stacks-and-repos.md` for framework and UI-kit choice · `references/cross-platform-decision.md` (native vs KMP vs Expo vs Flutter vs Capacitor; an explicit user choice is respected; Expo starter `assets/expo/`, Flutter has no starter).
 - **Stores:** `references/store-facts.md` (dated rules + sources) · `references/ios-app-store.md` · `references/google-play.md` · `references/metadata-and-assets.md` · `references/native-android-release.md` · `references/native-ios-release.md`.
 - **Ship:** `references/mobile-testing.md` · `references/definition-of-done.md` · `references/orchestration.md` · `references/gap-closure.md`.
 - **Assets:** `assets/` (tokens, profile and metadata templates), `assets/android/project/` and `assets/ios/project/` (buildable starters), `assets/ci/` (release workflows).

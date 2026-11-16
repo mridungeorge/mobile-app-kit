@@ -68,7 +68,7 @@ const AnimatedPress = Animated.createAnimatedComponent(Pressable);
 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
-  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: '#000' },
+  scrim: { ...StyleSheet.absoluteFill, backgroundColor: '#000' },
   sheet: {
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,

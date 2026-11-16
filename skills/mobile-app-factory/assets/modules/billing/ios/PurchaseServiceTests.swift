@@ -1,4 +1,5 @@
 import XCTest
+@testable import __PROJECT_NAME__
 
 final class EntitlementCacheTests: XCTestCase {
     func testEntitlementRoundTripsThroughCache() throws {

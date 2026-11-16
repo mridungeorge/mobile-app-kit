@@ -641,6 +641,23 @@ try {
   errors.push(`modules check failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
 }
 
+// Cross-platform honesty: the Expo starter ships real files, the decision doc exists and is
+// linked, and an explicit Expo/Flutter choice is kept by the router (not steered back to native).
+try {
+  for (const f of ["package.json", "app.json", "tsconfig.json", "app/_layout.tsx", "app/(tabs)/_layout.tsx", "app/(tabs)/index.tsx", "app/delete-account.tsx", "src/useColors.ts"]) {
+    if (!existsSync(join(root, "assets", "expo", f))) throw new Error(`assets/expo/${f} missing`);
+  }
+  if (!readFileSync(join(root, "SKILL.md"), "utf8").includes("references/cross-platform-decision.md")) throw new Error("SKILL.md does not link cross-platform-decision.md");
+  if (!/no starter/i.test(readFileSync(join(root, "references", "cross-platform-decision.md"), "utf8"))) throw new Error("Flutter is not flagged as having no starter");
+  for (const stack of ["expo", "flutter"]) {
+    const p = JSON.parse(execFileSync(process.execPath, [join(root, "scripts", "route-idea.mjs"), "--json", "--stack", stack, "habit tracker"], { encoding: "utf8" }));
+    if (p.stack.primary !== stack || !p.stack.explicit) throw new Error(`router did not keep explicit --stack ${stack}`);
+  }
+  ok.push("cross-platform: Expo starter files present, decision doc linked, router keeps an explicit Expo/Flutter choice");
+} catch (error) {
+  errors.push(`cross-platform check failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
+}
+
 // README artwork: every image the repo README references must exist on disk, so the
 // hero banner and the animation cannot silently rot when the artwork is re-rendered.
 // Installed copies live at ~/.claude/skills/mobile-app-factory, where there is no repo
