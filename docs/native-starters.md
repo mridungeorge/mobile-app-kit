@@ -44,6 +44,10 @@ Everything above is asserted by `node skills/mobile-app-factory/scripts/check-sk
 
 Both starters also ship the motion tokens (`ui/theme/Motion.kt` and `DesignSystem/Motion.swift`), so a generated app starts with the same springs the motion skill uses.
 
+## Optional modules
+
+`node skills/mobile-app-factory/scripts/enable-modules.mjs --platform android --app <dir> --package <id> --modules billing,push,analytics-crash` (iOS: `--platform ios --app <dir> --project <ModuleName>`) copies the module sources into a scaffolded app and appends their dependencies. CI scaffolds both platforms with modules enabled and builds them (`modules-android`, `modules-ios`).
+
 ## Toolchain
 
 The Android starter is pinned to the current stable line rather than a safe old one:

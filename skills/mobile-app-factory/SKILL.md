@@ -1,6 +1,6 @@
 ---
 name: mobile-app-factory
-description: Takes an app idea from sentence to submitted iOS/Google Play release with a Rune-grade design system and production-ready native UI. Routes to 14 archetypes so stack, screens, permissions, privacy, risks, and motion adapt per app. Defaults to native: Kotlin + Jetpack Compose in Android Studio (Gradle) and Swift + SwiftUI in Xcode (KMP optional). Use for "make me an app", "mobile app", "Kotlin", "Jetpack Compose", "Android Studio", "SwiftUI", "Xcode", "native/production app", "App Store", "Play Store", "TestFlight", "12 testers", "privacy manifest", "data safety", "app store metadata", or "why was my app rejected", and for store-readiness audits.
+description: Takes an app idea from sentence to submitted iOS/Google Play release with a Rune-grade design system and production-ready native UI. Routes to 14 archetypes so stack, screens, permissions, privacy, risks, and motion adapt per app. Defaults to native: Kotlin + Jetpack Compose in Android Studio (Gradle) and Swift + SwiftUI in Xcode (KMP optional). Use for "make me an app", "mobile app", "Kotlin", "Jetpack Compose", "Android Studio", "SwiftUI", "Xcode", "native/production app", "App Store", "Play Store", "TestFlight", "12 testers", "privacy manifest", "data safety", "app store metadata", "why was my app rejected", "which stack: Kotlin or Swift, native vs Expo/Flutter", "release plan for iOS and Android", rebuilding a live app natively, and store-readiness audits.
 ---
 
 # Mobile App Factory

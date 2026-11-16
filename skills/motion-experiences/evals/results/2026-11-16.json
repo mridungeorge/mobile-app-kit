@@ -1,0 +1,293 @@
+{
+  "skill": "motion-experiences",
+  "date": "2026-11-16",
+  "agent": "Claude Code",
+  "cli_format": "stream-json",
+  "model": null,
+  "auth": "cli-login",
+  "environment": {
+    "skills_visible": 177,
+    "skills_dir": ".claude/skills",
+    "detection": "tool-call",
+    "note": "Claude Code in a temp project; a positive counts only when this skill is the one invoked. The CLI may still expose account-synced skills."
+  },
+  "trigger": {
+    "metrics": {
+      "total": 20,
+      "positive": 10,
+      "negative": 10,
+      "tp": 6,
+      "fp": 0,
+      "fn": 4,
+      "tn": 10,
+      "precision": 1,
+      "recall": 0.6,
+      "accuracy": 0.8
+    },
+    "cases": [
+      {
+        "prompt": "This landing page feels dead. Add scroll animations.",
+        "why": "scroll motion",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "Skill",
+        "invoked": [
+          "motion-experiences"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 16639,
+        "error": null
+      },
+      {
+        "prompt": "Make the hero feel premium.",
+        "why": "hero motion",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "Skill",
+        "invoked": [
+          "motion-experiences"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 20534,
+        "error": null
+      },
+      {
+        "prompt": "Add reveal-on-scroll to these cards.",
+        "why": "reveal",
+        "should_trigger": true,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": false,
+        "skills_visible": 177,
+        "ms": 19989,
+        "error": null
+      },
+      {
+        "prompt": "How do I use GSAP ScrollTrigger in React?",
+        "why": "GSAP",
+        "should_trigger": true,
+        "triggered": false,
+        "via": null,
+        "invoked": [
+          "motion-gsap"
+        ],
+        "pass": false,
+        "skills_visible": 177,
+        "ms": 17449,
+        "error": null
+      },
+      {
+        "prompt": "Which React Bits component should I use for a text reveal?",
+        "why": "React Bits",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "Skill",
+        "invoked": [
+          "motion-experiences"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 15429,
+        "error": null
+      },
+      {
+        "prompt": "Animate a bottom sheet in React Native.",
+        "why": "Reanimated",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "Skill",
+        "invoked": [
+          "motion-experiences"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 57808,
+        "error": null
+      },
+      {
+        "prompt": "My GSAP animations replay on route change.",
+        "why": "motion debugging",
+        "should_trigger": true,
+        "triggered": false,
+        "via": null,
+        "invoked": [
+          "motion-gsap"
+        ],
+        "pass": false,
+        "skills_visible": 177,
+        "ms": 14278,
+        "error": null
+      },
+      {
+        "prompt": "Add a SwiftUI spring animation to my iOS onboarding.",
+        "why": "native SwiftUI motion",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "Skill",
+        "invoked": [
+          "motion-experiences"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 45605,
+        "error": null
+      },
+      {
+        "prompt": "How do I animate list items in Jetpack Compose?",
+        "why": "native Compose motion",
+        "should_trigger": true,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": false,
+        "skills_visible": 177,
+        "ms": 29394,
+        "error": null
+      },
+      {
+        "prompt": "The app feels static. Add micro-interactions and one hero animation.",
+        "why": "motion layer, unspecified stack",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "Skill",
+        "invoked": [
+          "motion-experiences"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 29907,
+        "error": null
+      },
+      {
+        "prompt": "Animate this SVG logo in After Effects.",
+        "why": "motion graphics tool, not UI code",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 18189,
+        "error": null
+      },
+      {
+        "prompt": "Set up a Postgres index for my backend.",
+        "why": "unrelated",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 26834,
+        "error": null
+      },
+      {
+        "prompt": "Build me a mobile app for booking dog walkers.",
+        "why": "mobile-app-factory",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [
+          "mobile-app-factory"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 33885,
+        "error": null
+      },
+      {
+        "prompt": "Write App Store metadata for my recipe app.",
+        "why": "mobile-app-factory, store metadata",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [
+          "mobile-app-factory"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 60601,
+        "error": null
+      },
+      {
+        "prompt": "Why was my app rejected for guideline 4.2?",
+        "why": "mobile-app-factory, review",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [
+          "mobile-app-factory"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 37540,
+        "error": null
+      },
+      {
+        "prompt": "Design a logo for my bakery.",
+        "why": "brand/design skill",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 53129,
+        "error": null
+      },
+      {
+        "prompt": "Fix a memory leak in my Android service.",
+        "why": "native debugging, not motion",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 13047,
+        "error": null
+      },
+      {
+        "prompt": "Create a Figma prototype for a checkout flow.",
+        "why": "design tooling",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 14155,
+        "error": null
+      },
+      {
+        "prompt": "Write a Python script to resize images.",
+        "why": "unrelated",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 49276,
+        "error": null
+      },
+      {
+        "prompt": "Set up GitHub Actions CI for my repo.",
+        "why": "infra, not motion",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 17022,
+        "error": null
+      }
+    ]
+  },
+  "quality": null
+}
