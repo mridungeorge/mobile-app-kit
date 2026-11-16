@@ -432,6 +432,7 @@ function parseArgs(argv) {
       case "--fast": opts.fast = true; break;
       case "--dir": opts.dir = next(); break;
       case "--rebuild": opts.rebuild = true; break;
+      case "--modules": opts.modules = next().split(",").map((m) => m.trim()).filter(Boolean); break;
       case "--src": opts.src = next(); opts.rebuild = true; break;
       case "--archetype": opts.archetype = next(); break;
       case "--stack": opts.stack = next(); break;
@@ -609,6 +610,15 @@ export function routeIdea(idea, overrides = {}) {
   }
   if (ranked[0].score === 0) clarify.unshift("No archetype keywords matched — confirm the closest vertical or pick one with --archetype.");
 
+  // Opt-in modules (assets/modules/*) the profile switches on; --modules overrides the lot.
+  const permSet = new Set(permissions);
+  const modules = overrides.modules ?? [
+    ...(payments.some((p) => p === "subscription" || p === "iap") ? ["billing"] : []),
+    ...(permSet.has("notifications") && ["commerce-marketplace", "social-ugc", "delivery-logistics", "dating"].includes(primary) ? ["push"] : []),
+    ...(["commerce-marketplace", "social-ugc", "travel-maps"].includes(primary) ? ["deeplinks"] : []),
+    ...(["health-fitness", "kids-family", "fintech"].includes(primary) ? [] : ["analytics-crash"])
+  ];
+
   const profile = {
     version: 1,
     idea: String(idea).trim(),
@@ -628,6 +638,7 @@ export function routeIdea(idea, overrides = {}) {
     aiGeneratedContent: ai,
     payments,
     monetisation,
+    modules,
     ios: { declarations: [...new Set(iosDeclarations)], ageRatingFloor: iosAgeFloor, reviewRisks: [...new Set(iosRisks)] },
     android: { declarations: [...new Set(androidDeclarations)], contentRatingFloor: def.android.contentRatingFloor, reviewRisks: [...new Set(androidRisks)] },
     motionBudget: def.motionBudget,

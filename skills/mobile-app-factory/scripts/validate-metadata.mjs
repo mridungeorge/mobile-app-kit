@@ -122,6 +122,26 @@ if (!ios) {
   }
 }
 
+// Optional per-locale listings (localization module): { "locales": { "de-DE": { ... } } } on either side.
+if (ios?.locales) {
+  for (const [loc, l] of Object.entries(ios.locales)) {
+    const w = `ios.locales.${loc}`;
+    checkLimit(w, 'name', l.name, 30, true);
+    checkLimit(w, 'subtitle', l.subtitle, 30);
+    checkLimit(w, 'promotionalText', l.promotionalText, 170);
+    checkLimit(w, 'keywords', l.keywords, 100);
+    checkLimit(w, 'description', l.description, 4000, true);
+  }
+}
+if (android?.locales) {
+  for (const [loc, l] of Object.entries(android.locales)) {
+    const w = `android.locales.${loc}`;
+    checkLimit(w, 'appName', l.appName, 30, true);
+    checkLimit(w, 'shortDescription', l.shortDescription, 80, true);
+    checkLimit(w, 'fullDescription', l.fullDescription, 4000, true);
+  }
+}
+
 /* -------------------------------- Android ------------------------------- */
 if (!android) {
   errors.push('android: missing (android.json or metadata.json#android)');

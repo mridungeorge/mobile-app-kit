@@ -1,0 +1,1 @@
+{"name":"localization","enabledBy":"--modules localization","sdks":{"android":[],"ios":[]},"dataTypes":{"ios":[],"android":[]},"declarations":["store listing fields per locale in metadata/ios.json and metadata/android.json"],"test":"pseudo-localize.mjs"}

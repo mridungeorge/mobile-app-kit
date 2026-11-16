@@ -7,7 +7,7 @@
 // agent numbering, and the metadata template. Exit code 1 means the skill is broken;
 // warnings do not fail the build.
 
-import { readFileSync, existsSync, mkdtempSync, copyFileSync, rmSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, existsSync, mkdtempSync, copyFileSync, rmSync, readdirSync, statSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -595,6 +595,50 @@ try {
   }
 } catch (error) {
   errors.push(`rebuild inventory failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
+}
+
+// Modules: every opt-in module ships a README with the required sections, a manifest, its
+// test artefact, and the profile router switches them on from the archetype.
+try {
+  const modulesDir = join(root, "assets", "modules");
+  const required = ["billing", "push", "localization", "deeplinks", "analytics-crash"];
+  for (const name of required) {
+    const dir = join(modulesDir, name);
+    const manifest = JSON.parse(readFileSync(join(dir, "module.json"), "utf8"));
+    const readme = readFileSync(join(dir, "README.md"), "utf8");
+    for (const heading of ["**Adds:**", "**Files touched:**", "**Declarations it changes", "**Test:**"]) {
+      if (!readme.includes(heading)) throw new Error(`${name}/README.md missing ${heading}`);
+    }
+    if (!existsSync(join(dir, manifest.test))) throw new Error(`${name} test artefact ${manifest.test} missing`);
+    if (!readFileSync(join(root, "SKILL.md"), "utf8").includes(`assets/modules/${name}/README.md`)) throw new Error(`SKILL.md does not link ${name}`);
+  }
+  execFileSync(process.execPath, [join(modulesDir, "localization", "pseudo-localize.mjs"), "--self-test"], { stdio: "pipe" });
+  for (const file of [join("deeplinks", "apple-app-site-association"), join("deeplinks", "assetlinks.json")]) {
+    const text = readFileSync(join(modulesDir, file), "utf8");
+    JSON.parse(text);
+    if (!/TEAMID|PACKAGE/.test(text)) throw new Error(`${file} lost its placeholders`);
+  }
+  const routed = (idea) => JSON.parse(execFileSync(process.execPath, [join(root, "scripts", "route-idea.mjs"), "--json", idea], { encoding: "utf8" })).modules;
+  if (!routed("habit tracker with subscription").includes("billing")) throw new Error("subscription idea did not enable billing");
+  if (routed("habit tracker with subscription").includes("analytics-crash")) throw new Error("health idea enabled analytics by default");
+  const market = routed("marketplace for local dog walkers");
+  for (const m of ["push", "deeplinks"]) if (!market.includes(m)) throw new Error(`marketplace did not enable ${m}`);
+
+  // reconcile: an undeclared SDK must fail, a declared one must pass.
+  const temp = mkdtempSync(join(tmpdir(), "maf-reconcile-"));
+  mkdirSync(join(temp, "app"), { recursive: true });
+  writeFileSync(join(temp, "app", "build.gradle.kts"), 'dependencies { implementation("io.sentry:sentry-android:7.0.0") }\n');
+  const reconcile = (...extra) => {
+    try { execFileSync(process.execPath, [join(root, "scripts", "reconcile-declarations.mjs"), "--app", temp, ...extra], { stdio: "pipe" }); return 0; }
+    catch (error) { return error.status; }
+  };
+  if (reconcile() !== 1) throw new Error("reconcile-declarations passed with an undeclared SDK");
+  writeFileSync(join(temp, "decl.json"), JSON.stringify({ ios: ["CrashData", "PerformanceData"], android: ["CrashLogs", "Diagnostics"] }));
+  if (reconcile("--declared", join(temp, "decl.json")) !== 0) throw new Error("reconcile-declarations failed with everything declared");
+  rmSync(temp, { recursive: true, force: true });
+  ok.push(`modules: ${required.length} documented, manifests + tests present, router enables them, reconcile fails on undeclared SDK`);
+} catch (error) {
+  errors.push(`modules check failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
 }
 
 // README artwork: every image the repo README references must exist on disk, so the
