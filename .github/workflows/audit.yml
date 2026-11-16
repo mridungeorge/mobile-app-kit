@@ -87,9 +87,14 @@ jobs:
             --platform android --name "CI Smoke" --package com.example.cismoke \
             --out "$RUNNER_TEMP/android"
 
-      - name: assembleDebug + lint
+      - name: assembleDebug + unit tests + lint + instrumented-test compile
         working-directory: ${{ runner.temp }}/android
-        run: ./gradlew --no-daemon --stacktrace assembleDebug lint
+        run: |
+          ./gradlew --no-daemon --stacktrace \
+            assembleDebug \
+            testDebugUnitTest \
+            lintDebug \
+            assembleDebugAndroidTest
 
   ios-build:
     name: ios starter compiles
@@ -126,6 +131,19 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      # Building proves it compiles; testing proves the state machine, the SwiftData
+      # repository and the auth stubs actually behave. The authoring machine has no
+      # Xcode, so this job is where the iOS starter is verified.
+      - name: Test on the simulator
+        working-directory: ${{ runner.temp }}/ios
+        run: |
+          xcodebuild \
+            -project CISmoke.xcodeproj \
+            -scheme CISmoke \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO \
+            test
 
   motion-demo-build:
     name: motion-demo builds

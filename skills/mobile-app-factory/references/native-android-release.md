@@ -6,7 +6,7 @@ Use this when the profile stack is `native`, `android-native`, or `kmp`. Target:
 - **IDE**: Android Studio (latest stable). Install Android SDK, command-line tools, and required platform/build-tools.
 - **Language/UI**: Kotlin, Jetpack Compose, Material 3. Single UI system (Material 3/Compose) — do not mix legacy View/XML patterns in new screens unless required.
 - **Build**: Gradle (Kotlin DSL preferred: `build.gradle.kts`). JDK 17+ (match AGP requirements).
-- **Min/target**: set `minSdk` per product needs; set `targetSdk`/`compileSdk` to current Play requirements (e.g. `targetSdk 36` for new apps/updates from 31 Aug 2026 — re-verify in `references/google-play.md`).
+- **Min/target**: set `minSdk` per product needs; set `targetSdk`/`compileSdk` to current Play requirements (e.g. `targetSdk 36` for new apps/updates from 31 Aug 2026 — re-verify in `references/google-play.md`). The bundled starter compiles against **37** (AGP 9.5.1, Gradle 9.9.1) because the current AndroidX line requires it; AGP 9 compiles Kotlin itself, so `org.jetbrains.kotlin.android` is no longer applied.
 
 ## Project setup (production-ready)
 - Use application modules with clear layers: `ui` (Compose screens/components), `domain`/`data` (repositories, use cases), `core` (design tokens/theme, utilities).

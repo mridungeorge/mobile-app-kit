@@ -454,6 +454,102 @@ try {
     }
   }
 
+  // Both starters are meant to be production shells, not one screen. A file that vanishes
+  // takes DI, the database, localisation or account deletion with it, and nothing else in
+  // this repo would notice.
+  const androidExpected = [
+    ["Hilt application", "app/src/main/java/com/example/smoke/SmokeAppApplication.kt"],
+    ["navigation shell", "app/src/main/java/com/example/smoke/ui/App.kt"],
+    ["route table", "app/src/main/java/com/example/smoke/ui/Routes.kt"],
+    ["state machine", "app/src/main/java/com/example/smoke/ui/UiState.kt"],
+    ["state host", "app/src/main/java/com/example/smoke/ui/components/StateHost.kt"],
+    ["DI module", "app/src/main/java/com/example/smoke/di/AppModule.kt"],
+    ["API client + fake", "app/src/main/java/com/example/smoke/data/api/ApiClient.kt"],
+    ["Room entity", "app/src/main/java/com/example/smoke/data/db/HabitEntity.kt"],
+    ["Room DAO", "app/src/main/java/com/example/smoke/data/db/HabitDao.kt"],
+    ["Room database", "app/src/main/java/com/example/smoke/data/db/AppDatabase.kt"],
+    ["DataStore settings", "app/src/main/java/com/example/smoke/data/settings/SettingsRepository.kt"],
+    ["auth providers", "app/src/main/java/com/example/smoke/data/auth/AuthRepository.kt"],
+    ["home view model", "app/src/main/java/com/example/smoke/feature/home/HomeViewModel.kt"],
+    ["detail view model", "app/src/main/java/com/example/smoke/feature/detail/DetailViewModel.kt"],
+    ["settings view model", "app/src/main/java/com/example/smoke/feature/settings/SettingsViewModel.kt"],
+    ["auth view model", "app/src/main/java/com/example/smoke/feature/auth/AuthViewModel.kt"],
+    ["home screen", "app/src/main/java/com/example/smoke/ui/screens/HomeScreen.kt"],
+    ["detail screen", "app/src/main/java/com/example/smoke/ui/screens/DetailScreen.kt"],
+    ["settings screen", "app/src/main/java/com/example/smoke/ui/screens/SettingsScreen.kt"],
+    ["auth screen", "app/src/main/java/com/example/smoke/ui/screens/AuthScreen.kt"],
+    ["account deletion screen", "app/src/main/java/com/example/smoke/ui/screens/AccountDeletionScreen.kt"],
+    ["per-app locales", "app/src/main/res/xml/locales_config.xml"],
+    ["unit test", "app/src/test/java/com/example/smoke/ui/UiStateTest.kt"],
+    ["instrumented Room test", "app/src/androidTest/java/com/example/smoke/data/db/HabitDaoTest.kt"],
+  ];
+  for (const [label, relativePath] of androidExpected) {
+    if (!existsSync(join(temp, "android", relativePath))) {
+      throw new Error(`Android starter missing ${label} (${relativePath})`);
+    }
+  }
+
+  const androidApp = readFileSync(join(temp, "android", "app/src/main/java/com/example/smoke/ui/App.kt"), "utf8");
+  for (const [label, needle] of [
+    ["bottom bar", "NavigationBar"],
+    ["rail for wide screens", "NavigationRail"],
+    ["nav host", "NavHost"],
+    ["detail route", "Routes.detail"],
+  ]) if (!androidApp.includes(needle)) throw new Error(`Android App.kt missing ${label} (${needle})`);
+
+  const androidManifest = readFileSync(join(temp, "android", "app/src/main/AndroidManifest.xml"), "utf8");
+  for (const [label, needle] of [
+    ["Hilt application class", "android:name=\".SmokeAppApplication\""],
+    ["per-app language config", "android:localeConfig=\"@xml/locales_config\""],
+  ]) if (!androidManifest.includes(needle)) throw new Error(`AndroidManifest missing ${label}`);
+
+  const catalog = readFileSync(join(temp, "android", "gradle/libs.versions.toml"), "utf8");
+  for (const [label, needle] of [
+    ["Hilt plugin", "hilt = { id = \"com.google.dagger.hilt.android\""],
+    ["KSP plugin", "ksp = { id = \"com.google.devtools.ksp\""],
+    ["Room", "androidx-room-runtime"],
+    ["DataStore", "androidx-datastore-preferences"],
+    ["Navigation Compose", "androidx-navigation-compose"],
+    ["WindowSizeClass", "material3-window-size-class"],
+  ]) if (!catalog.includes(needle)) throw new Error(`libs.versions.toml missing ${label}`);
+
+  const iosExpected = [
+    "Sources/AppEnvironment.swift",
+    "Sources/AppShell.swift",
+    "Sources/Data/APIClient.swift",
+    "Sources/Data/Habit.swift",
+    "Sources/Data/SettingsStore.swift",
+    "Sources/Data/AuthService.swift",
+    "Sources/UI/UiState.swift",
+    "Sources/UI/StateView.swift",
+    "Sources/Features/Home/HomeScreen.swift",
+    "Sources/Features/Home/HomeViewModel.swift",
+    "Sources/Features/Detail/DetailScreen.swift",
+    "Sources/Features/Settings/SettingsScreen.swift",
+    "Sources/Features/Auth/AuthScreen.swift",
+    "Sources/Features/Auth/AccountDeletionScreen.swift",
+    "Resources/Localizable.xcstrings",
+    "Tests/UiStateTests.swift",
+    "Tests/HabitRepositoryTests.swift",
+    "Tests/AuthTests.swift",
+  ];
+  for (const relativePath of iosExpected) {
+    if (!existsSync(join(temp, "ios", relativePath))) throw new Error(`iOS starter missing ${relativePath}`);
+  }
+
+  const iosShell = readFileSync(join(temp, "ios", "Sources", "AppShell.swift"), "utf8");
+  for (const [label, needle] of [
+    ["tab bar", "TabView"],
+    ["split view for wide screens", "NavigationSplitView"],
+    ["size-class adaptivity", "horizontalSizeClass"],
+  ]) if (!iosShell.includes(needle)) throw new Error(`iOS AppShell missing ${label} (${needle})`);
+
+  const stringCatalog = JSON.parse(readFileSync(join(temp, "ios", "Resources", "Localizable.xcstrings"), "utf8"));
+  const catalogKeys = Object.keys(stringCatalog.strings ?? {});
+  if (!catalogKeys.includes("state.offline.title")) throw new Error("iOS string catalog is missing the offline state copy");
+  const englishOnly = catalogKeys.filter((key) => Object.keys(stringCatalog.strings[key].localizations ?? {}).length < 2);
+  if (englishOnly.length) throw new Error(`iOS string catalog has untranslated keys: ${englishOnly.slice(0, 3).join(", ")}`);
+
   const placeholders = ["__PROJECT_NAME__", "__APP_NAME__", "__APP_SLUG__", "__PACKAGE__", "__PACKAGE_PATH__", "__BUNDLE_ID__"];
   const files = readdirSync(temp, { recursive: true }).filter((entry) => typeof entry === "string")
     .map((entry) => join(temp, entry));

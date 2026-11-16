@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">__APP_NAME__</string>
+
+    <!-- Shell -->
+    <string name="tab_home">Start</string>
+    <string name="tab_settings">Einstellungen</string>
+
+    <!-- Shared states -->
+    <string name="state_loading">Wird geladen</string>
+    <string name="state_offline_title">Du bist offline</string>
+    <string name="state_offline_detail">Deine gespeicherten Daten sind noch da. Versuche es erneut, wenn du eine Verbindung hast.</string>
+    <string name="state_error_title">Etwas ist schiefgelaufen</string>
+    <string name="state_empty_title">Noch nichts hier</string>
+    <string name="state_empty_detail">Der erste Eintrag, den du hinzufügst, erscheint hier.</string>
+    <string name="state_retry">Erneut versuchen</string>
+
+    <!-- Common actions -->
+    <string name="action_back">Zurück</string>
+    <string name="action_cancel">Abbrechen</string>
+    <string name="action_delete">Löschen</string>
+
+    <!-- Home -->
+    <string name="home_today">Heute</string>
+    <string name="home_empty_title">Noch keine Gewohnheiten</string>
+    <string name="home_empty_detail">Füge die erste Gewohnheit hinzu, die du behalten willst.</string>
+    <plurals name="home_days">
+        <item quantity="one">%d Tag</item>
+        <item quantity="other">%d Tage</item>
+    </plurals>
+
+    <!-- Detail -->
+    <plurals name="detail_streak">
+        <item quantity="one">%d Tag in Folge</item>
+        <item quantity="other">%d Tage in Folge</item>
+    </plurals>
+    <string name="detail_body">Detailroute für %1$s. Ersetze diesen Text durch den echten Datensatz.</string>
+    <string name="detail_a11y_note">Barrierefreiheit: Jeder Wert hier ist auswählbarer Text, kein Bild.</string>
+
+    <!-- Auth -->
+    <string name="auth_title">Anmelden</string>
+    <string name="auth_email">E-Mail</string>
+    <string name="auth_password">Passwort</string>
+    <string name="auth_sign_in_email">Mit E-Mail anmelden</string>
+    <string name="auth_sign_in_apple">Mit Apple anmelden</string>
+    <string name="auth_sign_in_google">Mit Google anmelden</string>
+    <string name="auth_stub_note">Apple und Google sind Platzhalter: Ergänze Entitlement und Provider-SDK vor der Veröffentlichung. Der Starter liefert nie einen falschen Erfolg.</string>
+    <string name="auth_signed_in">Angemeldet als %1$s über %2$s</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_notifications">Mitteilungen</string>
+    <string name="settings_notifications_detail">Im passenden Moment fragen, nie beim Start.</string>
+    <string name="settings_reduce_motion">Bewegung reduzieren</string>
+    <string name="settings_reduce_motion_detail">Folgt auch der Systemeinstellung.</string>
+    <string name="settings_not_signed_in">Nicht angemeldet</string>
+    <string name="settings_signed_in_as">Angemeldet als %1$s</string>
+    <string name="settings_sign_in">Anmelden</string>
+    <string name="settings_sign_out">Abmelden</string>
+    <string name="settings_account">Konto</string>
+    <string name="settings_delete_detail">Lösche dein Konto und seine Daten. Von Apple 5.1.1(v) und Google Play verlangt, sobald ein Konto erstellt werden kann.</string>
+    <string name="settings_delete_account">Konto löschen</string>
+
+    <!-- Account deletion -->
+    <string name="deletion_title">Konto löschen</string>
+    <string name="deletion_body">Dies löscht das Konto, seine Gewohnheiten und die Serverdaten. Veröffentlichte Apps müssen zusätzlich eine Webseite anbieten, auf der die Löschung beantragt werden kann — Play verlangt den Link im Eintrag.</string>
+    <string name="deletion_web_link">Web-Löschlink (vor der Veröffentlichung ersetzen): https://example.com/account/delete</string>
+    <string name="deletion_action">Mein Konto löschen</string>
+    <string name="deletion_confirm_title">Konto löschen?</string>
+    <string name="deletion_confirm_body">Das kann nicht rückgängig gemacht werden. Deine Daten werden vom Gerät und vom Server entfernt.</string>
+</resources>
