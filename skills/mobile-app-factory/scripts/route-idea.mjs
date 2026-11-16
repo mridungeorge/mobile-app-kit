@@ -19,11 +19,14 @@
 //   --ugc / --no-ugc
 //   --ai / --no-ai
 //   --offline
-//   --fast --dir <path>    infer the intake, write intake/profile/approval, skip the gate
+//        --fast --dir <path>    infer the intake, write intake/profile/approval, skip the gate
+//        --rebuild --src <path> rebuild an existing app; requires an inventory of that path
 //   --help
 
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, resolve, dirname } from "node:path";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const ARCHETYPES = {
   "utility": {
@@ -428,6 +431,8 @@ function parseArgs(argv) {
       case "--out": opts.out = next(); break;
       case "--fast": opts.fast = true; break;
       case "--dir": opts.dir = next(); break;
+      case "--rebuild": opts.rebuild = true; break;
+      case "--src": opts.src = next(); opts.rebuild = true; break;
       case "--archetype": opts.archetype = next(); break;
       case "--stack": opts.stack = next(); break;
       case "--monetisation": case "--monetization": opts.monetisation = next(); break;
@@ -607,6 +612,7 @@ export function routeIdea(idea, overrides = {}) {
   const profile = {
     version: 1,
     idea: String(idea).trim(),
+    mode: overrides.rebuild ? "rebuild" : "new",
     archetype: primary,
     archetypeLabel: def.label,
     secondary,
@@ -630,12 +636,25 @@ export function routeIdea(idea, overrides = {}) {
     scores: Object.fromEntries(ranked.filter((entry) => entry.score > 0).map((entry) => [entry.name, entry.score]))
   };
 
+  // Rebuild mode: the profile points at the inventory and the migration plan instead of
+  // pretending the app starts empty. The plan itself is written by the migration analyst.
+  if (overrides.rebuild) {
+    profile.rebuild = {
+      source: overrides.src ? resolve(overrides.src) : null,
+      inventory: "00-existing.json",
+      plan: "00-migration-plan.md",
+      agent: "agents/00-migration-analyst.md",
+      approach: "strangler — incremental cutover, no big-bang replacement"
+    };
+  }
+
   return profile;
 }
 
 function summary(profile) {
   const lines = [
     `Idea:       ${profile.idea}`,
+    ...(profile.mode === "rebuild" ? [`Mode:       rebuild — inventory ${profile.rebuild?.inventory ?? "missing"}, plan ${profile.rebuild?.plan ?? "missing"}`] : []),
     `Archetype:  ${profile.archetype} (${profile.archetypeLabel})${profile.secondary.length ? ` + ${profile.secondary.join(", ")}` : ""}`,
     `Confidence: ${profile.confidence}`,
     `Stack:      ${profile.stack.primary} / ${profile.stack.ui} / ${profile.stack.state} / ${profile.stack.data}`,
@@ -696,7 +715,8 @@ function fastIntake(profile, opts) {
   return {
     version: 1,
     createdAt: new Date().toISOString(),
-    mode: "fast",
+    mode: opts.rebuild ? "rebuild" : "fast",
+    existingSource: opts.rebuild ? opts.src ?? null : null,
     idea: profile.idea,
     audience: FAST_DEFAULTS.audience,
     problem: profile.coreLoop,
@@ -812,6 +832,20 @@ function assumptionsBlock(dir, assumptions) {
   return lines.join("\n");
 }
 
+function ensureInventory(opts) {
+  const dir = resolve(opts.dir || ".mobile");
+  const inventoryPath = join(dir, "00-existing.json");
+  if (existsSync(inventoryPath)) return inventoryPath;
+  const script = join(dirname(fileURLToPath(import.meta.url)), "inventory-existing.mjs");
+  const res = spawnSync(process.execPath, [script, "--src", opts.src, "--dir", dir], { encoding: "utf8" });
+  if (res.status !== 0) {
+    console.error(`error: could not inventory ${opts.src}\n${res.stderr || res.stdout || ""}`);
+    process.exit(2);
+  }
+  process.stderr.write(res.stdout);
+  return inventoryPath;
+}
+
 function main() {
   let opts;
   try {
@@ -826,6 +860,17 @@ function main() {
     console.error("error: no idea supplied");
     console.error(help());
     process.exit(2);
+  }
+  if (opts.rebuild) {
+    if (!opts.src) {
+      console.error("error: --rebuild needs --src <path to the existing app>");
+      process.exit(2);
+    }
+    if (!existsSync(resolve(opts.src))) {
+      console.error(`error: no directory at ${resolve(opts.src)}`);
+      process.exit(2);
+    }
+    ensureInventory(opts);
   }
 
   let profile;

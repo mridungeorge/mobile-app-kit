@@ -43,6 +43,9 @@ const required = [
   "references/mobile-testing.md",
   "references/native-android-release.md",
   "references/native-ios-release.md",
+  "references/rebuild-existing-app.md",
+  "agents/00-migration-analyst.md",
+  "scripts/inventory-existing.mjs",
   "assets/design-tokens.json",
   "assets/project-profile.template.json",
   "assets/store-metadata.template.json",
@@ -469,6 +472,33 @@ try {
   rmSync(temp, { recursive: true, force: true });
 } catch (error) {
   errors.push(`native template smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
+}
+
+// Rebuild path: the inventory must run on a real (tiny) existing app and find what the
+// migration analyst depends on. A fixture that stops matching the scanner is exactly how
+// this feature would rot unnoticed.
+try {
+  const repoRoot = resolve(root, "..", "..");
+  const fixture = join(repoRoot, "test-fixtures", "existing-expo-app");
+  if (!existsSync(fixture)) {
+    if (existsSync(join(repoRoot, "README.md"))) throw new Error("test-fixtures/existing-expo-app is missing");
+    ok.push("rebuild inventory: installed copy, fixture lives in the repo checkout");
+  } else {
+    const temp = mkdtempSync(join(tmpdir(), "maf-existing-"));
+    execFileSync(process.execPath, [join(root, "scripts", "inventory-existing.mjs"), "--src", fixture, "--dir", temp], { stdio: "pipe" });
+    const inv = JSON.parse(readFileSync(join(temp, "00-existing.json"), "utf8"));
+    if (inv.stack.primary !== "expo") throw new Error(`fixture stack detected as ${inv.stack.primary}, expected expo`);
+    const screens = inv.screens.map((s) => s.name);
+    for (const name of ["Home", "Stats"]) if (!screens.includes(name)) throw new Error(`fixture screen ${name} not found (got ${screens.join(", ")})`);
+    if (!inv.api.baseUrls.some((url) => url.includes("api.habitloop.app"))) throw new Error("fixture API base URL not found");
+    if (!inv.sdks.some((sdk) => sdk.name === "@react-native-firebase/analytics" && sdk.version)) throw new Error("fixture SDK with version not found");
+    if (inv.env.valuesRecorded !== false) throw new Error("inventory recorded environment values — names only");
+    if (!existsSync(join(temp, "00-existing.md"))) throw new Error("00-existing.md was not written");
+    ok.push(`rebuild inventory: fixture → ${inv.stack.primary}, ${screens.length} screens, ${inv.sdks.length} SDKs, API and env names only`);
+    rmSync(temp, { recursive: true, force: true });
+  }
+} catch (error) {
+  errors.push(`rebuild inventory failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
 }
 
 // README artwork: every image the repo README references must exist on disk, so the

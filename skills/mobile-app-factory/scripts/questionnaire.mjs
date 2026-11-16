@@ -26,6 +26,8 @@ function parseArgs(argv) {
     const next = () => argv[++i];
     if (a === "--out") opts.out = next();
     else if (a === "--non-interactive") opts.nonInteractive = true;
+    else if (a === "--mode") opts.mode = next();
+    else if (a === "--src") opts.src = next();
     else if (a === "--idea") opts.idea = next();
     else if (a === "--platforms") opts.platforms = next();
     else if (a === "--audience") opts.audience = next();
@@ -39,6 +41,8 @@ function parseArgs(argv) {
 }
 
 const questions = [
+  { key: "mode", q: "0) New app, or a rebuild of one already live on the stores? (new/rebuild)", def: "new" },
+  { key: "src", q: "0b) If rebuild, path to the existing codebase", def: "" },
   { key: "idea", q: "1) App idea (one sentence): What should the app do?", def: "" },
   { key: "audience", q: "2) Who is it for? (target users/audience)", def: "General users" },
   { key: "problem", q: "3) What problem does it solve / core outcome?", def: "" },
@@ -69,6 +73,8 @@ async function runInteractive() {
   console.log("Answer briefly. Press Enter to accept defaults where shown.\n");
   const answers = {};
   for (const item of questions) {
+    // The source path only exists in rebuild mode; asking it for a new app is noise.
+    if (item.key === "src" && !/rebuild|existing/i.test(String(answers.mode ?? ""))) continue;
     const prompt = item.def ? `${item.q} [${item.def}]: ` : `${item.q}: `;
     const ans = (await rl.question(prompt)).trim();
     answers[item.key] = ans || item.def;
@@ -90,6 +96,8 @@ function buildIntake(answers) {
   return {
     version: 1,
     createdAt: new Date().toISOString(),
+    mode: /rebuild|existing/i.test(String(answers.mode ?? "")) ? "rebuild" : "new",
+    existingSource: /rebuild|existing/i.test(String(answers.mode ?? "")) ? (answers.src || null) : null,
     idea: answers.idea,
     audience: answers.audience,
     problem: answers.problem,
@@ -115,6 +123,7 @@ function toMarkdown(intake) {
   return `# App Intake (Questionnaire)
 
 - **Created:** ${intake.createdAt}
+- **Mode:** ${intake.mode === "rebuild" ? `rebuild of \`${intake.existingSource ?? "path not given"}\`` : "new app"}
 - **Idea:** ${intake.idea}
 - **Audience:** ${intake.audience}
 - **Problem/Outcome:** ${intake.problem}
@@ -151,6 +160,10 @@ function routeProfile(idea, intake, outDir) {
   if (intake.ai) args.push("--ai"); else args.push("--no-ai");
   if (intake.offline) args.push("--offline");
   if (intake.monetisation) args.push("--monetisation", intake.monetisation);
+  if (intake.mode === "rebuild") {
+    args.push("--rebuild");
+    if (intake.existingSource) args.push("--src", intake.existingSource);
+  }
   // prefer native production stack for both platforms unless specified
   if (intake.platforms === "android") args.push("--stack", "android-native");
   else if (intake.platforms === "ios") args.push("--stack", "ios-native");
@@ -190,6 +203,21 @@ async function main() {
   const intake = buildIntake(answers);
   writeFileSync(join(outDir, "00-intake.json"), JSON.stringify(intake, null, 2));
   writeFileSync(join(outDir, "00-intake.md"), toMarkdown(intake));
+
+  // A rebuild starts from what exists. Inventory it before routing so the router and every
+  // later agent read the same facts; an inventory failure is reported, not silently skipped.
+  if (intake.mode === "rebuild") {
+    if (!intake.existingSource) {
+      console.error("Rebuild mode needs the existing codebase path (--src <path> or the questionnaire).");
+      process.exit(2);
+    }
+    const res = spawnSync(process.execPath, [join(__dirname, "inventory-existing.mjs"), "--src", intake.existingSource, "--dir", outDir], { encoding: "utf8" });
+    if (res.status !== 0) {
+      console.error(res.stderr || "inventory-existing failed");
+      process.exit(1);
+    }
+    process.stdout.write(res.stdout);
+  }
 
   const profile = routeProfile(intake.idea, intake, outDir);
   if (!profile) process.exit(1);
