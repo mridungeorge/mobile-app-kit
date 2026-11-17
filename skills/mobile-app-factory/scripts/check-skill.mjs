@@ -590,7 +590,15 @@ try {
     if (!inv.sdks.some((sdk) => sdk.name === "@react-native-firebase/analytics" && sdk.version)) throw new Error("fixture SDK with version not found");
     if (inv.env.valuesRecorded !== false) throw new Error("inventory recorded environment values — names only");
     if (!existsSync(join(temp, "00-existing.md"))) throw new Error("00-existing.md was not written");
-    ok.push(`rebuild inventory: fixture → ${inv.stack.primary}, ${screens.length} screens, ${inv.sdks.length} SDKs, API and env names only`);
+
+    // --rebuild --dir must leave the profile the migration analyst reads, not just print it.
+    // Run the documented command exactly: no one-line idea, because the inventory has it.
+    execFileSync(process.execPath, [join(root, "scripts", "route-idea.mjs"), "--rebuild", "--src", fixture, "--dir", temp], { stdio: "pipe" });
+    const rebuildProfile = JSON.parse(readFileSync(join(temp, "00-profile.json"), "utf8"));
+    if (rebuildProfile.mode !== "rebuild") throw new Error("rebuild profile did not record mode: rebuild");
+    if (!rebuildProfile.rebuild?.source) throw new Error("rebuild profile lost the existing-app source");
+    if (!rebuildProfile.rebuild?.plan) throw new Error("rebuild profile does not point at the migration plan");
+    ok.push(`rebuild inventory: fixture → ${inv.stack.primary}, ${screens.length} screens, ${inv.sdks.length} SDKs, API and env names only; --rebuild --dir writes 00-profile.json`);
     rmSync(temp, { recursive: true, force: true });
   }
 } catch (error) {

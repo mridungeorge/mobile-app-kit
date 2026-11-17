@@ -6,6 +6,7 @@
 //   node scripts/run-evals.mjs --skill mobile-app-factory --trigger
 //   node scripts/run-evals.mjs --quality --only idea-to-prd
 //   node scripts/run-evals.mjs --agent opencode    # claude (default) | opencode | codex
+//   node scripts/run-evals.mjs --quality --shard 0/4  # one quarter of the quality cases, for parallel runs
 //   node scripts/run-evals.mjs --validate          # check the eval files, call nothing
 //   node scripts/run-evals.mjs --dry-run           # print the plan, call nothing
 //   node scripts/run-evals.mjs --self-test         # check the agent adapters, call nothing
@@ -45,6 +46,7 @@ const opts = {
   timeoutMs: 240_000,
   maxTurns: null,
   model: null,
+  reasoning: null,
   keep: false,
   debug: false,
   cli: null,
@@ -61,9 +63,18 @@ for (let i = 2; i < process.argv.length; i++) {
   else if (arg === "--self-test") opts.selfTest = true;
   else if (arg === "--dry-run") opts.dryRun = true;
   else if (arg === "--only") opts.only = process.argv[++i];
+  else if (arg === "--shard") {
+    const [index, count] = String(process.argv[++i] ?? "").split("/").map(Number);
+    if (!Number.isInteger(index) || !Number.isInteger(count) || count < 1 || index < 0 || index >= count) {
+      console.error("--shard expects <index>/<count>, e.g. 0/4");
+      process.exit(2);
+    }
+    opts.shard = { index, count };
+  }
   else if (arg === "--timeout") opts.timeoutMs = Number(process.argv[++i]) * 1000;
   else if (arg === "--max-turns") opts.maxTurns = Number(process.argv[++i]);
   else if (arg === "--model") opts.model = process.argv[++i];
+  else if (arg === "--reasoning") opts.reasoning = process.argv[++i];
   else if (arg === "--keep") opts.keep = true;
   else if (arg === "--debug") opts.debug = true;
   else if (arg === "--cli") opts.cli = process.argv[++i];
@@ -135,6 +146,9 @@ function validate() {
       if (!Array.isArray(testCase.assertions) || !testCase.assertions.length) {
         problems.push(`${skill}/${testCase.id}: no checkable assertions`);
       }
+      if (testCase.fixture && !existsSync(join(repoRoot, "test-fixtures", testCase.fixture))) {
+        problems.push(`${skill}/${testCase.id}: fixture ${testCase.fixture} does not exist`);
+      }
       for (const assertion of testCase.assertions ?? []) {
         const types = ["file_exists", "file_absent", "file_matches", "mentions_all", "mentions_any", "json_equals", "json_max", "response_matches", "response_mentions_all"];
         if (!types.includes(assertion.type)) problems.push(`${skill}/${testCase.id}: unknown assertion type "${assertion.type}"`);
@@ -170,6 +184,11 @@ function selfTest() {
   const viaClaudePath = detectInText("/home/me/.claude/skills/mobile-app-factory/SKILL.md");
   expect("detects a `.claude/skills/<id>/SKILL.md` path",
     viaClaudePath.some((hit) => hit.skill === "mobile-app-factory" && hit.via === "path"));
+
+  const viaEscapedWindowsPath = detectInText(
+    "Get-Content C:\\\\sandbox\\\\.agents\\\\skills\\\\motion-experiences\\\\SKILL.md");
+  expect("detects a JSON-escaped Windows path with doubled separators",
+    viaEscapedWindowsPath.some((hit) => hit.skill === "motion-experiences" && hit.via === "path"));
 
   expect("does not fire on text with no skill mention",
     detectInText("I built a habit tracker and never loaded a skill.").length === 0);
@@ -228,7 +247,16 @@ const AGENTS = {
     format: "text",
     isolateConfig: false,
     keys: ["OPENAI_API_KEY"],
-    command: (prompt) => ["exec", prompt],
+    command: (prompt, { quality } = {}) => {
+      // A trigger prompt only asks the model to choose a skill; letting it write files makes it
+      // start building the app and blow through the timeout before it prints anything useful.
+      // Quality cases do need to scaffold, so they get write access to the sandbox only.
+      const args = ["exec", "--skip-git-repo-check", "-s", quality ? "workspace-write" : "read-only"];
+      if (opts.model) args.push("-m", opts.model);
+      if (opts.reasoning) args.push("-c", `model_reasoning_effort=${opts.reasoning}`);
+      args.push(prompt);
+      return args;
+    },
   },
   custom: {
     label: "custom command",
@@ -360,7 +388,9 @@ function makeEvalConfig() {
 // `detection: "path"` so nobody reads more into it than that.
 function detectInText(text) {
   const hits = [];
-  const pathPattern = /(?:^|[\\/\s"'`])skills[\\/]([^\\/\s"'`]+)[\\/]SKILL\.md/gi;
+  // Some text CLIs print a JSON-escaped Windows path, so a separator can appear as
+  // one backslash or as two. Accept either without widening the skill-name capture.
+  const pathPattern = /(?:^|[\\/\s"'`])skills(?:\\|\/)+([^\\/\s"'`]+)(?:\\|\/)+SKILL\.md/gi;
   let match;
   while ((match = pathPattern.exec(text)) !== null) hits.push({ skill: match[1], via: "path" });
   // OpenCode prints `Skill "<id>"` when it loads one.
@@ -692,12 +722,15 @@ async function main() {
           if (opts.only && !item.prompt.includes(opts.only)) continue;
           const run = await runPrompt(agent, cli, item.prompt, workspace, { quality: false });
           if (run.spawnError) { aborted = `could not start ${cli}: ${run.error}`; break; }
-          if (run.timedOut) { aborted = `${cli} did not answer within ${opts.timeoutMs / 1000}s — raise --timeout or check the CLI`; break; }
-          if (run.limit) { aborted = run.limit; break; }
+          // A text CLI can load the skill, start building and never exit. The trigger already
+          // happened, so score it and say so instead of discarding the whole run.
           const hit = run.invoked.find((entry) => entry.skill === skill);
+          if (run.timedOut && !hit) { aborted = `${cli} did not answer within ${opts.timeoutMs / 1000}s — raise --timeout or check the CLI`; break; }
+          if (run.limit) { aborted = run.limit; break; }
           const triggered = Boolean(hit);
           const pass = triggered === item.should_trigger;
           if (!pass) failures++;
+          const note = run.timedOut && hit ? `timed out after ${opts.timeoutMs / 1000}s but the skill was already loaded` : run.error ?? null;
           cases.push({
             prompt: item.prompt,
             why: item.why,
@@ -708,9 +741,9 @@ async function main() {
             pass,
             skills_visible: run.skillCount,
             ms: run.ms,
-            error: run.error ?? null,
+            error: note,
           });
-          console.log(`  ${pass ? "PASS" : "FAIL"} [${item.should_trigger ? "yes" : "no "} -> ${triggered ? "yes" : "no "}] ${item.prompt.slice(0, 72)}${run.error ? ` (${run.error})` : ""}`);
+          console.log(`  ${pass ? "PASS" : "FAIL"} [${item.should_trigger ? "yes" : "no "} -> ${triggered ? "yes" : "no "}] ${item.prompt.slice(0, 72)}${note ? ` (${note})` : ""}`);
         }
         if (cases.length) {
           result.trigger = { metrics: metrics(cases), cases };
@@ -729,19 +762,32 @@ async function main() {
 
       if (opts.quality) {
         const cases = [];
-        for (const testCase of quality.cases) {
+        for (const [caseIndex, testCase] of quality.cases.entries()) {
           if (opts.only && testCase.id !== opts.only) continue;
+          if (opts.shard && caseIndex % opts.shard.count !== opts.shard.index) continue;
           const caseWorkspace = makeWorkspace(skill, agent);
           try {
-            const run = await runPrompt(agent, cli, testCase.prompt, caseWorkspace, { quality: true });
+            // A case may describe a project it expects to exist ("a live app in ./existing-app").
+            // Copy the fixture in under the name the prompt uses so the test measures the skill,
+            // not whether the model can invent a codebase from a path that is not there.
+            if (testCase.fixture) {
+              cpSync(join(repoRoot, "test-fixtures", testCase.fixture), join(caseWorkspace, testCase.fixture_path ?? "existing-app"), { recursive: true });
+            }
+            // Quality cases are automated: there is no human to answer the skill's intake
+            // questions, so say so once. Without this the model correctly asks its five
+            // questions and writes nothing, and the case measures the harness, not the skill.
+            const prompt = `Automated evaluation — there is no human to answer questions. State your assumptions briefly and complete the task.\n\n${testCase.prompt}`;
+            const run = await runPrompt(agent, cli, prompt, caseWorkspace, { quality: true });
             if (run.spawnError) { aborted = `could not start ${cli}: ${run.error}`; break; }
-            if (run.timedOut) { aborted = `${cli} did not answer within ${opts.timeoutMs / 1000}s — raise --timeout or check the CLI`; break; }
             if (run.limit) { aborted = run.limit; break; }
             const assertions = testCase.assertions.map((assertion) => checkAssertion(assertion, caseWorkspace, run.response));
-            if (run.error) assertions.push({ label: "run completed", pass: false, detail: run.error });
+            // A timed-out case is a failed case, not a reason to throw away the other 18.
+            // Whatever the CLI wrote before the kill is still on disk and worth scoring.
+            if (run.timedOut) assertions.push({ label: `run completed within ${opts.timeoutMs / 1000}s`, pass: false, detail: run.error });
+            else if (run.error) assertions.push({ label: "run completed", pass: false, detail: run.error });
             const passed = assertions.every((a) => a.pass);
             if (!passed) failures++;
-            cases.push({ id: testCase.id, prompt: testCase.prompt, passed, assertions, judgement: testCase.judgement ?? [], ms: run.ms });
+            cases.push({ id: testCase.id, prompt: testCase.prompt, passed, assertions, judgement: testCase.judgement ?? [], ms: run.ms, response: run.response.slice(0, 4000) });
             const failed = assertions.filter((a) => !a.pass);
             console.log(`  ${passed ? "PASS" : "FAIL"} [quality] ${testCase.id}${failed.length ? ` — ${failed.map((a) => a.label).join("; ")}` : ""}`);
           } finally {
@@ -749,7 +795,7 @@ async function main() {
           }
         }
         if (cases.length) {
-          result.quality = { total: cases.length, passed: cases.filter((c) => c.passed).length, cases };
+          result.quality = { total: cases.length, passed: cases.filter((c) => c.passed).length, cases, harness: "prefixed with: no human to answer questions — state assumptions and complete the task" };
         }
       }
     } finally {
@@ -760,10 +806,23 @@ async function main() {
     const outDir = join(repoRoot, "skills", skill, "evals", "results");
     if (aborted) break;
     mkdirSync(outDir, { recursive: true });
-    writeFileSync(join(outDir, `${date}.json`), `${JSON.stringify(result, null, 2)}\n`);
-    writeFileSync(join(outDir, `${date}.md`), `${mdSummary(result)}\n`);
-    results.push(result);
-    console.log(`  wrote skills/${skill}/evals/results/${date}.json`);
+    const suffix = opts.shard ? `.shard-${opts.shard.index}` : "";
+    // Trigger and quality runs are separate commands, often on the same day. Merge rather
+    // than replace, so the second run cannot erase the first run's numbers.
+    const outJson = join(outDir, `${date}${suffix}.json`);
+    let record = result;
+    if (!suffix && existsSync(outJson)) {
+      try {
+        const previous = JSON.parse(readFileSync(outJson, "utf8"));
+        if (previous.agent === result.agent && (previous.model ?? null) === (result.model ?? null)) {
+          record = { ...previous, ...result, trigger: result.trigger ?? previous.trigger, quality: result.quality ?? previous.quality };
+        }
+      } catch { /* an unreadable file is replaced, not merged */ }
+    }
+    writeFileSync(outJson, `${JSON.stringify(record, null, 2)}\n`);
+    writeFileSync(join(outDir, `${date}${suffix}.md`), `${mdSummary(record)}\n`);
+    results.push(record);
+    console.log(`  wrote skills/${skill}/evals/results/${date}${suffix}.json`);
   }
 
   if (aborted) {

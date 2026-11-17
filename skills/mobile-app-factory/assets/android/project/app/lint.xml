@@ -10,4 +10,13 @@
     <issue id="ObsoleteSdkInt">
         <ignore path="src/main/res/mipmap-anydpi-v26" />
     </issue>
+
+    <!--
+      "in Folge" ("days in a row") is correct German; the Typos check suggests
+      "infolge" ("as a consequence"), which would change the meaning. Scope the
+      suppression to that phrase in the German strings so real typos still fail.
+    -->
+    <issue id="Typos">
+        <ignore path="src/main/res/values-de/strings.xml" regexp="in Folge" />
+    </issue>
 </lint>

@@ -1,7 +1,7 @@
 {
   "skill": "mobile-app-factory",
   "version": 1,
-  "notes": "Each case runs in a fresh temp project. `assertions` are checked mechanically by scripts/run-evals.mjs; `judgement` keeps the human pass criteria from the original manual set. Types: file_exists, file_absent, file_matches, mentions_all, mentions_any, json_equals, json_max, response_matches, response_mentions_all.",
+  "notes": "Each case runs in a fresh temp project. `assertions` are checked mechanically by scripts/run-evals.mjs; `judgement` keeps the human pass criteria from the original manual set. Types: file_exists, file_absent, file_matches, mentions_all, mentions_any, json_equals, json_max, response_matches, response_mentions_all. The runner prefixes every quality prompt with a no-questions instruction: there is no human in an automated run to answer the skill's intake questions.",
   "cases": [
     {
       "id": "idea-to-prd",
@@ -301,6 +301,8 @@
     {
       "id": "rebuild-plan",
       "prompt": "I have a live Expo app in ./existing-app on both stores. Rebuild it natively without losing users or the store listing.",
+      "fixture": "existing-expo-app",
+      "fixture_path": "existing-app",
       "assertions": [
         {
           "type": "file_exists",

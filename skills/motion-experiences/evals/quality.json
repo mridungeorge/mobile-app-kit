@@ -1,7 +1,7 @@
 {
   "skill": "motion-experiences",
   "version": 1,
-  "notes": "Motion quality cases mostly produce code in the user's project, so assertions read the final response. `judgement` keeps the human criteria from the original manual set.",
+  "notes": "Motion quality cases mostly produce code in the user's project, so assertions read the final response. `judgement` keeps the human criteria from the original manual set. The runner prefixes every quality prompt with a no-questions instruction: there is no human in an automated run.",
   "cases": [
     {
       "id": "landing-page-motion",

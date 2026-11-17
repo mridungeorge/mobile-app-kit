@@ -24,7 +24,7 @@
 //   --help
 
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
-import { join, resolve, dirname } from "node:path";
+import { join, resolve, dirname, basename } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -868,7 +868,9 @@ function main() {
     process.exit(2);
   }
   if (opts.help) { console.log(help()); return; }
-  if (!opts.words.length) {
+  // In rebuild mode the inventory already describes the app, so the one-line idea is optional:
+  // the documented command is `--rebuild --src ./existing-app --dir .mobile` with no prose.
+  if (!opts.words.length && !opts.rebuild) {
     console.error("error: no idea supplied");
     console.error(help());
     process.exit(2);
@@ -882,7 +884,12 @@ function main() {
       console.error(`error: no directory at ${resolve(opts.src)}`);
       process.exit(2);
     }
-    ensureInventory(opts);
+    const inventoryPath = ensureInventory(opts);
+    if (!opts.words.length) {
+      let name = null;
+      try { name = JSON.parse(readFileSync(inventoryPath, "utf8"))?.packageJson?.name ?? null; } catch { /* fall back to the folder name */ }
+      opts.words = [`rebuild ${(name || basename(resolve(opts.src))).replace(/[-_]+/g, " ")}`];
+    }
   }
 
   let profile;
@@ -907,6 +914,13 @@ function main() {
   if (opts.out) {
     writeFileSync(opts.out, `${JSON.stringify(profile, null, 2)}\n`);
     console.error(`wrote ${opts.out}`);
+  } else if (opts.rebuild && opts.dir) {
+    // A rebuild is a documented pipeline mode, so --dir must write the profile the
+    // migration analyst reads. Without this the command printed JSON and every later
+    // phase had to be told where the profile went.
+    const target = join(resolve(opts.dir), "00-profile.json");
+    writeFileSync(target, `${JSON.stringify(profile, null, 2)}\n`);
+    console.error(`wrote ${target}`);
   }
   console.log(opts.summary && !opts.out && !opts.json ? summary(profile) : output);
   if (fast) {
