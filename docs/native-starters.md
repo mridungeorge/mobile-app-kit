@@ -71,8 +71,8 @@ AGP 9 removed `org.jetbrains.kotlin.android`: Kotlin is compiled by the Android 
 | `:app:testDebugUnitTest` | same | 3/3 tests pass |
 | `:app:lintDebug` | same | 0 errors, 0 warnings |
 | `:app:assembleDebugAndroidTest` | same | compiles; running it needs a device or emulator |
-| `xcodegen generate`, `xcodebuild build`, `xcodebuild test` | macOS CI only | **not verified locally** — Xcode is macOS-only and the authoring machine is Windows |
+| `xcodegen generate`, `xcodebuild build`, `xcodebuild test` | GitHub Actions, macOS runner | passes — build and all XCTest cases, 2026-11-18 |
 
-The iOS sources have not been compiled on this machine. They are checked by inspection and by CI, and should be treated as unproven until that job has run once.
+The iOS sources cannot be compiled on the authoring machine (Windows), so CI is where they are proven. The last `ios starter compiles` run on `main` built the app for the simulator and ran the full test suite green.
 
-CI is set up to compile both starters on every push (`.github/workflows/audit.yml`): the Android job runs `assembleDebug`, `testDebugUnitTest`, `lintDebug` and `assembleDebugAndroidTest` with JDK 17, and the iOS job generates the project with XcodeGen, builds for the simulator with code signing disabled, then runs `xcodebuild test`. A template that stops compiling fails the build instead of rotting quietly.
+CI is set up to compile both starters on every push (`.github/workflows/audit.yml`): the Android job runs `assembleDebug`, `testDebugUnitTest`, `lintDebug` and `assembleDebugAndroidTest` with JDK 17, and the iOS job generates the project with XcodeGen, builds for the simulator with code signing disabled, then runs `xcodebuild test` against a simulator it picks from the runner image. A template that stops compiling fails the build instead of rotting quietly.

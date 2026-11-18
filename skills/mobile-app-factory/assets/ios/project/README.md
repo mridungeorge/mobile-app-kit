@@ -52,8 +52,10 @@ neutral surfaces, one accent, hairline borders instead of large shadows, 4/8/12/
 ## Tests
 
 ```bash
+# Simulator names change with every Xcode release; ask the machine for one.
+SIM=$(xcrun simctl list devices available | grep -m1 -o 'iPhone [^(]*' | xargs)
 xcodebuild -project __PROJECT_NAME__.xcodeproj -scheme __PROJECT_NAME__ \
-  -destination 'platform=iOS Simulator,name=iPhone 16' CODE_SIGNING_ALLOWED=NO test
+  -destination "platform=iOS Simulator,name=$SIM" CODE_SIGNING_ALLOWED=NO test
 ```
 
 The suite covers the shared state machine, the cache-first repository (including offline) and
