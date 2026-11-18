@@ -151,12 +151,24 @@ jobs:
       - name: Test on the simulator
         working-directory: ${{ runner.temp }}/ios
         run: |
+          set -o pipefail
           xcodebuild \
             -project CISmoke.xcodeproj \
             -scheme CISmoke \
             -destination "id=$SIM_UDID" \
             CODE_SIGNING_ALLOWED=NO \
-            test
+            test 2>&1 | tee test.log
+
+      # The log is unreadable without repo admin rights, so lift the failing lines into
+      # check annotations, which anyone can see on the run.
+      - name: Report failing tests
+        if: failure()
+        working-directory: ${{ runner.temp }}/ios
+        run: |
+          [ -f test.log ] || exit 0
+          grep -E "error:|Test Case .* failed|Testing failed" test.log | head -25 \
+            | sed 's/%/%25/g' \
+            | while IFS= read -r line; do echo "::error::$line"; done
 
   # Modules rot silently unless something builds them: scaffold fresh apps with every
   # module that ships platform code switched on, then compile them.
@@ -214,10 +226,19 @@ jobs:
       - name: Generate, build and test
         working-directory: ${{ runner.temp }}/ios
         run: |
+          set -o pipefail
           xcodegen generate
           xcodebuild -project CIModules.xcodeproj -scheme CIModules \
             -destination "id=$SIM_UDID" \
-            CODE_SIGNING_ALLOWED=NO test
+            CODE_SIGNING_ALLOWED=NO test 2>&1 | tee test.log
+      - name: Report failing tests
+        if: failure()
+        working-directory: ${{ runner.temp }}/ios
+        run: |
+          [ -f test.log ] || exit 0
+          grep -E "error:|Test Case .* failed|Testing failed" test.log | head -25 \
+            | sed 's/%/%25/g' \
+            | while IFS= read -r line; do echo "::error::$line"; done
 
   expo-build:
     name: expo starter typechecks and bundles
