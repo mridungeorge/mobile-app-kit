@@ -17,7 +17,10 @@ final class HabitRepositoryTests: XCTestCase {
     }
 
     func testLoadFillsAnEmptyCacheFromTheAPI() async throws {
-        let repository = HabitRepository(context: try container().mainContext, api: MockAPIClient())
+        // Hold the container: the context does not keep it alive, and a deallocated
+        // container crashes SwiftData on the next insert.
+        let model = try container()
+        let repository = HabitRepository(context: model.mainContext, api: MockAPIClient())
         let habits = try await repository.load()
         XCTAssertEqual(habits.count, 3)
         // Order is a store collation detail; the fixture content is what matters here.
@@ -33,8 +36,9 @@ final class HabitRepositoryTests: XCTestCase {
     }
 
     func testLoadThrowsWhenTheCacheIsEmptyAndTheNetworkFails() async throws {
+        let model = try container()
         let repository = HabitRepository(
-            context: try container().mainContext,
+            context: model.mainContext,
             api: FailingAPIClient(error: APIError.offline)
         )
         do {
@@ -56,7 +60,8 @@ final class HabitRepositoryTests: XCTestCase {
     }
 
     func testDeleteAllEmptiesTheCache() async throws {
-        let repository = HabitRepository(context: try container().mainContext, api: MockAPIClient())
+        let model = try container()
+        let repository = HabitRepository(context: model.mainContext, api: MockAPIClient())
         _ = try await repository.load()
         try repository.deleteAll()
         XCTAssertTrue(try repository.habits().isEmpty)

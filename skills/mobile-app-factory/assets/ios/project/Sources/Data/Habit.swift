@@ -5,7 +5,10 @@ import SwiftData
 /// a rebuild that renders straight from the network shows an empty screen on a train.
 @Model
 final class Habit {
-    @Attribute(.unique) var id: String
+    // Not `@Attribute(.unique)`: a unique constraint turns a duplicate API row into a
+    // CoreData conflict that traps at save time, and this repository only fills an empty
+    // cache, so duplicates cannot accumulate anyway.
+    var id: String
     var title: String
     var streak: Int
     var updatedAt: Date
