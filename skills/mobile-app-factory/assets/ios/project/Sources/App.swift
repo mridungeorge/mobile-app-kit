@@ -12,6 +12,6 @@ struct __PROJECT_NAME__App: App {
             ContentView()
                 .environment(environment)
         }
-        .modelContainer(for: Habit.self)
+        .modelContainer(Persistence.container())
     }
 }

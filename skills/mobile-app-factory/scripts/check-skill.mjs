@@ -520,6 +520,7 @@ try {
     "Sources/Data/Habit.swift",
     "Sources/Data/SettingsStore.swift",
     "Sources/Data/AuthService.swift",
+    "Sources/Data/Persistence.swift",
     "Sources/UI/UiState.swift",
     "Sources/UI/StateView.swift",
     "Sources/Features/Home/HomeScreen.swift",
