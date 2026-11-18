@@ -126,7 +126,7 @@ The one rule: **update the existing listing; never create a second bundle ID or 
 
 ## Optional modules
 
-The profile switches modules on per archetype; `enable-modules.mjs` copies the sources into a scaffolded app and appends their dependencies. Each module is a README, a `module.json`, platform code where it needs it, and a test artefact. The Android module code has been compiled on this machine; the iOS module sources have not — the `modules-ios` CI job would be their first compile.
+The profile switches modules on per archetype; `enable-modules.mjs` copies the sources into a scaffolded app and appends their dependencies. Each module is a README, a `module.json`, platform code where it needs it, and a test artefact. Both platforms' module code is compiled by CI (`android starter + modules compiles`, `ios starter + modules compiles`).
 
 | Module | What it adds | Declarations it changes |
 |---|---|---|
@@ -195,7 +195,7 @@ The same audit runs in CI on **Linux, macOS and Windows** (`.github/workflows/au
 
 ## Verified vs not verified
 
-Last checked **2026-11-17**. "Verified" means the command ran on this machine; "not verified" is a real gap, not a disclaimer.
+Last checked **2026-11-18**. "Verified" means the command ran on this machine or in CI; "not verified" is a real gap, not a disclaimer.
 
 | Item | Status | Evidence |
 |---|---|---|
@@ -206,9 +206,9 @@ Last checked **2026-11-17**. "Verified" means the command ran on this machine; "
 | Expo starter typecheck + Android bundle | Verified | `tsc --noEmit` and `expo export --platform android` |
 | Pinned dependency versions | Verified | every coordinate checked against Google Maven / Maven Central on 2026-11-16 |
 | Store facts (22 dated rows) | Verified | each row carries a source URL and `verified_on: 2026-11-16` |
-| iOS starter build + tests | **Not verified** | macOS-only; the `ios-build` CI job has never run |
-| Module code, both platforms | Partial | Android modules (billing, push, analytics-crash) pass `assembleDebug`; the Swift sources have not been compiled |
-| `modules-android`, `modules-ios`, `expo-build` CI jobs | **Not verified** | added, never run |
+| iOS starter build + tests | Verified | CI `ios starter compiles`, 2026-11-18: XcodeGen, simulator build and all XCTest cases pass |
+| Module code, both platforms | Verified | CI `android starter + modules compiles` and `ios starter + modules compiles`, 2026-11-18 |
+| `modules-android`, `modules-ios`, `expo-build` CI jobs | Verified | green on `main`, 2026-11-18 (run 44237352136's successor) |
 | Trigger evals | Verified | 2026-11-17 Codex: mobile 20/20, motion 19/20. 2026-11-16 Claude Code: mobile 18/20, motion 16/20 (before the descriptions were widened) |
 | Quality evals | Partial | 2026-11-18 OpenCode (free `big-pickle`): mobile 11/19, motion 3/7. 2026-11-17 Codex: motion 0/7; mobile never finished — the first case hit the 300s limit and the Codex quota ran out |
 
