@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!--
+      ObsoleteSdkInt suggests merging mipmap-anydpi-v26 into mipmap-anydpi because minSdk is 26.
+      AAPT2 does not resolve an <adaptive-icon> from a folder without the version qualifier — the
+      resource simply disappears and the manifest fails to link — so the -v26 folder is required
+      here, and this one suggestion is ignored with a reason instead of a project-wide disable.
+      Remove this file if minSdk ever drops below 26 and the qualifier becomes meaningful again.
+    -->
+    <issue id="ObsoleteSdkInt">
+        <ignore path="src/main/res/mipmap-anydpi-v26" />
+    </issue>
+
+    <!--
+      "in Folge" ("days in a row") is correct German; the Typos check suggests
+      "infolge" ("as a consequence"), which would change the meaning. Scope the
+      suppression to that phrase in the German strings so real typos still fail.
+    -->
+    <issue id="Typos">
+        <ignore path="src/main/res/values-de/strings.xml" regexp="in Folge" />
+    </issue>
+</lint>

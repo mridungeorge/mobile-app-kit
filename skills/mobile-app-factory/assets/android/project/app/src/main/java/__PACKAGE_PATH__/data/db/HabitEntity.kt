@@ -1,0 +1,12 @@
+package __PACKAGE__.data.db
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "habits")
+data class HabitEntity(
+    @PrimaryKey val id: String,
+    val title: String,
+    val streak: Int,
+    val updatedAt: Long
+)

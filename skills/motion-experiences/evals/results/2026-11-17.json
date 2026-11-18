@@ -1,0 +1,498 @@
+{
+  "skill": "motion-experiences",
+  "date": "2026-11-17",
+  "agent": "Codex CLI",
+  "cli_format": "text",
+  "model": "gpt-6.1-sol",
+  "auth": "cli-login",
+  "environment": null,
+  "trigger": {
+    "metrics": {
+      "total": 20,
+      "positive": 10,
+      "negative": 10,
+      "tp": 10,
+      "fp": 1,
+      "fn": 0,
+      "tn": 9,
+      "precision": 0.909,
+      "recall": 1,
+      "accuracy": 0.95
+    },
+    "cases": [
+      {
+        "prompt": "This landing page feels dead. Add scroll animations.",
+        "why": "scroll motion",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "path",
+        "invoked": [
+          "modern-web-guidance",
+          "motion-experiences",
+          "ponytail"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 114157,
+        "error": null
+      },
+      {
+        "prompt": "Make the hero feel premium.",
+        "why": "hero motion",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "path",
+        "invoked": [
+          "motion-experiences",
+          "modern-web-guidance",
+          "ponytail"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 82709,
+        "error": null
+      },
+      {
+        "prompt": "Add reveal-on-scroll to these cards.",
+        "why": "reveal",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "path",
+        "invoked": [
+          "motion-experiences",
+          "modern-web-guidance",
+          "ponytail"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 95898,
+        "error": null
+      },
+      {
+        "prompt": "How do I use GSAP ScrollTrigger in React?",
+        "why": "GSAP",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "path",
+        "invoked": [
+          "modern-web-guidance",
+          "motion-experiences"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 45145,
+        "error": null
+      },
+      {
+        "prompt": "Which React Bits component should I use for a text reveal?",
+        "why": "React Bits",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "path",
+        "invoked": [
+          "motion-experiences"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 62723,
+        "error": null
+      },
+      {
+        "prompt": "Animate a bottom sheet in React Native.",
+        "why": "Reanimated",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "path",
+        "invoked": [
+          "motion-experiences",
+          "ponytail"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 85887,
+        "error": null
+      },
+      {
+        "prompt": "My GSAP animations replay on route change.",
+        "why": "motion debugging",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "path",
+        "invoked": [
+          "motion-experiences",
+          "modern-web-guidance",
+          "ponytail"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 85665,
+        "error": null
+      },
+      {
+        "prompt": "Add a SwiftUI spring animation to my iOS onboarding.",
+        "why": "native SwiftUI motion",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "path",
+        "invoked": [
+          "motion-experiences",
+          "ponytail"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 46963,
+        "error": null
+      },
+      {
+        "prompt": "How do I animate list items in Jetpack Compose?",
+        "why": "native Compose motion",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "path",
+        "invoked": [
+          "motion-experiences"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 67871,
+        "error": null
+      },
+      {
+        "prompt": "The app feels static. Add micro-interactions and one hero animation.",
+        "why": "motion layer, unspecified stack",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "path",
+        "invoked": [
+          "motion-experiences",
+          "modern-web-guidance",
+          "ponytail",
+          "mobile-app-factory"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 93375,
+        "error": null
+      },
+      {
+        "prompt": "Animate this SVG logo in After Effects.",
+        "why": "motion graphics tool, not UI code",
+        "should_trigger": false,
+        "triggered": true,
+        "via": "path",
+        "invoked": [
+          "motion-experiences"
+        ],
+        "pass": false,
+        "skills_visible": null,
+        "ms": 50049,
+        "error": null
+      },
+      {
+        "prompt": "Set up a Postgres index for my backend.",
+        "why": "unrelated",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [
+          "ponytail",
+          "supabase-postgres-best-practices"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 25022,
+        "error": null
+      },
+      {
+        "prompt": "Build me a mobile app for booking dog walkers.",
+        "why": "mobile-app-factory",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [
+          "mobile-app-factory"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 67590,
+        "error": null
+      },
+      {
+        "prompt": "Write App Store metadata for my recipe app.",
+        "why": "mobile-app-factory, store metadata",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 22607,
+        "error": null
+      },
+      {
+        "prompt": "Why was my app rejected for guideline 4.2?",
+        "why": "mobile-app-factory, review",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [
+          "mobile-app-factory"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 51683,
+        "error": null
+      },
+      {
+        "prompt": "Design a logo for my bakery.",
+        "why": "brand/design skill",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 85944,
+        "error": null
+      },
+      {
+        "prompt": "Fix a memory leak in my Android service.",
+        "why": "native debugging, not motion",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [
+          "ponytail"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 87511,
+        "error": null
+      },
+      {
+        "prompt": "Create a Figma prototype for a checkout flow.",
+        "why": "design tooling",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [
+          "plugin-management"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 33024,
+        "error": null
+      },
+      {
+        "prompt": "Write a Python script to resize images.",
+        "why": "unrelated",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [
+          "ponytail"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 28483,
+        "error": null
+      },
+      {
+        "prompt": "Set up GitHub Actions CI for my repo.",
+        "why": "infra, not motion",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [
+          "ponytail"
+        ],
+        "pass": true,
+        "skills_visible": null,
+        "ms": 75461,
+        "error": null
+      }
+    ]
+  },
+  "quality": {
+    "total": 7,
+    "passed": 0,
+    "cases": [
+      {
+        "id": "landing-page-motion",
+        "prompt": "Add motion to my SaaS landing page. It currently has no animation.",
+        "passed": false,
+        "assertions": [
+          {
+            "label": "useGSAP + matchMedia, not raw useEffect",
+            "pass": false,
+            "detail": "response missing useGSAP, matchMedia"
+          },
+          {
+            "label": "reveal uses once: true",
+            "pass": false,
+            "detail": "response does not match /once/"
+          },
+          {
+            "label": "reduced-motion branch stated",
+            "pass": true,
+            "detail": "response matches /(?i)reduced[- ]motion/"
+          }
+        ],
+        "judgement": [
+          "Names the five jobs and picks a budget",
+          "Reveals 12-16px + fade",
+          "Restricts pinned sections to desktop widths",
+          "Animates transform/opacity only"
+        ],
+        "ms": 115531
+      },
+      {
+        "id": "component-choice",
+        "prompt": "I need a premium animated border on my primary CTA.",
+        "passed": false,
+        "assertions": [
+          {
+            "label": "picks one border effect",
+            "pass": false,
+            "detail": "response does not match /(?i)starborder/"
+          },
+          {
+            "label": "explains the canvas cost",
+            "pass": false,
+            "detail": "response does not match /(?i)canvas/"
+          }
+        ],
+        "judgement": [
+          "One effect, not three",
+          "One per page",
+          "Keeps contrast and focus-visible styling"
+        ],
+        "ms": 176786
+      },
+      {
+        "id": "react-native-reveal",
+        "prompt": "Add scroll reveals to a React Native feed.",
+        "passed": false,
+        "assertions": [
+          {
+            "label": "Reanimated on the UI thread",
+            "pass": false,
+            "detail": "response missing Reanimated, useAnimatedStyle"
+          },
+          {
+            "label": "honours the OS reduce-motion flag",
+            "pass": false,
+            "detail": "response does not match /(?i)reduceMotion|isReduceMotionEnabled/"
+          }
+        ],
+        "judgement": [
+          "Does not animate every row; virtualises and reveals once",
+          "Maps Rune tokens to withSpring",
+          "Never imports GSAP into React Native"
+        ],
+        "ms": 93341
+      },
+      {
+        "id": "performance-review",
+        "prompt": "My scroll animation janks on Android.",
+        "passed": false,
+        "assertions": [
+          {
+            "label": "checks will-change and ScrollTrigger cleanup",
+            "pass": false,
+            "detail": "response missing will-change, ScrollTrigger"
+          },
+          {
+            "label": "flags non-composited properties",
+            "pass": false,
+            "detail": "response does not match /(?i)width|top|filter/"
+          }
+        ],
+        "judgement": [
+          "Checks image sizes and WebGL layers",
+          "Suggests narrow will-change removed after the animation"
+        ],
+        "ms": 77012
+      },
+      {
+        "id": "budget-aware-motion",
+        "prompt": "Add motion to this budgeting app, and also to this kids learning app.",
+        "passed": false,
+        "assertions": [
+          {
+            "label": "different budgets per app",
+            "pass": false,
+            "detail": "response missing expressive"
+          },
+          {
+            "label": "reduced-motion path for both",
+            "pass": false,
+            "detail": "response does not match /(?i)reduce[- ]motion/"
+          }
+        ],
+        "judgement": [
+          "Budgeting app: press feedback, short fades, one count reveal, no confetti",
+          "Kids app: expressive but calm, no rapid flashing or variable-ratio reward loop",
+          "Reads .mobile/00-profile.json if present, otherwise states the budget"
+        ],
+        "ms": 82509
+      },
+      {
+        "id": "native-swiftui",
+        "prompt": "Add a spring entrance and press feedback to my SwiftUI onboarding screen.",
+        "passed": false,
+        "assertions": [
+          {
+            "label": "uses SwiftUI springs, not ease curves",
+            "pass": false,
+            "detail": "response does not match /Animation\\.spring|Motion\\.settle/"
+          },
+          {
+            "label": "reads the reduce-motion environment",
+            "pass": false,
+            "detail": "response does not match /accessibilityReduceMotion/"
+          },
+          {
+            "label": "press feedback with haptics",
+            "pass": false,
+            "detail": "response does not match /sensoryFeedback|RunePressStyle/"
+          }
+        ],
+        "judgement": [
+          "Tokens come from DesignSystem/Motion.swift",
+          "No bounce on body text",
+          "One flourish per screen"
+        ],
+        "ms": 86425
+      },
+      {
+        "id": "native-compose",
+        "prompt": "Animate list item entry in my Jetpack Compose screen.",
+        "passed": false,
+        "assertions": [
+          {
+            "label": "uses the Compose animation API",
+            "pass": true,
+            "detail": "response matches /animateItem|AnimatedVisibility/"
+          },
+          {
+            "label": "springs from the token file",
+            "pass": true,
+            "detail": "response matches /spring\\(|Motion\\.settle/"
+          },
+          {
+            "label": "reduced-motion path",
+            "pass": false,
+            "detail": "response does not match /ANIMATOR_DURATION_SCALE|reduced/"
+          }
+        ],
+        "judgement": [
+          "Does not animate every row on first paint",
+          "Uses transform/opacity, not layout properties",
+          "Stagger 24-40ms"
+        ],
+        "ms": 76734
+      }
+    ]
+  }
+}

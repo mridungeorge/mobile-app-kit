@@ -87,9 +87,14 @@ jobs:
             --platform android --name "CI Smoke" --package com.example.cismoke \
             --out "$RUNNER_TEMP/android"
 
-      - name: assembleDebug + lint
+      - name: assembleDebug + unit tests + lint + instrumented-test compile
         working-directory: ${{ runner.temp }}/android
-        run: ./gradlew --no-daemon --stacktrace assembleDebug lint
+        run: |
+          ./gradlew --no-daemon --stacktrace \
+            assembleDebug \
+            testDebugUnitTest \
+            lintDebug \
+            assembleDebugAndroidTest
 
   ios-build:
     name: ios starter compiles
@@ -126,6 +131,89 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      # Building proves it compiles; testing proves the state machine, the SwiftData
+      # repository and the auth stubs actually behave. The authoring machine has no
+      # Xcode, so this job is where the iOS starter is verified.
+      - name: Test on the simulator
+        working-directory: ${{ runner.temp }}/ios
+        run: |
+          xcodebuild \
+            -project CISmoke.xcodeproj \
+            -scheme CISmoke \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO \
+            test
+
+  # Modules rot silently unless something builds them: scaffold fresh apps with every
+  # module that ships platform code switched on, then compile them.
+  modules-android:
+    name: android starter + modules compiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Scaffold and enable modules
+        run: |
+          node skills/mobile-app-factory/scripts/scaffold-native.mjs \
+            --platform android --name "CI Modules" --package com.example.cimodules \
+            --out "$RUNNER_TEMP/android"
+          node skills/mobile-app-factory/scripts/enable-modules.mjs \
+            --platform android --app "$RUNNER_TEMP/android" --package com.example.cimodules \
+            --modules billing,push,analytics-crash
+      - name: assembleDebug
+        working-directory: ${{ runner.temp }}/android
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+  modules-ios:
+    name: ios starter + modules compiles
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Scaffold and enable modules
+        run: |
+          node skills/mobile-app-factory/scripts/scaffold-native.mjs \
+            --platform ios --name "CI Modules" --bundle-id com.example.cimodules \
+            --out "$RUNNER_TEMP/ios"
+          node skills/mobile-app-factory/scripts/enable-modules.mjs \
+            --platform ios --app "$RUNNER_TEMP/ios" --project CIModules \
+            --modules billing,push,analytics-crash
+      - run: brew install xcodegen
+      - name: Generate, build and test
+        working-directory: ${{ runner.temp }}/ios
+        run: |
+          xcodegen generate
+          xcodebuild -project CIModules.xcodeproj -scheme CIModules \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO test
+
+  expo-build:
+    name: expo starter typechecks and bundles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Scaffold the Expo starter
+        run: bash "$GITHUB_WORKSPACE/skills/mobile-app-factory/scripts/new-app.sh" expo CiExpo com.example.ciexpo
+        working-directory: ${{ runner.temp }}
+      - name: Typecheck
+        working-directory: ${{ runner.temp }}/CiExpo
+        run: npx tsc --noEmit
+      - name: Bundle
+        working-directory: ${{ runner.temp }}/CiExpo
+        run: npx expo export --platform android --platform ios
 
   motion-demo-build:
     name: motion-demo builds

@@ -6,6 +6,8 @@
 //   node scripts/run-evals.mjs --skill mobile-app-factory --trigger
 //   node scripts/run-evals.mjs --quality --only idea-to-prd
 //   node scripts/run-evals.mjs --agent opencode    # claude (default) | opencode | codex
+//   node scripts/run-evals.mjs --quality --shard 0/4  # one quarter of the quality cases, for parallel runs
+//   node scripts/run-evals.mjs --merge             # combine today's shard files into one result
 //   node scripts/run-evals.mjs --validate          # check the eval files, call nothing
 //   node scripts/run-evals.mjs --dry-run           # print the plan, call nothing
 //   node scripts/run-evals.mjs --self-test         # check the agent adapters, call nothing
@@ -42,9 +44,11 @@ const opts = {
   selfTest: false,
   dryRun: false,
   only: null,
+  merge: false,
   timeoutMs: 240_000,
   maxTurns: null,
   model: null,
+  reasoning: null,
   keep: false,
   debug: false,
   cli: null,
@@ -61,9 +65,19 @@ for (let i = 2; i < process.argv.length; i++) {
   else if (arg === "--self-test") opts.selfTest = true;
   else if (arg === "--dry-run") opts.dryRun = true;
   else if (arg === "--only") opts.only = process.argv[++i];
+  else if (arg === "--merge") opts.merge = true;
+  else if (arg === "--shard") {
+    const [index, count] = String(process.argv[++i] ?? "").split("/").map(Number);
+    if (!Number.isInteger(index) || !Number.isInteger(count) || count < 1 || index < 0 || index >= count) {
+      console.error("--shard expects <index>/<count>, e.g. 0/4");
+      process.exit(2);
+    }
+    opts.shard = { index, count };
+  }
   else if (arg === "--timeout") opts.timeoutMs = Number(process.argv[++i]) * 1000;
   else if (arg === "--max-turns") opts.maxTurns = Number(process.argv[++i]);
   else if (arg === "--model") opts.model = process.argv[++i];
+  else if (arg === "--reasoning") opts.reasoning = process.argv[++i];
   else if (arg === "--keep") opts.keep = true;
   else if (arg === "--debug") opts.debug = true;
   else if (arg === "--cli") opts.cli = process.argv[++i];
@@ -135,6 +149,9 @@ function validate() {
       if (!Array.isArray(testCase.assertions) || !testCase.assertions.length) {
         problems.push(`${skill}/${testCase.id}: no checkable assertions`);
       }
+      if (testCase.fixture && !existsSync(join(repoRoot, "test-fixtures", testCase.fixture))) {
+        problems.push(`${skill}/${testCase.id}: fixture ${testCase.fixture} does not exist`);
+      }
       for (const assertion of testCase.assertions ?? []) {
         const types = ["file_exists", "file_absent", "file_matches", "mentions_all", "mentions_any", "json_equals", "json_max", "response_matches", "response_mentions_all"];
         if (!types.includes(assertion.type)) problems.push(`${skill}/${testCase.id}: unknown assertion type "${assertion.type}"`);
@@ -170,6 +187,11 @@ function selfTest() {
   const viaClaudePath = detectInText("/home/me/.claude/skills/mobile-app-factory/SKILL.md");
   expect("detects a `.claude/skills/<id>/SKILL.md` path",
     viaClaudePath.some((hit) => hit.skill === "mobile-app-factory" && hit.via === "path"));
+
+  const viaEscapedWindowsPath = detectInText(
+    "Get-Content C:\\\\sandbox\\\\.agents\\\\skills\\\\motion-experiences\\\\SKILL.md");
+  expect("detects a JSON-escaped Windows path with doubled separators",
+    viaEscapedWindowsPath.some((hit) => hit.skill === "motion-experiences" && hit.via === "path"));
 
   expect("does not fire on text with no skill mention",
     detectInText("I built a habit tracker and never loaded a skill.").length === 0);
@@ -219,7 +241,17 @@ const AGENTS = {
     format: "text",
     isolateConfig: false,
     keys: ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"],
-    command: (prompt) => ["run", prompt],
+    command: (prompt, { quality } = {}) => {
+      // --standalone keeps the eval off the authoring session's background server, which
+      // otherwise restarts mid-run. Plan mode is read-only, so a trigger prompt cannot turn
+      // into a build; quality cases get build + auto-approved tools inside their sandbox.
+      const args = ["run", "--standalone"];
+      if (!quality) args.push("--agent", "plan", "--format", "json");
+      else args.push("--agent", "build", "--auto");
+      if (opts.model) args.push("--model", opts.model);
+      args.push(prompt);
+      return args;
+    },
   },
   codex: {
     label: "Codex CLI",
@@ -228,7 +260,16 @@ const AGENTS = {
     format: "text",
     isolateConfig: false,
     keys: ["OPENAI_API_KEY"],
-    command: (prompt) => ["exec", prompt],
+    command: (prompt, { quality } = {}) => {
+      // A trigger prompt only asks the model to choose a skill; letting it write files makes it
+      // start building the app and blow through the timeout before it prints anything useful.
+      // Quality cases do need to scaffold, so they get write access to the sandbox only.
+      const args = ["exec", "--skip-git-repo-check", "-s", quality ? "workspace-write" : "read-only"];
+      if (opts.model) args.push("-m", opts.model);
+      if (opts.reasoning) args.push("-c", `model_reasoning_effort=${opts.reasoning}`);
+      args.push(prompt);
+      return args;
+    },
   },
   custom: {
     label: "custom command",
@@ -360,7 +401,9 @@ function makeEvalConfig() {
 // `detection: "path"` so nobody reads more into it than that.
 function detectInText(text) {
   const hits = [];
-  const pathPattern = /(?:^|[\\/\s"'`])skills[\\/]([^\\/\s"'`]+)[\\/]SKILL\.md/gi;
+  // Some text CLIs print a JSON-escaped Windows path, so a separator can appear as
+  // one backslash or as two. Accept either without widening the skill-name capture.
+  const pathPattern = /(?:^|[\\/\s"'`])skills(?:\\|\/)+([^\\/\s"'`]+)(?:\\|\/)+SKILL\.md/gi;
   let match;
   while ((match = pathPattern.exec(text)) !== null) hits.push({ skill: match[1], via: "path" });
   // OpenCode prints `Skill "<id>"` when it loads one.
@@ -487,10 +530,13 @@ function runPrompt(agent, cli, prompt, cwd, { quality }) {
       const error = timedOut ? `timed out after ${opts.timeoutMs / 1000}s` : code === 0 ? null : `exit ${code}: ${stderr.trim().split("\n").slice(-2).join(" ").slice(0, 200)}`;
       // A text CLI that is not signed in looks exactly like a skill that did not trigger.
       // Treat auth and quota messages as "could not run", so no misleading results file is written.
+      // Only the CLI's own last lines count, and only recognised auth/quota wording: scanning the
+      // whole transcript aborts the run when a model writes about rate limiting in an app design.
       if (!limitHit && code !== 0 && !invoked.length) {
-        const message = `${raw}\n${stderr}`.trim();
-        if (/not logged in|authenticat|unauthori[sz]ed|credit balance|quota|usage limit|rate limit|api key/i.test(message)) {
-          limitHit = message.split("\n").filter(Boolean).slice(-2).join(" ").slice(0, 200);
+        const tail = stderr.trim().split("\n").filter(Boolean).slice(-12).join("\n");
+        if (/usage limit|quota exceeded|quota reached|credit balance|not logged in|unauthori[sz]ed|authenticat\w* (failed|required|expired)|invalid api key|rate limit exceeded/i.test(tail)) {
+          limitHit = tail.split("\n").slice(-2).join(" ").slice(0, 200);
+          if (opts.debug) console.log(`    · quota/auth pattern matched in CLI stderr`);
         }
       }
       resolveRun({ invoked, response, error, timedOut, skillCount, limit: limitHit, ms: Date.now() - started });
@@ -618,6 +664,68 @@ function mdSummary(result) {
   return lines.join("\n");
 }
 
+function mergeShards(skills, date) {
+  let merged = 0;
+  for (const skill of skills) {
+    const dir = join(repoRoot, "skills", skill, "evals", "results");
+    if (!existsSync(dir)) continue;
+    const shardFiles = readdirSync(dir)
+      .filter((name) => name.startsWith(`${date}.shard-`) && name.endsWith(".json"))
+      .sort();
+    if (shardFiles.length < 2) continue;
+
+    const records = shardFiles.map((name) => JSON.parse(readFileSync(join(dir, name), "utf8")));
+    const { agent, model = null } = records[0];
+    const mismatch = records.find((record) => record.agent !== agent || (record.model ?? null) !== model);
+    if (mismatch) {
+      console.error(`SKIP — ${skill}: shards came from different agents (${agent}/${model} vs ${mismatch.agent}/${mismatch.model ?? "default"}). Merge them by hand or rerun the odd shard.`);
+      process.exitCode = 2;
+      continue;
+    }
+
+    const quality = loadJson(join(repoRoot, "skills", skill, "evals", "quality.json"));
+    const byId = new Map();
+    for (const record of records) for (const testCase of record.quality?.cases ?? []) byId.set(testCase.id, testCase);
+    // Keep the eval file's order, so the merged record reads like a single run.
+    const cases = quality.cases.map((testCase) => byId.get(testCase.id)).filter(Boolean);
+    if (cases.length !== quality.cases.length) {
+      console.error(`SKIP — ${skill}: shards cover ${cases.length}/${quality.cases.length} cases. Run the missing shard first.`);
+      process.exitCode = 2;
+      continue;
+    }
+
+    const record = {
+      ...records[0],
+      quality: {
+        total: cases.length,
+        passed: cases.filter((testCase) => testCase.passed).length,
+        cases,
+        harness: records[0].quality?.harness,
+      },
+    };
+
+    // A trigger run on the same day is a separate command with its own record; keep it.
+    const outJson = join(dir, `${date}.json`);
+    if (existsSync(outJson)) {
+      try {
+        const previous = JSON.parse(readFileSync(outJson, "utf8"));
+        if (previous.agent === record.agent && (previous.model ?? null) === record.model) record.trigger = previous.trigger ?? record.trigger;
+      } catch { /* an unreadable file is replaced */ }
+    }
+
+    writeFileSync(outJson, `${JSON.stringify(record, null, 2)}\n`);
+    writeFileSync(join(dir, `${date}.md`), `${mdSummary(record)}\n`);
+    for (const name of shardFiles) {
+      rmSync(join(dir, name), { force: true });
+      rmSync(join(dir, name.replace(/\.json$/, ".md")), { force: true });
+    }
+    console.log(`${skill}: merged ${shardFiles.length} shard(s) — quality ${record.quality.passed}/${record.quality.total}`);
+    merged++;
+  }
+  if (!merged) console.error(`No ${date} shard files to merge.`);
+  return merged;
+}
+
 async function main() {
   if (opts.validate) process.exit(validate() ? 1 : 0);
   if (opts.selfTest) process.exit(selfTest() ? 1 : 0);
@@ -627,6 +735,11 @@ async function main() {
     console.error("No skills with evals/trigger.json. Nothing to run.");
     process.exit(2);
   }
+
+  const today = new Date();
+  const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  if (opts.merge) process.exit(mergeShards(skills, date) ? 0 : 2);
 
   if (opts.dryRun) {
     for (const skill of skills) {
@@ -672,8 +785,6 @@ async function main() {
   console.log(`skills: ${agent.skillsDirs.join(", ")} in each sandbox`);
   if (!auth) console.log("note:   no API key in the environment; evals will use the CLI's own login.");
 
-  const now = new Date();
-  const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const results = [];
   let failures = 0;
   let aborted = null;
@@ -692,12 +803,15 @@ async function main() {
           if (opts.only && !item.prompt.includes(opts.only)) continue;
           const run = await runPrompt(agent, cli, item.prompt, workspace, { quality: false });
           if (run.spawnError) { aborted = `could not start ${cli}: ${run.error}`; break; }
-          if (run.timedOut) { aborted = `${cli} did not answer within ${opts.timeoutMs / 1000}s — raise --timeout or check the CLI`; break; }
-          if (run.limit) { aborted = run.limit; break; }
+          // A text CLI can load the skill, start building and never exit. The trigger already
+          // happened, so score it and say so instead of discarding the whole run.
           const hit = run.invoked.find((entry) => entry.skill === skill);
+          if (run.timedOut && !hit) { aborted = `${cli} did not answer within ${opts.timeoutMs / 1000}s — raise --timeout or check the CLI`; break; }
+          if (run.limit) { aborted = run.limit; break; }
           const triggered = Boolean(hit);
           const pass = triggered === item.should_trigger;
           if (!pass) failures++;
+          const note = run.timedOut && hit ? `timed out after ${opts.timeoutMs / 1000}s but the skill was already loaded` : run.error ?? null;
           cases.push({
             prompt: item.prompt,
             why: item.why,
@@ -708,9 +822,9 @@ async function main() {
             pass,
             skills_visible: run.skillCount,
             ms: run.ms,
-            error: run.error ?? null,
+            error: note,
           });
-          console.log(`  ${pass ? "PASS" : "FAIL"} [${item.should_trigger ? "yes" : "no "} -> ${triggered ? "yes" : "no "}] ${item.prompt.slice(0, 72)}${run.error ? ` (${run.error})` : ""}`);
+          console.log(`  ${pass ? "PASS" : "FAIL"} [${item.should_trigger ? "yes" : "no "} -> ${triggered ? "yes" : "no "}] ${item.prompt.slice(0, 72)}${note ? ` (${note})` : ""}`);
         }
         if (cases.length) {
           result.trigger = { metrics: metrics(cases), cases };
@@ -729,27 +843,39 @@ async function main() {
 
       if (opts.quality) {
         const cases = [];
-        for (const testCase of quality.cases) {
+        for (const [caseIndex, testCase] of quality.cases.entries()) {
           if (opts.only && testCase.id !== opts.only) continue;
+          if (opts.shard && caseIndex % opts.shard.count !== opts.shard.index) continue;
           const caseWorkspace = makeWorkspace(skill, agent);
           try {
-            const run = await runPrompt(agent, cli, testCase.prompt, caseWorkspace, { quality: true });
+            // A case may describe a project it expects to exist ("a live app in ./existing-app").
+            // Copy the fixture in under the name the prompt uses so the test measures the skill,
+            // not whether the model can invent a codebase from a path that is not there.
+            if (testCase.fixture) {
+              cpSync(join(repoRoot, "test-fixtures", testCase.fixture), join(caseWorkspace, testCase.fixture_path ?? "existing-app"), { recursive: true });
+            }
+            // Quality cases are automated: there is no human to answer the skill's intake
+            // questions, so say so once. Without this the model correctly asks its five
+            // questions and writes nothing, and the case measures the harness, not the skill.
+            const prompt = `Automated evaluation — there is no human to answer questions. State your assumptions briefly and complete the task.\n\n${testCase.prompt}`;
+            const run = await runPrompt(agent, cli, prompt, caseWorkspace, { quality: true });
             if (run.spawnError) { aborted = `could not start ${cli}: ${run.error}`; break; }
-            if (run.timedOut) { aborted = `${cli} did not answer within ${opts.timeoutMs / 1000}s — raise --timeout or check the CLI`; break; }
             if (run.limit) { aborted = run.limit; break; }
             const assertions = testCase.assertions.map((assertion) => checkAssertion(assertion, caseWorkspace, run.response));
-            if (run.error) assertions.push({ label: "run completed", pass: false, detail: run.error });
+            // A timeout is a harness limit, not proof the task failed: if the artifacts are on
+            // disk, score them. Record the timeout on the case so nobody reads it as fast.
+            if (run.error && !run.timedOut) assertions.push({ label: "run completed", pass: false, detail: run.error });
             const passed = assertions.every((a) => a.pass);
             if (!passed) failures++;
-            cases.push({ id: testCase.id, prompt: testCase.prompt, passed, assertions, judgement: testCase.judgement ?? [], ms: run.ms });
+            cases.push({ id: testCase.id, prompt: testCase.prompt, passed, assertions, judgement: testCase.judgement ?? [], ms: run.ms, timed_out: run.timedOut, response: run.response.slice(0, 4000) });
             const failed = assertions.filter((a) => !a.pass);
-            console.log(`  ${passed ? "PASS" : "FAIL"} [quality] ${testCase.id}${failed.length ? ` — ${failed.map((a) => a.label).join("; ")}` : ""}`);
+            console.log(`  ${passed ? "PASS" : "FAIL"} [quality] ${testCase.id}${failed.length ? ` — ${failed.map((a) => a.label).join("; ")}` : ""}${run.timedOut ? ` (timed out at ${opts.timeoutMs / 1000}s; assertions still checked)` : ""}`);
           } finally {
             if (!opts.keep) cleanup(caseWorkspace);
           }
         }
         if (cases.length) {
-          result.quality = { total: cases.length, passed: cases.filter((c) => c.passed).length, cases };
+          result.quality = { total: cases.length, passed: cases.filter((c) => c.passed).length, cases, harness: "prefixed with: no human to answer questions — state assumptions and complete the task" };
         }
       }
     } finally {
@@ -760,10 +886,23 @@ async function main() {
     const outDir = join(repoRoot, "skills", skill, "evals", "results");
     if (aborted) break;
     mkdirSync(outDir, { recursive: true });
-    writeFileSync(join(outDir, `${date}.json`), `${JSON.stringify(result, null, 2)}\n`);
-    writeFileSync(join(outDir, `${date}.md`), `${mdSummary(result)}\n`);
-    results.push(result);
-    console.log(`  wrote skills/${skill}/evals/results/${date}.json`);
+    const suffix = opts.shard ? `.shard-${opts.shard.index}` : "";
+    // Trigger and quality runs are separate commands, often on the same day. Merge rather
+    // than replace, so the second run cannot erase the first run's numbers.
+    const outJson = join(outDir, `${date}${suffix}.json`);
+    let record = result;
+    if (!suffix && existsSync(outJson)) {
+      try {
+        const previous = JSON.parse(readFileSync(outJson, "utf8"));
+        if (previous.agent === result.agent && (previous.model ?? null) === (result.model ?? null)) {
+          record = { ...previous, ...result, trigger: result.trigger ?? previous.trigger, quality: result.quality ?? previous.quality };
+        }
+      } catch { /* an unreadable file is replaced, not merged */ }
+    }
+    writeFileSync(outJson, `${JSON.stringify(record, null, 2)}\n`);
+    writeFileSync(join(outDir, `${date}${suffix}.md`), `${mdSummary(record)}\n`);
+    results.push(record);
+    console.log(`  wrote skills/${skill}/evals/results/${date}${suffix}.json`);
   }
 
   if (aborted) {

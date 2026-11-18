@@ -2,14 +2,14 @@
 
 Star counts are a **November 2026 GitHub snapshot** — a popularity signal, not a quality score. Anything under ~6 months since last push deserves suspicion for a new build.
 
-The decision table is a fallback for when the idea is unusual or the team overrides the profile. By default the stack comes from `.mobile/00-profile.json`, which already encodes the archetype's sensible choice — **native (Kotlin + Jetpack Compose / Swift + SwiftUI) for almost every consumer and B2B app**, Unity for games, and native plus an offline queue for B2B field work. Expo appears only when the team explicitly asks for a cross-platform JS prototype.
+The decision table is a fallback for when the idea is unusual or the team overrides the profile. By default the stack comes from `.mobile/00-profile.json`, which already encodes the archetype's sensible choice — **native (Kotlin + Jetpack Compose / Swift + SwiftUI) for almost every consumer and B2B app**, Unity for games, and native plus an offline queue for B2B field work. Expo (starter in `assets/expo/`) and the other cross-platform stacks are respected whenever the team explicitly chooses them; see `cross-platform-decision.md`.
 
 ## Contents
 1. Decision table
 2. Native Android — Kotlin + Jetpack Compose
 3. Native iOS — Swift + SwiftUI
 4. Kotlin Multiplatform
-5. Expo / React Native (prototype)
+5. Expo / React Native
 6. Flutter
 7. Web-to-app (Ionic / Capacitor)
 8. Library map by job
@@ -27,7 +27,7 @@ The decision table is a fallback for when the idea is unusual or the team overri
 | Shared business logic, native UI | **KMP + Compose Multiplatform / SwiftUI** | Share domain/data while keeping production-native UI where needed |
 | Design-heavy custom UI, single codebase | **Flutter** | Own renderer, consistent output |
 | Existing web app, store shell needed | **Ionic + Capacitor** | Reuse web build; ensure it feels app-like (not a thin wrapper) |
-| JS team, rapid prototype (explicit) | **Expo + React Native** | Fast iteration; for production use dev builds/EAS, not Expo Go |
+| JS team, cross-platform (explicit) | **Expo + React Native** | Fast iteration; for production use dev builds/EAS, not Expo Go |
 
 For "proper" production apps, prefer native toolchains (Android Studio/Gradle, Xcode) over Expo Go-style runtime workflows.
 
@@ -122,9 +122,9 @@ Use KMP when the domain logic is the expensive part. Keep navigation and platfor
 
 ---
 
-## 5. Expo / React Native (prototype)
+## 5. Expo / React Native
 
-Explicit request only. This is the fast path to a cross-platform prototype, not the production-native path.
+Explicit choice. Real starter in `assets/expo/` (expo-router, shared theme, EAS); ship with EAS builds, never Expo Go.
 
 **Scaffold**
 

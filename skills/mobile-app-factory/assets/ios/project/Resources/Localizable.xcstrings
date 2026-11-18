@@ -1,0 +1,276 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "app.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "__APP_NAME__" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "__APP_NAME__" } }
+      }
+    },
+    "auth.email" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "E-Mail" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Email" } }
+      }
+    },
+    "auth.password" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Passwort" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Password" } }
+      }
+    },
+    "auth.password.hint" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mindestens 8 Zeichen. Wird nie auf dem Gerät gespeichert." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "At least 8 characters. Never stored on the device." } }
+      }
+    },
+    "auth.signIn.apple" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mit Apple anmelden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign in with Apple" } }
+      }
+    },
+    "auth.signIn.email" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mit E-Mail anmelden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign in with email" } }
+      }
+    },
+    "auth.signIn.google" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mit Google anmelden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign in with Google" } }
+      }
+    },
+    "auth.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Anmelden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign in" } }
+      }
+    },
+    "common.cancel" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Abbrechen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } }
+      }
+    },
+    "common.retry" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erneut versuchen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Retry" } }
+      }
+    },
+    "common.retry.hint" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Lädt den Bildschirm neu" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reloads the screen" } }
+      }
+    },
+    "deletion.action" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mein Konto löschen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete my account" } }
+      }
+    },
+    "deletion.body" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dies löscht das Konto, seine Gewohnheiten und die Serverdaten." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This deletes the account, its habits and its server data." } }
+      }
+    },
+    "deletion.confirm.action" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Löschen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete" } }
+      }
+    },
+    "deletion.confirm.body" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Das kann nicht rückgängig gemacht werden. Daten werden vom Gerät und vom Server entfernt." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This cannot be undone. Data is removed from the device and the server." } }
+      }
+    },
+    "deletion.confirm.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Konto löschen?" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete account?" } }
+      }
+    },
+    "deletion.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Konto löschen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete account" } }
+      }
+    },
+    "deletion.web" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Web-Löschlink: https://example.com/account/delete" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Web deletion link: https://example.com/account/delete" } }
+      }
+    },
+    "deletion.web.hint" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Google Play verlangt eine Web-Lösch-URL im Eintrag. Vor der Veröffentlichung ersetzen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Play requires a web deletion URL in the listing. Replace this before release." } }
+      }
+    },
+    "detail.body" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ersetze dies durch den Eintrag für diese Gewohnheit. Jeder Wert ist auswählbarer Text, kein Bild." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Replace this with the record for this habit. Every value here is selectable text, not an image." } }
+      }
+    },
+    "detail.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Detail" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Detail" } }
+      }
+    },
+    "home.refresh" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aktualisieren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Refresh" } }
+      }
+    },
+    "home.subtitle" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Heute" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Today" } }
+      }
+    },
+    "home.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "__APP_NAME__" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "__APP_NAME__" } }
+      }
+    },
+    "settings.deleteAccount" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Konto löschen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete account" } }
+      }
+    },
+    "settings.deleteAccount.detail" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Löscht das Konto, seine Gewohnheiten und die Serverdaten. Apple 5.1.1(v) und Google Play verlangen dies." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Deletes the account, its habits and its server data. Apple 5.1.1(v) and Google Play both require this." } }
+      }
+    },
+    "settings.notifications" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mitteilungen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Notifications" } }
+      }
+    },
+    "settings.notifications.detail" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Im passenden Moment fragen, nie beim Start." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ask in context, never at launch." } }
+      }
+    },
+    "settings.reduceMotion" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bewegung reduzieren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reduce motion" } }
+      }
+    },
+    "settings.reduceMotion.detail" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Folgt auch der Systemeinstellung." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Also follows the system setting." } }
+      }
+    },
+    "settings.section.account" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Konto" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Account" } }
+      }
+    },
+    "settings.section.data" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Daten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Data" } }
+      }
+    },
+    "settings.section.general" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Allgemein" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "General" } }
+      }
+    },
+    "settings.signIn" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Anmelden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign in" } }
+      }
+    },
+    "settings.signOut" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Abmelden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign out" } }
+      }
+    },
+    "settings.signedIn" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Angemeldet" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Signed in" } }
+      }
+    },
+    "settings.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Einstellungen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } }
+      }
+    },
+    "state.empty.body" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Deine erste Gewohnheit erscheint hier." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The first habit you add will appear here." } }
+      }
+    },
+    "state.empty.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch nichts hier" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Nothing here yet" } }
+      }
+    },
+    "state.error.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Etwas ist schiefgelaufen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Something went wrong" } }
+      }
+    },
+    "state.loading" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wird geladen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading" } }
+      }
+    },
+    "state.offline.body" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Deine gespeicherten Gewohnheiten sind noch da. Versuche es mit Verbindung erneut." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your saved habits are still here. Retry when you have a connection." } }
+      }
+    },
+    "state.offline.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Du bist offline" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "You're offline" } }
+      }
+    },
+    "tab.home" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Start" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Home" } }
+      }
+    },
+    "tab.settings" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Einstellungen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

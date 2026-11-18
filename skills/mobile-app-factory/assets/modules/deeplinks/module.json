@@ -1,0 +1,1 @@
+{"name":"deeplinks","enabledBy":"archetype commerce-marketplace, social-ugc or travel-maps","sdks":{"android":[],"ios":[]},"dataTypes":{"ios":[],"android":[]},"declarations":["ios: Associated Domains capability applinks:<domain>","android: intent-filter autoVerify with https scheme"],"test":"apple-app-site-association"}

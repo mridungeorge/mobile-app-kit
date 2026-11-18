@@ -19,11 +19,14 @@
 //   --ugc / --no-ugc
 //   --ai / --no-ai
 //   --offline
-//   --fast --dir <path>    infer the intake, write intake/profile/approval, skip the gate
+//        --fast --dir <path>    infer the intake, write intake/profile/approval, skip the gate
+//        --rebuild --src <path> rebuild an existing app; requires an inventory of that path
 //   --help
 
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, resolve, dirname, basename } from "node:path";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const ARCHETYPES = {
   "utility": {
@@ -359,8 +362,8 @@ const STACK_PRESETS = {
   "android-native": { primary: "android-native", ui: "jetpack-compose", androidToolchain: "android-studio-gradle-kotlin", build: "gradle" },
   "ios-native": { primary: "ios-native", ui: "swiftui", iosToolchain: "xcode-swiftui", build: "xcode" },
   kmp: { primary: "kmp", ui: "compose-multiplatform", androidToolchain: "android-studio-gradle-kotlin", iosToolchain: "xcode-swiftui", build: "gradle-xcode" },
-  flutter: { primary: "flutter", ui: "material-3", build: "flutter-gradle-xcode" },
-  expo: { primary: "expo", ui: "nativewind", build: "eas", note: "cross-platform JS; not a native Kotlin/Swift codebase" },
+  flutter: { primary: "flutter", ui: "material-3", build: "flutter-gradle-xcode", note: "no Flutter starter in this kit: reference only (references/cross-platform-decision.md)" },
+  expo: { primary: "expo", ui: "nativewind", build: "eas", note: "cross-platform JS; starter in assets/expo/ (new-app.sh expo)" },
   capacitor: { primary: "capacitor", ui: "web", build: "capacitor-gradle-xcode" },
   unity: { primary: "unity", ui: "unity-ui", build: "unity" }
 };
@@ -428,6 +431,9 @@ function parseArgs(argv) {
       case "--out": opts.out = next(); break;
       case "--fast": opts.fast = true; break;
       case "--dir": opts.dir = next(); break;
+      case "--rebuild": opts.rebuild = true; break;
+      case "--modules": opts.modules = next().split(",").map((m) => m.trim()).filter(Boolean); break;
+      case "--src": opts.src = next(); opts.rebuild = true; break;
       case "--archetype": opts.archetype = next(); break;
       case "--stack": opts.stack = next(); break;
       case "--monetisation": case "--monetization": opts.monetisation = next(); break;
@@ -512,6 +518,7 @@ export function routeIdea(idea, overrides = {}) {
     const preset = STACK_PRESETS[overrides.stack];
     if (!preset) throw new Error(`unknown stack "${overrides.stack}". Try: ${Object.keys(STACK_PRESETS).join(", ")}`);
     Object.assign(stack, preset);
+    stack.explicit = true; // the user chose it; never steer away (references/cross-platform-decision.md)
   }
   if (overrides.offline) stack.data = stack.data.includes("offline") ? stack.data : `${stack.data}-offline-queue`;
 
@@ -604,9 +611,19 @@ export function routeIdea(idea, overrides = {}) {
   }
   if (ranked[0].score === 0) clarify.unshift("No archetype keywords matched — confirm the closest vertical or pick one with --archetype.");
 
+  // Opt-in modules (assets/modules/*) the profile switches on; --modules overrides the lot.
+  const permSet = new Set(permissions);
+  const modules = overrides.modules ?? [
+    ...(payments.some((p) => p === "subscription" || p === "iap") ? ["billing"] : []),
+    ...(permSet.has("notifications") && ["commerce-marketplace", "social-ugc", "delivery-logistics", "dating"].includes(primary) ? ["push"] : []),
+    ...(["commerce-marketplace", "social-ugc", "travel-maps"].includes(primary) ? ["deeplinks"] : []),
+    ...(["health-fitness", "kids-family", "fintech"].includes(primary) ? [] : ["analytics-crash"])
+  ];
+
   const profile = {
     version: 1,
     idea: String(idea).trim(),
+    mode: overrides.rebuild ? "rebuild" : "new",
     archetype: primary,
     archetypeLabel: def.label,
     secondary,
@@ -622,6 +639,7 @@ export function routeIdea(idea, overrides = {}) {
     aiGeneratedContent: ai,
     payments,
     monetisation,
+    modules,
     ios: { declarations: [...new Set(iosDeclarations)], ageRatingFloor: iosAgeFloor, reviewRisks: [...new Set(iosRisks)] },
     android: { declarations: [...new Set(androidDeclarations)], contentRatingFloor: def.android.contentRatingFloor, reviewRisks: [...new Set(androidRisks)] },
     motionBudget: def.motionBudget,
@@ -630,12 +648,25 @@ export function routeIdea(idea, overrides = {}) {
     scores: Object.fromEntries(ranked.filter((entry) => entry.score > 0).map((entry) => [entry.name, entry.score]))
   };
 
+  // Rebuild mode: the profile points at the inventory and the migration plan instead of
+  // pretending the app starts empty. The plan itself is written by the migration analyst.
+  if (overrides.rebuild) {
+    profile.rebuild = {
+      source: overrides.src ? resolve(overrides.src) : null,
+      inventory: "00-existing.json",
+      plan: "00-migration-plan.md",
+      agent: "agents/00-migration-analyst.md",
+      approach: "strangler — incremental cutover, no big-bang replacement"
+    };
+  }
+
   return profile;
 }
 
 function summary(profile) {
   const lines = [
     `Idea:       ${profile.idea}`,
+    ...(profile.mode === "rebuild" ? [`Mode:       rebuild — inventory ${profile.rebuild?.inventory ?? "missing"}, plan ${profile.rebuild?.plan ?? "missing"}`] : []),
     `Archetype:  ${profile.archetype} (${profile.archetypeLabel})${profile.secondary.length ? ` + ${profile.secondary.join(", ")}` : ""}`,
     `Confidence: ${profile.confidence}`,
     `Stack:      ${profile.stack.primary} / ${profile.stack.ui} / ${profile.stack.state} / ${profile.stack.data}`,
@@ -696,7 +727,8 @@ function fastIntake(profile, opts) {
   return {
     version: 1,
     createdAt: new Date().toISOString(),
-    mode: "fast",
+    mode: opts.rebuild ? "rebuild" : "fast",
+    existingSource: opts.rebuild ? opts.src ?? null : null,
     idea: profile.idea,
     audience: FAST_DEFAULTS.audience,
     problem: profile.coreLoop,
@@ -812,6 +844,20 @@ function assumptionsBlock(dir, assumptions) {
   return lines.join("\n");
 }
 
+function ensureInventory(opts) {
+  const dir = resolve(opts.dir || ".mobile");
+  const inventoryPath = join(dir, "00-existing.json");
+  if (existsSync(inventoryPath)) return inventoryPath;
+  const script = join(dirname(fileURLToPath(import.meta.url)), "inventory-existing.mjs");
+  const res = spawnSync(process.execPath, [script, "--src", opts.src, "--dir", dir], { encoding: "utf8" });
+  if (res.status !== 0) {
+    console.error(`error: could not inventory ${opts.src}\n${res.stderr || res.stdout || ""}`);
+    process.exit(2);
+  }
+  process.stderr.write(res.stdout);
+  return inventoryPath;
+}
+
 function main() {
   let opts;
   try {
@@ -822,10 +868,28 @@ function main() {
     process.exit(2);
   }
   if (opts.help) { console.log(help()); return; }
-  if (!opts.words.length) {
+  // In rebuild mode the inventory already describes the app, so the one-line idea is optional:
+  // the documented command is `--rebuild --src ./existing-app --dir .mobile` with no prose.
+  if (!opts.words.length && !opts.rebuild) {
     console.error("error: no idea supplied");
     console.error(help());
     process.exit(2);
+  }
+  if (opts.rebuild) {
+    if (!opts.src) {
+      console.error("error: --rebuild needs --src <path to the existing app>");
+      process.exit(2);
+    }
+    if (!existsSync(resolve(opts.src))) {
+      console.error(`error: no directory at ${resolve(opts.src)}`);
+      process.exit(2);
+    }
+    const inventoryPath = ensureInventory(opts);
+    if (!opts.words.length) {
+      let name = null;
+      try { name = JSON.parse(readFileSync(inventoryPath, "utf8"))?.packageJson?.name ?? null; } catch { /* fall back to the folder name */ }
+      opts.words = [`rebuild ${(name || basename(resolve(opts.src))).replace(/[-_]+/g, " ")}`];
+    }
   }
 
   let profile;
@@ -850,6 +914,13 @@ function main() {
   if (opts.out) {
     writeFileSync(opts.out, `${JSON.stringify(profile, null, 2)}\n`);
     console.error(`wrote ${opts.out}`);
+  } else if (opts.rebuild && opts.dir) {
+    // A rebuild is a documented pipeline mode, so --dir must write the profile the
+    // migration analyst reads. Without this the command printed JSON and every later
+    // phase had to be told where the profile went.
+    const target = join(resolve(opts.dir), "00-profile.json");
+    writeFileSync(target, `${JSON.stringify(profile, null, 2)}\n`);
+    console.error(`wrote ${target}`);
   }
   console.log(opts.summary && !opts.out && !opts.json ? summary(profile) : output);
   if (fast) {

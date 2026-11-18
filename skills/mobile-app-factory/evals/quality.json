@@ -1,18 +1,46 @@
 {
   "skill": "mobile-app-factory",
   "version": 1,
-  "notes": "Each case runs in a fresh temp project. `assertions` are checked mechanically by scripts/run-evals.mjs; `judgement` keeps the human pass criteria from the original manual set. Types: file_exists, file_absent, file_matches, mentions_all, mentions_any, json_equals, json_max, response_matches, response_mentions_all.",
+  "notes": "Each case runs in a fresh temp project. `assertions` are checked mechanically by scripts/run-evals.mjs; `judgement` keeps the human pass criteria from the original manual set. Types: file_exists, file_absent, file_matches, mentions_all, mentions_any, json_equals, json_max, response_matches, response_mentions_all. The runner prefixes every quality prompt with a no-questions instruction: there is no human in an automated run to answer the skill's intake questions.",
   "cases": [
     {
       "id": "idea-to-prd",
       "prompt": "A quiet app that helps me stop doomscrolling at night. Free, maybe a subscription later.",
       "assertions": [
-        { "type": "file_exists", "path": ".mobile/00-profile.json", "label": "profile written before the PRD" },
-        { "type": "file_exists", "path": ".mobile/01-prd.md", "label": "PRD is a file, not a chat essay" },
-        { "type": "file_matches", "path": ".mobile/01-prd.md", "pattern": "(?i)core loop", "label": "one-sentence core loop" },
-        { "type": "json_max", "path": ".mobile/00-profile.json", "pointer": "screens", "max": 12, "label": "screen count <= 12" },
-        { "type": "file_matches", "path": ".mobile/01-prd.md", "pattern": "(?i)subscription|in-app purchase|iap|monetis", "label": "monetisation stated" },
-        { "type": "file_exists", "path": ".mobile/00-approval.json", "label": "preview approved before implementation" }
+        {
+          "type": "file_exists",
+          "path": ".mobile/00-profile.json",
+          "label": "profile written before the PRD"
+        },
+        {
+          "type": "file_exists",
+          "path": ".mobile/01-prd.md",
+          "label": "PRD is a file, not a chat essay"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/01-prd.md",
+          "pattern": "(?i)core loop",
+          "label": "one-sentence core loop"
+        },
+        {
+          "type": "json_max",
+          "path": ".mobile/00-profile.json",
+          "pointer": "screens",
+          "max": 12,
+          "label": "screen count <= 12"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/01-prd.md",
+          "pattern": "(?i)subscription|in-app purchase|iap|monetis",
+          "label": "monetisation stated"
+        },
+        {
+          "type": "file_exists",
+          "path": ".mobile/00-approval.json",
+          "label": "preview approved before implementation"
+        }
       ],
       "judgement": [
         "Asks no more than 5 questions or states assumptions",
@@ -24,10 +52,33 @@
       "id": "store-readiness",
       "prompt": "Here's my app. Is it ready for the App Store and Play?",
       "assertions": [
-        { "type": "file_exists", "path": ".mobile/05-compliance.md", "label": "compliance artifact exists" },
-        { "type": "file_exists", "path": ".mobile/07-review.md", "label": "reviewer verdict exists" },
-        { "type": "mentions_any", "path": ".mobile/05-compliance.md", "terms": ["privacy manifest", "data safety", "targetSdk", "target API"], "label": "checks the dated store rules" },
-        { "type": "file_matches", "path": ".mobile/07-review.md", "pattern": "(?i)blocker|PASS|FAIL", "label": "blocker list with owners, not a vibe check" }
+        {
+          "type": "file_exists",
+          "path": ".mobile/05-compliance.md",
+          "label": "compliance artifact exists"
+        },
+        {
+          "type": "file_exists",
+          "path": ".mobile/07-review.md",
+          "label": "reviewer verdict exists"
+        },
+        {
+          "type": "mentions_any",
+          "path": ".mobile/05-compliance.md",
+          "terms": [
+            "privacy manifest",
+            "data safety",
+            "targetSdk",
+            "target API"
+          ],
+          "label": "checks the dated store rules"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/07-review.md",
+          "pattern": "(?i)blocker|PASS|FAIL",
+          "label": "blocker list with owners, not a vibe check"
+        }
       ],
       "judgement": [
         "Reads the dependency list before declaring privacy answers",
@@ -40,10 +91,28 @@
       "id": "metadata-lint",
       "prompt": "Write and validate the store listing for Halcyon, a meditation timer.",
       "assertions": [
-        { "type": "file_exists", "path": ".mobile/metadata/ios.json", "label": "iOS metadata written" },
-        { "type": "file_exists", "path": ".mobile/metadata/android.json", "label": "Play metadata written" },
-        { "type": "file_matches", "path": ".mobile/metadata/listing.md", "pattern": "(?i)halcyon", "label": "listing names the app" },
-        { "type": "file_matches", "path": ".mobile/metadata/ios.json", "pattern": "subtitle", "label": "subtitle field present" }
+        {
+          "type": "file_exists",
+          "path": ".mobile/metadata/ios.json",
+          "label": "iOS metadata written"
+        },
+        {
+          "type": "file_exists",
+          "path": ".mobile/metadata/android.json",
+          "label": "Play metadata written"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/metadata/listing.md",
+          "pattern": "(?i)halcyon",
+          "label": "listing names the app"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/metadata/ios.json",
+          "pattern": "subtitle",
+          "label": "subtitle field present"
+        }
       ],
       "judgement": [
         "Runs scripts/validate-metadata.mjs and reports zero errors",
@@ -55,10 +124,29 @@
       "id": "design-drift",
       "prompt": "Use Rune's design language for the settings screen.",
       "assertions": [
-        { "type": "file_exists", "path": ".mobile/02-design.md", "label": "design artifact exists" },
-        { "type": "file_matches", "path": ".mobile/02-design.md", "pattern": "(?i)hairline|separator", "label": "hairlines, not shadows" },
-        { "type": "file_matches", "path": ".mobile/02-design.md", "pattern": "settle|snap|glide", "label": "motion tokens named" },
-        { "type": "file_matches", "path": ".mobile/02-design.md", "pattern": "4/8/12/16/24|4, 8, 12, 16, 24", "label": "Rune spacing scale" }
+        {
+          "type": "file_exists",
+          "path": ".mobile/02-design.md",
+          "label": "design artifact exists"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/02-design.md",
+          "pattern": "(?i)hairline|separator",
+          "label": "hairlines, not shadows"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/02-design.md",
+          "pattern": "settle|snap|glide",
+          "label": "motion tokens named"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/02-design.md",
+          "pattern": "4/8/12/16/24|4, 8, 12, 16, 24",
+          "label": "Rune spacing scale"
+        }
       ],
       "judgement": [
         "One accent, neutral surfaces, 13-14px body",
@@ -70,9 +158,25 @@
       "id": "routing-fintech",
       "prompt": "Build a budgeting app that connects to my bank.",
       "assertions": [
-        { "type": "file_exists", "path": ".mobile/00-profile.json", "label": "profile written" },
-        { "type": "json_equals", "path": ".mobile/00-profile.json", "pointer": "archetype", "value": "fintech", "label": "routes to fintech" },
-        { "type": "json_equals", "path": ".mobile/00-profile.json", "pointer": "motionBudget", "value": "restrained", "label": "restrained motion around money" }
+        {
+          "type": "file_exists",
+          "path": ".mobile/00-profile.json",
+          "label": "profile written"
+        },
+        {
+          "type": "json_equals",
+          "path": ".mobile/00-profile.json",
+          "pointer": "archetype",
+          "value": "fintech",
+          "label": "routes to fintech"
+        },
+        {
+          "type": "json_equals",
+          "path": ".mobile/00-profile.json",
+          "pointer": "motionBudget",
+          "value": "restrained",
+          "label": "restrained motion around money"
+        }
       ],
       "judgement": [
         "Financial declarations and 18+/Mature floor",
@@ -84,8 +188,19 @@
       "id": "routing-kids",
       "prompt": "Build a kids phonics and bedtime app.",
       "assertions": [
-        { "type": "json_equals", "path": ".mobile/00-profile.json", "pointer": "archetype", "value": "kids-family", "label": "routes to kids-family" },
-        { "type": "file_matches", "path": ".mobile/00-profile.json", "pattern": "(?i)parental|families", "label": "parental gate / Families category" }
+        {
+          "type": "json_equals",
+          "path": ".mobile/00-profile.json",
+          "pointer": "archetype",
+          "value": "kids-family",
+          "label": "routes to kids-family"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/00-profile.json",
+          "pattern": "(?i)parental|families",
+          "label": "parental gate / Families category"
+        }
       ],
       "judgement": [
         "No third-party analytics in the child experience",
@@ -96,8 +211,20 @@
       "id": "router-override",
       "prompt": "It's a social app for hikers, but it must work offline and have no accounts.",
       "assertions": [
-        { "type": "json_equals", "path": ".mobile/00-profile.json", "pointer": "archetype", "value": "social-ugc", "label": "keeps the UGC archetype" },
-        { "type": "json_equals", "path": ".mobile/00-profile.json", "pointer": "accounts", "value": false, "label": "honours --no-accounts" }
+        {
+          "type": "json_equals",
+          "path": ".mobile/00-profile.json",
+          "pointer": "archetype",
+          "value": "social-ugc",
+          "label": "keeps the UGC archetype"
+        },
+        {
+          "type": "json_equals",
+          "path": ".mobile/00-profile.json",
+          "pointer": "accounts",
+          "value": false,
+          "label": "honours --no-accounts"
+        }
       ],
       "judgement": [
         "Runs route-idea.mjs --no-accounts --offline (or edits the profile)",
@@ -109,9 +236,29 @@
       "id": "adaptive-ui",
       "prompt": "Test this app on a low-end Android, with Reduce Motion on, at 200% text, and with location denied.",
       "assertions": [
-        { "type": "file_exists", "path": ".mobile/07-review.md", "label": "review artifact exists" },
-        { "type": "mentions_all", "path": ".mobile/07-review.md", "terms": ["200%", "Reduce Motion"], "label": "covers text scaling and Reduce Motion" },
-        { "type": "mentions_any", "path": ".mobile/07-review.md", "terms": ["location", "permission"], "label": "covers the denied-permission path" }
+        {
+          "type": "file_exists",
+          "path": ".mobile/07-review.md",
+          "label": "review artifact exists"
+        },
+        {
+          "type": "mentions_all",
+          "path": ".mobile/07-review.md",
+          "terms": [
+            "200%",
+            "Reduce Motion"
+          ],
+          "label": "covers text scaling and Reduce Motion"
+        },
+        {
+          "type": "mentions_any",
+          "path": ".mobile/07-review.md",
+          "terms": [
+            "location",
+            "permission"
+          ],
+          "label": "covers the denied-permission path"
+        }
       ],
       "judgement": [
         "Names the tier rules (fades only on low tier)",
@@ -123,15 +270,298 @@
       "id": "intake-preview-approval",
       "prompt": "I want a quiet sleep tracker with white noise and weekly trends. Build it.",
       "assertions": [
-        { "type": "file_exists", "path": ".mobile/00-intake.json", "label": "intake captured" },
-        { "type": "file_exists", "path": ".mobile/preview/index.html", "label": "preview generated" },
-        { "type": "file_exists", "path": ".mobile/00-approval.json", "label": "approval recorded" },
-        { "type": "file_matches", "path": ".mobile/00-approval.json", "pattern": "\"status\"\\s*:\\s*\"(approved|approved-fast)\"", "label": "status is approved" }
+        {
+          "type": "file_exists",
+          "path": ".mobile/00-intake.json",
+          "label": "intake captured"
+        },
+        {
+          "type": "file_exists",
+          "path": ".mobile/preview/index.html",
+          "label": "preview generated"
+        },
+        {
+          "type": "file_exists",
+          "path": ".mobile/00-approval.json",
+          "label": "approval recorded"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/00-approval.json",
+          "pattern": "\"status\"\\s*:\\s*\"(approved|approved-fast)\"",
+          "label": "status is approved"
+        }
       ],
       "judgement": [
         "Asks for approval before writing code",
         "On 'add a settings screen and drop the paywall', review-preview.mjs updates profile and preview together",
         "Says which actions remain human (accounts, signing, devices, store upload)"
+      ]
+    },
+    {
+      "id": "rebuild-plan",
+      "prompt": "I have a live Expo app in ./existing-app on both stores. Rebuild it natively without losing users or the store listing.",
+      "fixture": "existing-expo-app",
+      "fixture_path": "existing-app",
+      "assertions": [
+        {
+          "type": "file_exists",
+          "path": ".mobile/00-existing.json",
+          "label": "inventory of the current app"
+        },
+        {
+          "type": "file_exists",
+          "path": ".mobile/00-migration-plan.md",
+          "label": "migration plan is a file"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/00-migration-plan.md",
+          "pattern": "(?i)parity",
+          "label": "feature parity matrix"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/00-migration-plan.md",
+          "pattern": "(?i)cutover|strangler",
+          "label": "incremental cutover, not big-bang"
+        }
+      ],
+      "judgement": [
+        "Keeps the existing bundle ID/package name and updates the listing instead of creating a new one",
+        "Never records secret values, only env var names"
+      ]
+    },
+    {
+      "id": "rebuild-listing-continuity",
+      "prompt": "We are replacing our live React Native app with native. What must stay the same on the stores?",
+      "assertions": [
+        {
+          "type": "file_matches",
+          "path": ".mobile/00-migration-plan.md",
+          "pattern": "(?i)bundle id|package name|applicationId",
+          "label": "identifiers preserved"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/00-migration-plan.md",
+          "pattern": "(?i)signing|keystore|upload key",
+          "label": "signing continuity"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/00-migration-plan.md",
+          "pattern": "(?i)entitlement|subscriber",
+          "label": "subscriber entitlements preserved"
+        }
+      ],
+      "judgement": [
+        "Says to update the existing listing, not publish a new app"
+      ]
+    },
+    {
+      "id": "billing-subscription",
+      "prompt": "Habit tracker with a monthly subscription. Add the purchase flow.",
+      "assertions": [
+        {
+          "type": "file_matches",
+          "path": ".mobile/00-profile.json",
+          "pattern": "\"billing\"",
+          "label": "billing module enabled by the profile"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/05-compliance.md",
+          "pattern": "(?i)restore",
+          "label": "restore purchases covered"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/05-compliance.md",
+          "pattern": "(?i)purchase history",
+          "label": "purchase data declared"
+        }
+      ],
+      "judgement": [
+        "Mentions server-side receipt validation",
+        "Does not hand-roll entitlement trust on the client alone"
+      ]
+    },
+    {
+      "id": "billing-revenuecat",
+      "prompt": "Use RevenueCat for subscriptions in my fitness app.",
+      "assertions": [
+        {
+          "type": "file_matches",
+          "path": ".mobile/03-build-log.md",
+          "pattern": "(?i)revenuecat",
+          "label": "RevenueCat path followed"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/05-compliance.md",
+          "pattern": "(?i)revenuecat|third-party sdk",
+          "label": "SDK declared"
+        }
+      ],
+      "judgement": [
+        "Keeps the PurchaseService protocol rather than calling the SDK from views"
+      ]
+    },
+    {
+      "id": "push-priming",
+      "prompt": "Marketplace for dog walkers. Users should get notified about booking updates.",
+      "assertions": [
+        {
+          "type": "file_matches",
+          "path": ".mobile/00-profile.json",
+          "pattern": "\"push\"",
+          "label": "push module enabled"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/03-build-log.md",
+          "pattern": "(?i)priming|in context|not at launch",
+          "label": "permission asked in context"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/05-compliance.md",
+          "pattern": "(?i)device id|notification",
+          "label": "push data declared"
+        }
+      ],
+      "judgement": [
+        "Does not request notification permission on first launch"
+      ]
+    },
+    {
+      "id": "push-android-channels",
+      "prompt": "Add push notifications to the Android version of my delivery app.",
+      "assertions": [
+        {
+          "type": "file_matches",
+          "path": ".mobile/03-build-log.md",
+          "pattern": "(?i)channel",
+          "label": "notification channels created"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/03-build-log.md",
+          "pattern": "(?i)POST_NOTIFICATIONS",
+          "label": "Android 13 permission handled"
+        }
+      ],
+      "judgement": [
+        "Gives the user a Not now path that leaves the app usable"
+      ]
+    },
+    {
+      "id": "localization-rtl",
+      "prompt": "Ship my app in German and Arabic.",
+      "assertions": [
+        {
+          "type": "file_matches",
+          "path": ".mobile/03-build-log.md",
+          "pattern": "(?i)xcstrings|strings.xml",
+          "label": "string catalogs used"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/03-build-log.md",
+          "pattern": "(?i)rtl|right-to-left",
+          "label": "RTL tested"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/05-compliance.md",
+          "pattern": "(?i)locale|de|ar",
+          "label": "per-locale store metadata"
+        }
+      ],
+      "judgement": [
+        "Uses start/end instead of left/right",
+        "Runs a pseudo-localization pass"
+      ]
+    },
+    {
+      "id": "localization-metadata",
+      "prompt": "Localise the store listing for German and French.",
+      "assertions": [
+        {
+          "type": "file_exists",
+          "path": ".mobile/metadata/ios.json",
+          "label": "iOS metadata exists"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/metadata/ios.json",
+          "pattern": "\"locales\"",
+          "label": "per-locale entries"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/metadata/android.json",
+          "pattern": "\"locales\"",
+          "label": "per-locale entries"
+        }
+      ],
+      "judgement": [
+        "Respects the same character limits in every locale"
+      ]
+    },
+    {
+      "id": "account-deletion",
+      "prompt": "My app has accounts and email sign-in. What do I need for review?",
+      "assertions": [
+        {
+          "type": "file_matches",
+          "path": ".mobile/05-compliance.md",
+          "pattern": "(?i)account deletion",
+          "label": "account deletion covered"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/05-compliance.md",
+          "pattern": "(?i)5.1.1",
+          "label": "Apple guideline cited"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/05-compliance.md",
+          "pattern": "(?i)web|url",
+          "label": "Play web deletion link"
+        }
+      ],
+      "judgement": [
+        "Deletion is in-app, not only by emailing support"
+      ]
+    },
+    {
+      "id": "declarations-reconcile",
+      "prompt": "We added Sentry and RevenueCat. Make sure the privacy declarations still match.",
+      "assertions": [
+        {
+          "type": "file_matches",
+          "path": ".mobile/05-compliance.md",
+          "pattern": "(?i)reconcile|PrivacyInfo",
+          "label": "manifest reconciled"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/05-compliance.md",
+          "pattern": "(?i)crash",
+          "label": "crash data declared"
+        },
+        {
+          "type": "file_matches",
+          "path": ".mobile/05-compliance.md",
+          "pattern": "(?i)data safety",
+          "label": "Play data safety updated"
+        }
+      ],
+      "judgement": [
+        "Runs scripts/reconcile-declarations.mjs and reports its result"
       ]
     }
   ]

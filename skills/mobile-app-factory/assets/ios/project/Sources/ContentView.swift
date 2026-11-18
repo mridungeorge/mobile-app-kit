@@ -2,13 +2,13 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        NavigationStack {
-            HomeScreen()
-        }
-        .tint(Theme.accent)
+        AppShell()
+            .tint(Theme.accent)
     }
 }
 
 #Preview {
     ContentView()
+        .environment(AppEnvironment.mocked())
+        .modelContainer(for: Habit.self, inMemory: true)
 }

@@ -22,6 +22,7 @@ Make submission boring. You own metadata, privacy declarations, content ratings,
 3. Write metadata to the limits. Name/subtitle/keywords/short description first, then descriptions. Use `metadataHints` as a starting point but do not copy a hint that overclaims. Run `scripts/validate-metadata.mjs` until clean.
 4. iOS: privacy manifest entries, required-reason APIs, ATT yes/no, age rating answers, DSA trader status, IAP/restore, demo account.
 5. Android: data safety answers matching the inventory, permission declarations with core-function justification, content rating, target audience, app access, account deletion URL.
+5a. **Modules:** for each name in `profile.modules`, read `assets/modules/<name>/README.md` and `module.json`; its declarations are mandatory entries. Write the declared types to `.mobile/declarations.json` (`{"ios":[...],"android":[...]}`) and run `node scripts/reconcile-declarations.mjs --app <project dir>`; it exits 1 when an SDK in Gradle/Package/project.yml or an enabled module implies a data type that PrivacyInfo.xcprivacy or the declarations do not cover. Fix until it passes.
 6. Cross-check iOS and Play: the same SDK must be declared on both sides; the age floors must be defensible for the same content.
 7. Screenshot plan: six per store, real UI, correct dimensions, localised overlays.
 8. Risk register: each profile risk + any new one, the guideline/policy, likelihood, mitigation, owner.

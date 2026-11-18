@@ -6,7 +6,7 @@
 skills/mobile-app-factory/
   SKILL.md                     pipeline, intake, preview gate, gates, definition of done
   QUICKSTART.md                idea → submission, without the jargon
-  agents/01..07-*.md           7 role briefs, one per phase
+  agents/00..07-*.md           8 role briefs: 00 migration analyst (rebuild), 01-07 one per phase
   references/                  18 deep references (router, archetypes, design, stores,
                                store facts, native release, testing, gap closure, ...)
   assets/
@@ -17,14 +17,16 @@ skills/mobile-app-factory/
     android/data-safety-worksheet.md Play data-safety form + SDK inventory
     ios/project/                     buildable SwiftUI + XcodeGen starter
     ios/PrivacyInfo.xcprivacy        privacy manifest starter
-    rn/theme.ts  rn/motion.ts        React Native tokens (prototype path only)
+    rn/theme.ts  rn/motion.ts        React Native / Expo tokens
+    expo/                            Expo starter: expo-router tabs + detail + delete-account
+    modules/                         opt-in billing, push, localization, deeplinks, analytics-crash
     rn/components/                   9 primitives: Surface, Button, ListRow,
                                      Sheet, Reveal, TextField, Switch,
                                      SegmentedControl, EmptyState
     web/tokens.css                   web / Capacitor tokens + primitives
     ci/android-release.yml           native Android CI: lint, test, signed AAB
     ci/ios-release.yml               native iOS CI: test, archive, TestFlight hook
-    ci/expo-eas.json                 EAS build/submit profiles (prototype only)
+    ci/expo-eas.json                 EAS build/submit profiles
     store-metadata.template.json     validates clean out of the box
   scripts/
     questionnaire.mjs                requirements intake → intake + profile + STATE
@@ -32,6 +34,9 @@ skills/mobile-app-factory/
     generate-preview.mjs             illustrative preview + exportable feedback
     review-preview.mjs               change requests / approval → regenerate preview
     scaffold-native.mjs              copy native starter, substitute package/bundle id
+    enable-modules.mjs               copy opt-in modules into a scaffolded app + add dependencies
+    reconcile-declarations.mjs       SDKs/modules vs declared data types; exit 1 on mismatch
+    inventory-existing.mjs           scan an existing app (rebuild mode) → 00-existing.json/.md
     readiness-report.mjs             AI-fixable vs human/external gap report
     check-skill.mjs                  self-audit + end-to-end pipeline smoke test
     run-evals.mjs                    trigger + quality eval runner

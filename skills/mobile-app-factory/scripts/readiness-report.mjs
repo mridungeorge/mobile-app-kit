@@ -112,6 +112,24 @@ function checkMetadata(dir) {
   }
 }
 
+function checkMigration(dir) {
+  const profilePath = join(dir, "00-profile.json");
+  let profile = null;
+  try { profile = JSON.parse(readFileSync(profilePath, "utf8")); } catch { /* new app */ }
+  const rebuilding = profile?.mode === "rebuild" || existsSync(join(dir, "00-existing.json"));
+  if (!rebuilding) return ok("new app — no migration plan needed");
+  const path = join(dir, "00-migration-plan.md");
+  if (!existsSync(path)) return bad("00-migration-plan.md missing (agents/00-migration-analyst.md)");
+  const text = read(path) || "";
+  const missing = [];
+  if (!/feature parity|parity matrix/i.test(text)) missing.push("parity matrix");
+  if (!/cutover/i.test(text)) missing.push("cutover order");
+  if (!/data migration/i.test(text)) missing.push("data migration");
+  if (!/api contract/i.test(text)) missing.push("API contract");
+  if (missing.length) return bad(`00-migration-plan.md is missing: ${missing.join(", ")}`);
+  return ok("rebuild plan: parity matrix, data migration, API contract, cutover order");
+}
+
 function checkNativeProject(root) {
   const files = listFiles(root).filter((f) => !f.includes("node_modules") && !f.includes(".git" + sep));
   const gradle = files.find((f) => f.endsWith("settings.gradle.kts") || f.endsWith("settings.gradle"));
@@ -164,6 +182,7 @@ function main() {
   const ai = [
     { name: "Intake captured", ...(existsSync(join(dir, "00-intake.json")) ? ok("00-intake.json") : bad("run questionnaire.mjs")) },
     { name: "Profile routed", ...(existsSync(join(dir, "00-profile.json")) ? ok("00-profile.json") : bad("run route-idea.mjs")) },
+    { name: "Migration plan", ...checkMigration(dir) },
     { name: "Preview approved", ...hasApproval(dir) },
     { name: "PRD", ...checkArtifact(dir, "01-prd.md", "product spec") },
     { name: "Design spec", ...checkArtifact(dir, "02-design.md", "design system + screen specs") },

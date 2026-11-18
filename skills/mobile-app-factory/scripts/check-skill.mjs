@@ -7,7 +7,7 @@
 // agent numbering, and the metadata template. Exit code 1 means the skill is broken;
 // warnings do not fail the build.
 
-import { readFileSync, existsSync, mkdtempSync, copyFileSync, rmSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, existsSync, mkdtempSync, copyFileSync, rmSync, readdirSync, statSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -43,6 +43,9 @@ const required = [
   "references/mobile-testing.md",
   "references/native-android-release.md",
   "references/native-ios-release.md",
+  "references/rebuild-existing-app.md",
+  "agents/00-migration-analyst.md",
+  "scripts/inventory-existing.mjs",
   "assets/design-tokens.json",
   "assets/project-profile.template.json",
   "assets/store-metadata.template.json",
@@ -451,6 +454,102 @@ try {
     }
   }
 
+  // Both starters are meant to be production shells, not one screen. A file that vanishes
+  // takes DI, the database, localisation or account deletion with it, and nothing else in
+  // this repo would notice.
+  const androidExpected = [
+    ["Hilt application", "app/src/main/java/com/example/smoke/SmokeAppApplication.kt"],
+    ["navigation shell", "app/src/main/java/com/example/smoke/ui/App.kt"],
+    ["route table", "app/src/main/java/com/example/smoke/ui/Routes.kt"],
+    ["state machine", "app/src/main/java/com/example/smoke/ui/UiState.kt"],
+    ["state host", "app/src/main/java/com/example/smoke/ui/components/StateHost.kt"],
+    ["DI module", "app/src/main/java/com/example/smoke/di/AppModule.kt"],
+    ["API client + fake", "app/src/main/java/com/example/smoke/data/api/ApiClient.kt"],
+    ["Room entity", "app/src/main/java/com/example/smoke/data/db/HabitEntity.kt"],
+    ["Room DAO", "app/src/main/java/com/example/smoke/data/db/HabitDao.kt"],
+    ["Room database", "app/src/main/java/com/example/smoke/data/db/AppDatabase.kt"],
+    ["DataStore settings", "app/src/main/java/com/example/smoke/data/settings/SettingsRepository.kt"],
+    ["auth providers", "app/src/main/java/com/example/smoke/data/auth/AuthRepository.kt"],
+    ["home view model", "app/src/main/java/com/example/smoke/feature/home/HomeViewModel.kt"],
+    ["detail view model", "app/src/main/java/com/example/smoke/feature/detail/DetailViewModel.kt"],
+    ["settings view model", "app/src/main/java/com/example/smoke/feature/settings/SettingsViewModel.kt"],
+    ["auth view model", "app/src/main/java/com/example/smoke/feature/auth/AuthViewModel.kt"],
+    ["home screen", "app/src/main/java/com/example/smoke/ui/screens/HomeScreen.kt"],
+    ["detail screen", "app/src/main/java/com/example/smoke/ui/screens/DetailScreen.kt"],
+    ["settings screen", "app/src/main/java/com/example/smoke/ui/screens/SettingsScreen.kt"],
+    ["auth screen", "app/src/main/java/com/example/smoke/ui/screens/AuthScreen.kt"],
+    ["account deletion screen", "app/src/main/java/com/example/smoke/ui/screens/AccountDeletionScreen.kt"],
+    ["per-app locales", "app/src/main/res/xml/locales_config.xml"],
+    ["unit test", "app/src/test/java/com/example/smoke/ui/UiStateTest.kt"],
+    ["instrumented Room test", "app/src/androidTest/java/com/example/smoke/data/db/HabitDaoTest.kt"],
+  ];
+  for (const [label, relativePath] of androidExpected) {
+    if (!existsSync(join(temp, "android", relativePath))) {
+      throw new Error(`Android starter missing ${label} (${relativePath})`);
+    }
+  }
+
+  const androidApp = readFileSync(join(temp, "android", "app/src/main/java/com/example/smoke/ui/App.kt"), "utf8");
+  for (const [label, needle] of [
+    ["bottom bar", "NavigationBar"],
+    ["rail for wide screens", "NavigationRail"],
+    ["nav host", "NavHost"],
+    ["detail route", "Routes.detail"],
+  ]) if (!androidApp.includes(needle)) throw new Error(`Android App.kt missing ${label} (${needle})`);
+
+  const androidManifest = readFileSync(join(temp, "android", "app/src/main/AndroidManifest.xml"), "utf8");
+  for (const [label, needle] of [
+    ["Hilt application class", "android:name=\".SmokeAppApplication\""],
+    ["per-app language config", "android:localeConfig=\"@xml/locales_config\""],
+  ]) if (!androidManifest.includes(needle)) throw new Error(`AndroidManifest missing ${label}`);
+
+  const catalog = readFileSync(join(temp, "android", "gradle/libs.versions.toml"), "utf8");
+  for (const [label, needle] of [
+    ["Hilt plugin", "hilt = { id = \"com.google.dagger.hilt.android\""],
+    ["KSP plugin", "ksp = { id = \"com.google.devtools.ksp\""],
+    ["Room", "androidx-room-runtime"],
+    ["DataStore", "androidx-datastore-preferences"],
+    ["Navigation Compose", "androidx-navigation-compose"],
+    ["WindowSizeClass", "material3-window-size-class"],
+  ]) if (!catalog.includes(needle)) throw new Error(`libs.versions.toml missing ${label}`);
+
+  const iosExpected = [
+    "Sources/AppEnvironment.swift",
+    "Sources/AppShell.swift",
+    "Sources/Data/APIClient.swift",
+    "Sources/Data/Habit.swift",
+    "Sources/Data/SettingsStore.swift",
+    "Sources/Data/AuthService.swift",
+    "Sources/UI/UiState.swift",
+    "Sources/UI/StateView.swift",
+    "Sources/Features/Home/HomeScreen.swift",
+    "Sources/Features/Home/HomeViewModel.swift",
+    "Sources/Features/Detail/DetailScreen.swift",
+    "Sources/Features/Settings/SettingsScreen.swift",
+    "Sources/Features/Auth/AuthScreen.swift",
+    "Sources/Features/Auth/AccountDeletionScreen.swift",
+    "Resources/Localizable.xcstrings",
+    "Tests/UiStateTests.swift",
+    "Tests/HabitRepositoryTests.swift",
+    "Tests/AuthTests.swift",
+  ];
+  for (const relativePath of iosExpected) {
+    if (!existsSync(join(temp, "ios", relativePath))) throw new Error(`iOS starter missing ${relativePath}`);
+  }
+
+  const iosShell = readFileSync(join(temp, "ios", "Sources", "AppShell.swift"), "utf8");
+  for (const [label, needle] of [
+    ["tab bar", "TabView"],
+    ["split view for wide screens", "NavigationSplitView"],
+    ["size-class adaptivity", "horizontalSizeClass"],
+  ]) if (!iosShell.includes(needle)) throw new Error(`iOS AppShell missing ${label} (${needle})`);
+
+  const stringCatalog = JSON.parse(readFileSync(join(temp, "ios", "Resources", "Localizable.xcstrings"), "utf8"));
+  const catalogKeys = Object.keys(stringCatalog.strings ?? {});
+  if (!catalogKeys.includes("state.offline.title")) throw new Error("iOS string catalog is missing the offline state copy");
+  const englishOnly = catalogKeys.filter((key) => Object.keys(stringCatalog.strings[key].localizations ?? {}).length < 2);
+  if (englishOnly.length) throw new Error(`iOS string catalog has untranslated keys: ${englishOnly.slice(0, 3).join(", ")}`);
+
   const placeholders = ["__PROJECT_NAME__", "__APP_NAME__", "__APP_SLUG__", "__PACKAGE__", "__PACKAGE_PATH__", "__BUNDLE_ID__"];
   const files = readdirSync(temp, { recursive: true }).filter((entry) => typeof entry === "string")
     .map((entry) => join(temp, entry));
@@ -469,6 +568,102 @@ try {
   rmSync(temp, { recursive: true, force: true });
 } catch (error) {
   errors.push(`native template smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
+}
+
+// Rebuild path: the inventory must run on a real (tiny) existing app and find what the
+// migration analyst depends on. A fixture that stops matching the scanner is exactly how
+// this feature would rot unnoticed.
+try {
+  const repoRoot = resolve(root, "..", "..");
+  const fixture = join(repoRoot, "test-fixtures", "existing-expo-app");
+  if (!existsSync(fixture)) {
+    if (existsSync(join(repoRoot, "README.md"))) throw new Error("test-fixtures/existing-expo-app is missing");
+    ok.push("rebuild inventory: installed copy, fixture lives in the repo checkout");
+  } else {
+    const temp = mkdtempSync(join(tmpdir(), "maf-existing-"));
+    execFileSync(process.execPath, [join(root, "scripts", "inventory-existing.mjs"), "--src", fixture, "--dir", temp], { stdio: "pipe" });
+    const inv = JSON.parse(readFileSync(join(temp, "00-existing.json"), "utf8"));
+    if (inv.stack.primary !== "expo") throw new Error(`fixture stack detected as ${inv.stack.primary}, expected expo`);
+    const screens = inv.screens.map((s) => s.name);
+    for (const name of ["Home", "Stats"]) if (!screens.includes(name)) throw new Error(`fixture screen ${name} not found (got ${screens.join(", ")})`);
+    if (!inv.api.baseUrls.some((url) => url.includes("api.habitloop.app"))) throw new Error("fixture API base URL not found");
+    if (!inv.sdks.some((sdk) => sdk.name === "@react-native-firebase/analytics" && sdk.version)) throw new Error("fixture SDK with version not found");
+    if (inv.env.valuesRecorded !== false) throw new Error("inventory recorded environment values — names only");
+    if (!existsSync(join(temp, "00-existing.md"))) throw new Error("00-existing.md was not written");
+
+    // --rebuild --dir must leave the profile the migration analyst reads, not just print it.
+    // Run the documented command exactly: no one-line idea, because the inventory has it.
+    execFileSync(process.execPath, [join(root, "scripts", "route-idea.mjs"), "--rebuild", "--src", fixture, "--dir", temp], { stdio: "pipe" });
+    const rebuildProfile = JSON.parse(readFileSync(join(temp, "00-profile.json"), "utf8"));
+    if (rebuildProfile.mode !== "rebuild") throw new Error("rebuild profile did not record mode: rebuild");
+    if (!rebuildProfile.rebuild?.source) throw new Error("rebuild profile lost the existing-app source");
+    if (!rebuildProfile.rebuild?.plan) throw new Error("rebuild profile does not point at the migration plan");
+    ok.push(`rebuild inventory: fixture → ${inv.stack.primary}, ${screens.length} screens, ${inv.sdks.length} SDKs, API and env names only; --rebuild --dir writes 00-profile.json`);
+    rmSync(temp, { recursive: true, force: true });
+  }
+} catch (error) {
+  errors.push(`rebuild inventory failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
+}
+
+// Modules: every opt-in module ships a README with the required sections, a manifest, its
+// test artefact, and the profile router switches them on from the archetype.
+try {
+  const modulesDir = join(root, "assets", "modules");
+  const required = ["billing", "push", "localization", "deeplinks", "analytics-crash"];
+  for (const name of required) {
+    const dir = join(modulesDir, name);
+    const manifest = JSON.parse(readFileSync(join(dir, "module.json"), "utf8"));
+    const readme = readFileSync(join(dir, "README.md"), "utf8");
+    for (const heading of ["**Adds:**", "**Files touched:**", "**Declarations it changes", "**Test:**"]) {
+      if (!readme.includes(heading)) throw new Error(`${name}/README.md missing ${heading}`);
+    }
+    if (!existsSync(join(dir, manifest.test))) throw new Error(`${name} test artefact ${manifest.test} missing`);
+    if (!readFileSync(join(root, "SKILL.md"), "utf8").includes(`assets/modules/${name}/README.md`)) throw new Error(`SKILL.md does not link ${name}`);
+  }
+  execFileSync(process.execPath, [join(modulesDir, "localization", "pseudo-localize.mjs"), "--self-test"], { stdio: "pipe" });
+  for (const file of [join("deeplinks", "apple-app-site-association"), join("deeplinks", "assetlinks.json")]) {
+    const text = readFileSync(join(modulesDir, file), "utf8");
+    JSON.parse(text);
+    if (!/TEAMID|PACKAGE/.test(text)) throw new Error(`${file} lost its placeholders`);
+  }
+  const routed = (idea) => JSON.parse(execFileSync(process.execPath, [join(root, "scripts", "route-idea.mjs"), "--json", idea], { encoding: "utf8" })).modules;
+  if (!routed("habit tracker with subscription").includes("billing")) throw new Error("subscription idea did not enable billing");
+  if (routed("habit tracker with subscription").includes("analytics-crash")) throw new Error("health idea enabled analytics by default");
+  const market = routed("marketplace for local dog walkers");
+  for (const m of ["push", "deeplinks"]) if (!market.includes(m)) throw new Error(`marketplace did not enable ${m}`);
+
+  // reconcile: an undeclared SDK must fail, a declared one must pass.
+  const temp = mkdtempSync(join(tmpdir(), "maf-reconcile-"));
+  mkdirSync(join(temp, "app"), { recursive: true });
+  writeFileSync(join(temp, "app", "build.gradle.kts"), 'dependencies { implementation("io.sentry:sentry-android:7.0.0") }\n');
+  const reconcile = (...extra) => {
+    try { execFileSync(process.execPath, [join(root, "scripts", "reconcile-declarations.mjs"), "--app", temp, ...extra], { stdio: "pipe" }); return 0; }
+    catch (error) { return error.status; }
+  };
+  if (reconcile() !== 1) throw new Error("reconcile-declarations passed with an undeclared SDK");
+  writeFileSync(join(temp, "decl.json"), JSON.stringify({ ios: ["CrashData", "PerformanceData"], android: ["CrashLogs", "Diagnostics"] }));
+  if (reconcile("--declared", join(temp, "decl.json")) !== 0) throw new Error("reconcile-declarations failed with everything declared");
+  rmSync(temp, { recursive: true, force: true });
+  ok.push(`modules: ${required.length} documented, manifests + tests present, router enables them, reconcile fails on undeclared SDK`);
+} catch (error) {
+  errors.push(`modules check failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
+}
+
+// Cross-platform honesty: the Expo starter ships real files, the decision doc exists and is
+// linked, and an explicit Expo/Flutter choice is kept by the router (not steered back to native).
+try {
+  for (const f of ["package.json", "app.json", "tsconfig.json", "app/_layout.tsx", "app/(tabs)/_layout.tsx", "app/(tabs)/index.tsx", "app/delete-account.tsx", "src/useColors.ts"]) {
+    if (!existsSync(join(root, "assets", "expo", f))) throw new Error(`assets/expo/${f} missing`);
+  }
+  if (!readFileSync(join(root, "SKILL.md"), "utf8").includes("references/cross-platform-decision.md")) throw new Error("SKILL.md does not link cross-platform-decision.md");
+  if (!/no starter/i.test(readFileSync(join(root, "references", "cross-platform-decision.md"), "utf8"))) throw new Error("Flutter is not flagged as having no starter");
+  for (const stack of ["expo", "flutter"]) {
+    const p = JSON.parse(execFileSync(process.execPath, [join(root, "scripts", "route-idea.mjs"), "--json", "--stack", stack, "habit tracker"], { encoding: "utf8" }));
+    if (p.stack.primary !== stack || !p.stack.explicit) throw new Error(`router did not keep explicit --stack ${stack}`);
+  }
+  ok.push("cross-platform: Expo starter files present, decision doc linked, router keeps an explicit Expo/Flutter choice");
+} catch (error) {
+  errors.push(`cross-platform check failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
 }
 
 // README artwork: every image the repo README references must exist on disk, so the

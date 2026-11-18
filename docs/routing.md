@@ -26,4 +26,8 @@ The profile drives everything downstream — including what gets **skipped**. `a
 
 Routing is a script, not a prompt, so the same idea always produces the same profile. The rules it applies are in [`references/idea-router.md`](../skills/mobile-app-factory/references/idea-router.md) and the per-archetype detail is in [`references/archetypes.md`](../skills/mobile-app-factory/references/archetypes.md).
 
+## Modules and explicit stacks
+
+The profile also carries `modules`, the opt-in drop-ins from `assets/modules/`: a subscription or IAP idea enables **billing**; marketplace, social, delivery and dating ideas with notifications enable **push**; marketplace, social and travel enable **deeplinks**; **analytics-crash** is on unless the archetype is health-fitness, kids-family or fintech. Override with `--modules a,b`. An explicit `--stack expo|flutter|kmp|capacitor` is kept (`stack.explicit: true`), never steered back to native; see [cross-platform decision](../skills/mobile-app-factory/references/cross-platform-decision.md). Rebuilding a live app: `route-idea.mjs --rebuild --src <path>`.
+
 If you already know what you are shipping, `route-idea.mjs --fast` skips the questionnaire and the preview gate, writes the same three artifacts, and records every inferred answer as an assumption for you to correct.

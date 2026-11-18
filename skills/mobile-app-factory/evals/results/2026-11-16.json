@@ -1,0 +1,291 @@
+{
+  "skill": "mobile-app-factory",
+  "date": "2026-11-16",
+  "agent": "Claude Code",
+  "cli_format": "stream-json",
+  "model": null,
+  "auth": "cli-login",
+  "environment": {
+    "skills_visible": 177,
+    "skills_dir": ".claude/skills",
+    "detection": "tool-call",
+    "note": "Claude Code in a temp project; a positive counts only when this skill is the one invoked. The CLI may still expose account-synced skills."
+  },
+  "trigger": {
+    "metrics": {
+      "total": 20,
+      "positive": 10,
+      "negative": 10,
+      "tp": 8,
+      "fp": 0,
+      "fn": 2,
+      "tn": 10,
+      "precision": 1,
+      "recall": 0.8,
+      "accuracy": 0.9
+    },
+    "cases": [
+      {
+        "prompt": "I want to build a habit tracker app and put it on both app stores.",
+        "why": "build + publish",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "Skill",
+        "invoked": [
+          "mobile-app-factory"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 15453,
+        "error": null
+      },
+      {
+        "prompt": "How do I get my app through Google Play's testing requirement?",
+        "why": "store gate",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "Skill",
+        "invoked": [
+          "mobile-app-factory"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 18193,
+        "error": null
+      },
+      {
+        "prompt": "Write App Store metadata for my recipe app.",
+        "why": "metadata",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "Skill",
+        "invoked": [
+          "mobile-app-factory"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 59556,
+        "error": null
+      },
+      {
+        "prompt": "My app got rejected under guideline 4.2, what do I change?",
+        "why": "review",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "Skill",
+        "invoked": [
+          "mobile-app-factory"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 24960,
+        "error": null
+      },
+      {
+        "prompt": "Design the onboarding flow for an iOS app.",
+        "why": "design, mobile",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "Skill",
+        "invoked": [
+          "mobile-app-factory"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 21580,
+        "error": null
+      },
+      {
+        "prompt": "Which native stack should I use, Kotlin or Swift first?",
+        "why": "stack selection",
+        "should_trigger": true,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": false,
+        "skills_visible": 177,
+        "ms": 12977,
+        "error": null
+      },
+      {
+        "prompt": "Build me a Kotlin app with Jetpack Compose that tracks my expenses offline.",
+        "why": "explicit native Android build",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "Skill",
+        "invoked": [
+          "mobile-app-factory"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 83116,
+        "error": null
+      },
+      {
+        "prompt": "I need a TestFlight build and a privacy manifest for my SwiftUI app.",
+        "why": "iOS release + manifest",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "Skill",
+        "invoked": [
+          "mobile-app-factory"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 24843,
+        "error": null
+      },
+      {
+        "prompt": "My Play Console data safety form doesn't match the SDKs in my build. Help.",
+        "why": "declaration parity",
+        "should_trigger": true,
+        "triggered": true,
+        "via": "Skill",
+        "invoked": [
+          "mobile-app-factory"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 22631,
+        "error": null
+      },
+      {
+        "prompt": "Take this app idea to a shippable release plan for iOS and Android.",
+        "why": "end-to-end pipeline",
+        "should_trigger": true,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": false,
+        "skills_visible": 177,
+        "ms": 11617,
+        "error": null
+      },
+      {
+        "prompt": "Build me a website for my bakery.",
+        "why": "web, not a native app",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 53962,
+        "error": null
+      },
+      {
+        "prompt": "Design a logo for my bakery.",
+        "why": "brand/design skill",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 28076,
+        "error": null
+      },
+      {
+        "prompt": "Add React web animation to my analytics dashboard.",
+        "why": "motion-experiences, web",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [
+          "motion-gsap"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 17190,
+        "error": null
+      },
+      {
+        "prompt": "Add GSAP scroll animations to my marketing landing page.",
+        "why": "motion-experiences, web",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [
+          "motion-gsap"
+        ],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 11527,
+        "error": null
+      },
+      {
+        "prompt": "Review this SwiftUI spring animation, it feels too bouncy.",
+        "why": "motion-experiences, native motion",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 23305,
+        "error": null
+      },
+      {
+        "prompt": "Fix this Python stack trace.",
+        "why": "unrelated",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 6650,
+        "error": null
+      },
+      {
+        "prompt": "Write a SQL query joining users and orders.",
+        "why": "unrelated",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 7563,
+        "error": null
+      },
+      {
+        "prompt": "Set up a Postgres index for my backend.",
+        "why": "backend, not an app",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 12874,
+        "error": null
+      },
+      {
+        "prompt": "Create a Figma component library for our design system.",
+        "why": "design tooling, not an app build",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 37626,
+        "error": null
+      },
+      {
+        "prompt": "Deploy this Node API to Railway.",
+        "why": "infra, not a store release",
+        "should_trigger": false,
+        "triggered": false,
+        "via": null,
+        "invoked": [],
+        "pass": true,
+        "skills_visible": 177,
+        "ms": 24583,
+        "error": null
+      }
+    ]
+  },
+  "quality": null
+}
