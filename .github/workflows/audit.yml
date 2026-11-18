@@ -132,6 +132,19 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+      # Hard-coding "iPhone 16" broke the moment the runner image moved to a newer Xcode.
+      # Ask the image which iPhone simulators it actually has.
+      - name: Pick an iPhone simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          print(next(d["udid"] for runtime in sorted(devices, reverse=True) if "iOS" in runtime
+                     for d in devices[runtime] if d["name"].startswith("iPhone")))
+          ')
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
+          echo "using simulator $UDID"
+
       # Building proves it compiles; testing proves the state machine, the SwiftData
       # repository and the auth stubs actually behave. The authoring machine has no
       # Xcode, so this job is where the iOS starter is verified.
@@ -141,7 +154,7 @@ jobs:
           xcodebuild \
             -project CISmoke.xcodeproj \
             -scheme CISmoke \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination "id=$SIM_UDID" \
             CODE_SIGNING_ALLOWED=NO \
             test
 
@@ -189,12 +202,21 @@ jobs:
             --platform ios --app "$RUNNER_TEMP/ios" --project CIModules \
             --modules billing,push,analytics-crash
       - run: brew install xcodegen
+      - name: Pick an iPhone simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          print(next(d["udid"] for runtime in sorted(devices, reverse=True) if "iOS" in runtime
+                     for d in devices[runtime] if d["name"].startswith("iPhone")))
+          ')
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
       - name: Generate, build and test
         working-directory: ${{ runner.temp }}/ios
         run: |
           xcodegen generate
           xcodebuild -project CIModules.xcodeproj -scheme CIModules \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination "id=$SIM_UDID" \
             CODE_SIGNING_ALLOWED=NO test
 
   expo-build:
