@@ -169,6 +169,7 @@ jobs:
           grep -E "error:|Test Case .* failed|Testing failed" test.log | head -25 \
             | sed 's/%/%25/g' \
             | while IFS= read -r line; do echo "::error::$line"; done
+          echo "::error::tail-b64=$(tail -n 30 test.log | base64 | tr -d '\n')"
 
   # Modules rot silently unless something builds them: scaffold fresh apps with every
   # module that ships platform code switched on, then compile them.
@@ -239,6 +240,7 @@ jobs:
           grep -E "error:|Test Case .* failed|Testing failed" test.log | head -25 \
             | sed 's/%/%25/g' \
             | while IFS= read -r line; do echo "::error::$line"; done
+          echo "::error::tail-b64=$(tail -n 30 test.log | base64 | tr -d '\n')"
 
   expo-build:
     name: expo starter typechecks and bundles
