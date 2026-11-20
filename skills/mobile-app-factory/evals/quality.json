@@ -46,7 +46,8 @@
         "Asks no more than 5 questions or states assumptions",
         "Names the store risk (screen-time API, health claims, accounts)",
         "Does not invent a backend without saying so"
-      ]
+      ],
+      "timeout_s": 420
     },
     {
       "id": "store-readiness",
@@ -85,7 +86,8 @@
         "States the calendar cost of the Play tester gate",
         "Runs readiness-report.mjs --strict and separates AI from human gaps",
         "Does not declare 'no data collected' with analytics installed"
-      ]
+      ],
+      "timeout_s": 420
     },
     {
       "id": "metadata-lint",
@@ -152,7 +154,8 @@
         "One accent, neutral surfaces, 13-14px body",
         "No glassmorphism, rainbow gradients or a second font",
         "Reduce-motion path stated"
-      ]
+      ],
+      "timeout_s": 420
     },
     {
       "id": "routing-fintech",
@@ -264,7 +267,8 @@
         "Names the tier rules (fades only on low tier)",
         "Shows a manual location fallback and the Settings path",
         "Reports file/screen evidence, not a general statement"
-      ]
+      ],
+      "timeout_s": 420
     },
     {
       "id": "intake-preview-approval",
@@ -296,7 +300,8 @@
         "Asks for approval before writing code",
         "On 'add a settings screen and drop the paywall', review-preview.mjs updates profile and preview together",
         "Says which actions remain human (accounts, signing, devices, store upload)"
-      ]
+      ],
+      "timeout_s": 420
     },
     {
       "id": "rebuild-plan",
@@ -330,7 +335,8 @@
       "judgement": [
         "Keeps the existing bundle ID/package name and updates the listing instead of creating a new one",
         "Never records secret values, only env var names"
-      ]
+      ],
+      "timeout_s": 420
     },
     {
       "id": "rebuild-listing-continuity",
@@ -357,7 +363,8 @@
       ],
       "judgement": [
         "Says to update the existing listing, not publish a new app"
-      ]
+      ],
+      "timeout_s": 420
     },
     {
       "id": "billing-subscription",
@@ -385,7 +392,8 @@
       "judgement": [
         "Mentions server-side receipt validation",
         "Does not hand-roll entitlement trust on the client alone"
-      ]
+      ],
+      "timeout_s": 420
     },
     {
       "id": "billing-revenuecat",
@@ -406,7 +414,8 @@
       ],
       "judgement": [
         "Keeps the PurchaseService protocol rather than calling the SDK from views"
-      ]
+      ],
+      "timeout_s": 420
     },
     {
       "id": "push-priming",
@@ -433,7 +442,8 @@
       ],
       "judgement": [
         "Does not request notification permission on first launch"
-      ]
+      ],
+      "timeout_s": 420
     },
     {
       "id": "push-android-channels",
@@ -482,7 +492,8 @@
       "judgement": [
         "Uses start/end instead of left/right",
         "Runs a pseudo-localization pass"
-      ]
+      ],
+      "timeout_s": 420
     },
     {
       "id": "localization-metadata",
@@ -535,7 +546,8 @@
       ],
       "judgement": [
         "Deletion is in-app, not only by emailing support"
-      ]
+      ],
+      "timeout_s": 420
     },
     {
       "id": "declarations-reconcile",

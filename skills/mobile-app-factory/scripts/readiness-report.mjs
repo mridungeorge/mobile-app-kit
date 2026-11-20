@@ -167,6 +167,22 @@ function checkLegal(dir) {
   return ok("privacy, terms and support contact referenced");
 }
 
+function checkArtifactLint(dir) {
+  const linter = join(__dirname, "lint-artifacts.mjs");
+  try {
+    execFileSync(process.execPath, [linter, "--dir", dir, "--json"], { stdio: "pipe" });
+    return ok("artifact recipes satisfied (no model involved)");
+  } catch (error) {
+    if (error.status === 2) return warn("artifact lint could not read .mobile");
+    let parsed = null;
+    try { parsed = JSON.parse(String(error.stdout || "")); } catch { /* fall through */ }
+    if (!parsed) return bad(`artifact lint failed: ${String(error.message || "").split("\n")[0]}`);
+    const errors = parsed.errors || [];
+    const summary = errors.slice(0, 3).map((e) => `${e.file}: ${e.message}`).join("; ");
+    return bad(`${errors.length} artifact error(s) — ${summary}${errors.length > 3 ? "; …" : ""}`);
+  }
+}
+
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.help) {
@@ -195,6 +211,7 @@ function main() {
     { name: "Store metadata", ...checkMetadata(dir) },
     { name: "Listing legal links", ...checkLegal(dir) },
     { name: "Screenshots", ...checkScreenshots(dir) },
+    { name: "Artifact consistency", ...checkArtifactLint(dir) },
     { name: "Adversarial review", ...checkReview(dir) }
   ];
 

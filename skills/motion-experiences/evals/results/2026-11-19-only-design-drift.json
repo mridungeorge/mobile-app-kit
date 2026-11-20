@@ -1,0 +1,11 @@
+{
+  "skill": "motion-experiences",
+  "date": "2026-11-19",
+  "agent": "OpenCode",
+  "cli_format": "text",
+  "model": "opencode/big-pickle",
+  "auth": "cli-login",
+  "environment": null,
+  "trigger": null,
+  "quality": null
+}

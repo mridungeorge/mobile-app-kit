@@ -109,6 +109,17 @@ Curated picks by job: `references/react-bits-catalog.md`.
 
 React Native equivalents (Reanimated patterns, scroll reveals, gesture sheets): `references/mobile-motion.md`. Native SwiftUI/Compose implementations of all five jobs, mapped to the Rune spring tokens: `references/native-motion.md`.
 
+## What a code answer must contain
+
+When the answer is code, these identifiers are part of the contract — a prose description scores zero:
+
+- **React / Next:** `useGSAP` imported from `@gsap/react`, animation inside its scope, and a `gsap.matchMedia()` branch for `(prefers-reduced-motion: no-preference)`. No raw `useEffect` for animation.
+- **React Native / Expo:** `useAnimatedStyle` + `useSharedValue` from `react-native-reanimated`, worklets on the UI thread, and `useReducedMotion()` (or `AccessibilityInfo.isReduceMotionEnabled`) choosing a static or 150ms fade path.
+- **Compose:** `AnimatedVisibility` (or `Modifier.animateItem()` in lists) and `spring(` using `Motion.settle` or `Motion.snap` from the token file. Name both.
+- **SwiftUI:** `withAnimation(.spring(...))`, `matchedGeometryEffect`, or `.phaseAnimator`; gate with `@Environment(\.accessibilityReduceMotion)`.
+
+Every motion answer ends with the reduce-motion path for the stack being discussed, even when the request only says "add an animation" — budget answers (`restrained`, `standard`, `expressive`) included. The shortest working shape for each stack, with the exact identifiers and cleanup call, is in `references/quality-recipes.md`.
+
 ## Recipes
 
 Full code in `references/gsap-recipes.md`:

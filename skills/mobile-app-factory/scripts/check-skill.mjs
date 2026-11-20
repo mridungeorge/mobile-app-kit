@@ -81,6 +81,7 @@ const required = [
   "scripts/review-preview.mjs",
   "scripts/scaffold-native.mjs",
   "scripts/readiness-report.mjs",
+  "scripts/lint-artifacts.mjs",
   "scripts/new-app.sh",
   "scripts/new-android-app.sh",
   "scripts/new-ios-app.sh",
@@ -245,6 +246,57 @@ try {
   rmSync(temp, { recursive: true, force: true });
 } catch (error) {
   errors.push(`pipeline smoke test failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
+}
+
+// The artifact lint is the cheap half of the quality gate: no model, so a missing fact must fail
+// deterministically, and readiness --strict must surface it rather than let a prose answer through.
+try {
+  const temp = mkdtempSync(join(tmpdir(), "maf-lint-"));
+  writeFileSync(join(temp, "05-compliance.md"), "# Compliance\n\nLooks good. Ship it.\n");
+
+  let rejected = null;
+  try {
+    execFileSync(process.execPath, [join(root, "scripts", "lint-artifacts.mjs"), "--dir", temp, "--json"], { stdio: "pipe" });
+  } catch (error) {
+    rejected = error;
+  }
+  if (!rejected) throw new Error("lint accepted a compliance file with none of the required facts");
+  if (rejected.status !== 1) throw new Error(`lint exited ${rejected.status}; expected 1`);
+  const linted = JSON.parse(String(rejected.stdout));
+  if (!linted.errors.some((item) => /privacy manifest/i.test(item.message))) {
+    throw new Error("lint did not name the missing privacy manifest");
+  }
+
+  let strict = null;
+  try {
+    execFileSync(process.execPath, [join(root, "scripts", "readiness-report.mjs"), "--dir", temp, "--json", "--strict"], { stdio: "pipe" });
+  } catch (error) {
+    strict = error;
+  }
+  const report = strict ? JSON.parse(String(strict.stdout)) : null;
+  const item = report?.ai?.find((entry) => entry.name === "Artifact consistency");
+  if (!strict || strict.status !== 1 || item?.status === "pass" || !item) {
+    throw new Error("readiness --strict did not fail on the lint error");
+  }
+
+  writeFileSync(join(temp, "05-compliance.md"),
+    "# Store compliance\n\n" +
+    "- Privacy manifest: PrivacyInfo.xcprivacy lists the collected data types.\n" +
+    "- Play data safety form matches the dependency list.\n" +
+    "- targetSdk 36 / target API 36.\n");
+  execFileSync(process.execPath, [join(root, "scripts", "lint-artifacts.mjs"), "--dir", temp, "--json"], { stdio: "pipe" });
+
+  // The agent's own skill bundle lives inside the sandbox. Its templates name Sentry and
+  // RevenueCat; scanning them would report dependencies the app does not have.
+  mkdirSync(join(temp, ".claude", "skills", "bundled"), { recursive: true });
+  writeFileSync(join(temp, ".claude", "skills", "bundled", "manifest.json"), '{"dependency":"RevenueCat"}\n');
+  execFileSync(process.execPath, [join(root, "scripts", "lint-artifacts.mjs"), "--dir", temp, "--json"], { stdio: "pipe" });
+
+  ok.push("artifact lint: rejects a compliance file that omits the facts, readiness --strict fails, passes when fixed, ignores bundled skill templates");
+  rmSync(temp, { recursive: true, force: true });
+} catch (error) {
+  const detail = String(error.stdout || error.stderr || error.message).trim().split("\n").slice(0, 3).join(" ");
+  errors.push(`artifact lint self-test failed: ${detail}`);
 }
 
 // Size budget: a SKILL.md is loaded whenever the skill triggers, so it has a hard ceiling.

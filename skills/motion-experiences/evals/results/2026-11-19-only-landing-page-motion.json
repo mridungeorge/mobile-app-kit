@@ -1,0 +1,90 @@
+{
+  "skill": "motion-experiences",
+  "date": "2026-11-19",
+  "agent": "OpenCode",
+  "cli_format": "text",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "auth": "cli-login",
+  "environment": null,
+  "trigger": null,
+  "quality": {
+    "total": 1,
+    "passed": 1,
+    "cases": [
+      {
+        "id": "landing-page-motion",
+        "prompt": "Add motion to the SaaS landing page in ./landing-page. It currently has no animation.",
+        "passed": true,
+        "pass_rate": 1,
+        "assertions": [
+          {
+            "label": "useGSAP + matchMedia, not raw useEffect",
+            "pass": true,
+            "detail": "response mentions useGSAP, matchMedia"
+          },
+          {
+            "label": "reveal uses once: true",
+            "pass": true,
+            "detail": "response matches /once/"
+          },
+          {
+            "label": "reduced-motion branch stated",
+            "pass": true,
+            "detail": "response matches /(?i)reduced[- ]motion/"
+          }
+        ],
+        "judgement": [
+          "Names the five jobs and picks a budget",
+          "Reveals 12-16px + fade",
+          "Restricts pinned sections to desktop widths",
+          "Animates transform/opacity only"
+        ],
+        "ms": 400371,
+        "timed_out": false,
+        "timeout_s": 420,
+        "response": "I'll start by exploring the landing page structure.\r\nNow the CSS: press/hover feedback plus a reduced-motion override.\r\nMotion added and verified in a real browser.\n\n## Assumptions\n- **Budget: `restrained`.** Ledgerly is B2B invoicing/finance software, so the motion ceiling is entry + reveal + press feedback — no parallax, scrub, pinned sections or looping effects.\n- The existing `data-hero` / `data-reveal` attributes were motion hooks waiting to be wired up, so I kept the markup and only added `data-nav`.\n- GSAP was already a dependency, so I used it instead of adding a library.\n\n## What changed\n\n**`landing-page/src/motion/gsap.ts`** (new) — single place that registers `useGSAP` + `ScrollTrigger` once, so hot reload can't double-register.\n\n**`landing-page/src/App.tsx`**\n- `useGSAP` scoped to a `main` ref (no raw `useEffect`), all work inside `gsap.matchMedia()`.\n- **Entry:** one timeline — nav drops in 8px, then eyebrow/headline/lede/CTAs stagger 16px + fade, 40ms apart, `power2.out`, total ≈ 0.8s. One direction, no bounce on text.\n- **Reveal:** `ScrollTrigger.batch` on `[data-reveal]` with `start: \"top 85%\"` and `once: true` — 16px + fade, 40ms stagger, never replays when you scroll back.\n- **Reduced-motion branch:** sets nav/hero/cards to `opacity: 1; y: 0` with cleared props, so nothing is ever left hidden.\n- Cleanup returns `mm.revert()` so triggers die on unmount/route change.\n\n**`landing-page/src/styles.css`**\n- Nav underline wipes in via `scaleX` on `::after` (transform only, hover + `:focus-visible`).\n- CTA press feedback: `scale(0.97)` in 100ms on `:active` (fires on touch-down, not release) plus a 150ms background shift.\n- Card hover: 2px lift + border/shadow, gated behind `@media (hover: hover)` so touch devices don't get stuck states.\n- `prefers-reduced-motion` block strips the transforms/wipe and keeps only 150ms colour changes; added visible `:focus-visible` rings.\n\n## Verification\nRan headless Chrome against the dev server in both media modes, then removed the harness and `puppeteer-core` so the repo is back to its original dependency set (`npm run build` passes).\n\n| Check | Result |\n|---|---|\n| Hero mid-entrance | `opacity 0, translateY(16px)` in flight → settles to `1, 0` |\n| Below-fold proof card | hidden at load, reveals on scroll into view |\n| Scroll back up + down | all reveal items stay at `opacity 1` (no replay) |\n| Reduced motion | everything `opacity 1, transform none` at first frame, no JS errors |\n| Console | no errors (only a favicon 404) |\n\nLayout and copy are unchanged — screenshots before/after show the same composition.\r\n",
+        "repeats": [
+          {
+            "repeat": 1,
+            "passed": true,
+            "assertions": [
+              {
+                "label": "useGSAP + matchMedia, not raw useEffect",
+                "pass": true,
+                "detail": "response mentions useGSAP, matchMedia"
+              },
+              {
+                "label": "reveal uses once: true",
+                "pass": true,
+                "detail": "response matches /once/"
+              },
+              {
+                "label": "reduced-motion branch stated",
+                "pass": true,
+                "detail": "response matches /(?i)reduced[- ]motion/"
+              }
+            ],
+            "ms": 400371,
+            "timed_out": false,
+            "response": "I'll start by exploring the landing page structure.\r\nNow the CSS: press/hover feedback plus a reduced-motion override.\r\nMotion added and verified in a real browser.\n\n## Assumptions\n- **Budget: `restrained`.** Ledgerly is B2B invoicing/finance software, so the motion ceiling is entry + reveal + press feedback — no parallax, scrub, pinned sections or looping effects.\n- The existing `data-hero` / `data-reveal` attributes were motion hooks waiting to be wired up, so I kept the markup and only added `data-nav`.\n- GSAP was already a dependency, so I used it instead of adding a library.\n\n## What changed\n\n**`landing-page/src/motion/gsap.ts`** (new) — single place that registers `useGSAP` + `ScrollTrigger` once, so hot reload can't double-register.\n\n**`landing-page/src/App.tsx`**\n- `useGSAP` scoped to a `main` ref (no raw `useEffect`), all work inside `gsap.matchMedia()`.\n- **Entry:** one timeline — nav drops in 8px, then eyebrow/headline/lede/CTAs stagger 16px + fade, 40ms apart, `power2.out`,"
+          }
+        ]
+      }
+    ],
+    "repeats": 1,
+    "repeat_summary": {
+      "repeats": 1,
+      "per_repeat": [
+        {
+          "repeat": 1,
+          "passed": 1,
+          "total": 1
+        }
+      ],
+      "min": 1,
+      "max": 1
+    },
+    "checkpoint": "C:\\Users\\GeorgeMridun\\mobile\\skills\\motion-experiences\\evals\\results\\.progress-motion-experiences-only-landing-page-motion.json",
+    "harness": "prefixed with: no human to answer questions — state assumptions and complete the task"
+  }
+}

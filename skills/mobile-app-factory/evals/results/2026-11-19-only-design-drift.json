@@ -1,0 +1,99 @@
+{
+  "skill": "mobile-app-factory",
+  "date": "2026-11-19",
+  "agent": "OpenCode",
+  "cli_format": "text",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "auth": "cli-login",
+  "environment": null,
+  "trigger": null,
+  "quality": {
+    "total": 1,
+    "passed": 1,
+    "cases": [
+      {
+        "id": "design-drift",
+        "prompt": "Use Rune's design language for the settings screen.",
+        "passed": true,
+        "pass_rate": 1,
+        "assertions": [
+          {
+            "label": "design artifact exists",
+            "pass": true,
+            "detail": ".mobile/02-design.md exists"
+          },
+          {
+            "label": "hairlines, not shadows",
+            "pass": true,
+            "detail": "matched Hairline"
+          },
+          {
+            "label": "motion tokens named",
+            "pass": true,
+            "detail": "matched snap"
+          },
+          {
+            "label": "Rune spacing scale",
+            "pass": true,
+            "detail": "matched 4/8/12/16/24"
+          }
+        ],
+        "judgement": [
+          "One accent, neutral surfaces, 13-14px body",
+          "No glassmorphism, rainbow gradients or a second font",
+          "Reduce-motion path stated"
+        ],
+        "ms": 173150,
+        "timed_out": false,
+        "timeout_s": 300,
+        "response": "I'll start by exploring the working directory to understand the project context.\r\nThe directory contains the `mobile-app-factory` skill. Let me load it and its design language reference, since the task references \"Rune's design language.\"\r\nNow I'll scaffold the project profile with the router's fast path, then write the design artifact.\r\nDone. The settings-screen design spec is written and passes the artifact lint.\n\n## Assumptions (stated, since the run is automated)\n- The request is a **design/motion spec for an existing Settings screen**, not new product scope.\n- App context: the sandbox was empty, so I routed a proxy idea — *a quiet habit tracker with a settings screen* → `health-fitness`, native SwiftUI + Compose, `restrained` motion budget. Because that profile implies accounts, notifications, health sync and billing, the spec includes those rows; any control not in the real build should simply be dropped.\n- One accent: Rune **blue** (`#4392f7` dark / `#3680dd` light).\n\n## What was produced\n- `.mobile/00-profile.json`, `00-intake.*`, `00-approval.json` — scaffolded via `route-idea.mjs --fast` (15 inferences recorded, not silent).\n- `.mobile/02-design.md` — the settings screen spec.\n- `.mobile/STATE.md` — gate 2 line appended.\n\n## Design decisions in the spec\n- **Surfaces:** neutral OKLCH-265 cards on `bg`, 1px **hairline** borders, **separator** inset 16 — no shadows except the confirm sheet.\n- **Spacing:** exactly `4/8/12/16/24` (4 label→value, 8 in-row, 12 row gap, 16 gutter, 24 section break); radius 4/6/8/10; 56 px rows.\n- **Type:** one family (SF Pro / Roboto–Inter), 13–14 px body, max two sizes per card.\n- **Components:** grouped list (one card per section, not per row), Rune switch 38×22, 3-way theme segmented control, sheet, danger confirm, toast — each with full states including loading, error, permission-denied and disabled/locked.\n- **Motion:** `settle` 300 ms, `snap` 250 ms, `glide` 320/260 ms, `pop`, `instant`; the single flourish is the theme cross-fade. **Reduce Motion** collapses everything to a 150 ms cross-fade with no translation or overshoot.\n- **Adaptive:** 200% text reflow (no fixed row heights), RTL-safe start/end, low-tier fades only, and four permission states with Settings deep links.\n\nArtifact lint: `PASS — 0 errors, 0 warnings`.\r\n",
+        "repeats": [
+          {
+            "repeat": 1,
+            "passed": true,
+            "assertions": [
+              {
+                "label": "design artifact exists",
+                "pass": true,
+                "detail": ".mobile/02-design.md exists"
+              },
+              {
+                "label": "hairlines, not shadows",
+                "pass": true,
+                "detail": "matched Hairline"
+              },
+              {
+                "label": "motion tokens named",
+                "pass": true,
+                "detail": "matched snap"
+              },
+              {
+                "label": "Rune spacing scale",
+                "pass": true,
+                "detail": "matched 4/8/12/16/24"
+              }
+            ],
+            "ms": 173150,
+            "timed_out": false,
+            "response": "I'll start by exploring the working directory to understand the project context.\r\nThe directory contains the `mobile-app-factory` skill. Let me load it and its design language reference, since the task references \"Rune's design language.\"\r\nNow I'll scaffold the project profile with the router's fast path, then write the design artifact.\r\nDone. The settings-screen design spec is written and passes the artifact lint.\n\n## Assumptions (stated, since the run is automated)\n- The request is a **design/motion spec for an existing Settings screen**, not new product scope.\n- App context: the sandbox was empty, so I routed a proxy idea — *a quiet habit tracker with a settings screen* → `health-fitness`, native SwiftUI + Compose, `restrained` motion budget. Because that profile implies accounts, notifications, health sync and billing, the spec includes those rows; any control not in the real build should simply be dropped.\n- One accent: Rune **blue** (`#4392f7` dark / `#3680dd` light).\n\n## What wa"
+          }
+        ]
+      }
+    ],
+    "repeats": 1,
+    "repeat_summary": {
+      "repeats": 1,
+      "per_repeat": [
+        {
+          "repeat": 1,
+          "passed": 1,
+          "total": 1
+        }
+      ],
+      "min": 1,
+      "max": 1
+    },
+    "checkpoint": "C:\\Users\\GeorgeMridun\\mobile\\skills\\mobile-app-factory\\evals\\results\\.progress-mobile-app-factory-only-design-drift.json",
+    "harness": "prefixed with: no human to answer questions — state assumptions and complete the task"
+  }
+}

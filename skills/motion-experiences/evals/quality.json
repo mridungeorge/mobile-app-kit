@@ -5,7 +5,10 @@
   "cases": [
     {
       "id": "landing-page-motion",
-      "prompt": "Add motion to my SaaS landing page. It currently has no animation.",
+      "prompt": "Add motion to the SaaS landing page in ./landing-page. It currently has no animation.",
+      "fixture": "landing-page",
+      "fixture_path": "landing-page",
+      "timeout_s": 420,
       "assertions": [
         { "type": "response_mentions_all", "terms": ["useGSAP", "matchMedia"], "label": "useGSAP + matchMedia, not raw useEffect" },
         { "type": "response_matches", "pattern": "once", "label": "reveal uses once: true" },

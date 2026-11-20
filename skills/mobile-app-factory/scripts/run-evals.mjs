@@ -7,6 +7,9 @@
 //   node scripts/run-evals.mjs --quality --only idea-to-prd
 //   node scripts/run-evals.mjs --agent opencode    # claude (default) | opencode | codex
 //   node scripts/run-evals.mjs --quality --shard 0/4  # one quarter of the quality cases, for parallel runs
+//   node scripts/run-evals.mjs --quality --concurrency 3  # three cases in flight at once
+//   node scripts/run-evals.mjs --quality --repeat 3      # flakiness: min/max across three runs
+//   node scripts/run-evals.mjs --quality --resume [file]  # keep passed runs, finish the rest
 //   node scripts/run-evals.mjs --merge             # combine today's shard files into one result
 //   node scripts/run-evals.mjs --validate          # check the eval files, call nothing
 //   node scripts/run-evals.mjs --dry-run           # print the plan, call nothing
@@ -45,7 +48,12 @@ const opts = {
   dryRun: false,
   only: null,
   merge: false,
-  timeoutMs: 240_000,
+  // Six minutes: the 2026-11-18 run showed a slow free CLI spending 228s on one compliance
+  // case before writing anything, so 240s measured the timeout rather than the skill.
+  timeoutMs: 360_000,
+  concurrency: 1,
+  repeat: 1,
+  resume: null,
   maxTurns: null,
   model: null,
   reasoning: null,
@@ -75,6 +83,9 @@ for (let i = 2; i < process.argv.length; i++) {
     opts.shard = { index, count };
   }
   else if (arg === "--timeout") opts.timeoutMs = Number(process.argv[++i]) * 1000;
+  else if (arg === "--concurrency") opts.concurrency = Math.min(16, Math.max(1, Number(process.argv[++i]) || 1));
+  else if (arg === "--repeat") opts.repeat = Math.min(10, Math.max(1, Number(process.argv[++i]) || 1));
+  else if (arg === "--resume") opts.resume = process.argv[++i];
   else if (arg === "--max-turns") opts.maxTurns = Number(process.argv[++i]);
   else if (arg === "--model") opts.model = process.argv[++i];
   else if (arg === "--reasoning") opts.reasoning = process.argv[++i];
@@ -84,7 +95,7 @@ for (let i = 2; i < process.argv.length; i++) {
   else if (arg === "--agent") opts.agent = process.argv[++i];
   else if (arg === "--cli-args") opts.cliArgs = process.argv[++i];
   else if (arg === "--help" || arg === "-h") {
-    console.log(readFileSync(fileURLToPath(import.meta.url), "utf8").split("\n").slice(1, 23).join("\n").replace(/^\/\/ ?/gm, ""));
+    console.log(readFileSync(fileURLToPath(import.meta.url), "utf8").split("\n").slice(1, 28).join("\n").replace(/^\/\/ ?/gm, ""));
     process.exit(0);
   } else {
     console.error(`unknown flag: ${arg}`);
@@ -146,6 +157,9 @@ function validate() {
       else if (ids.has(testCase.id)) problems.push(`${skill}: duplicate quality id "${testCase.id}"`);
       ids.add(testCase.id);
       if (!testCase.prompt) problems.push(`${skill}/${testCase.id}: no prompt`);
+      if (testCase.timeout_s != null && !(Number(testCase.timeout_s) > 0)) {
+        problems.push(`${skill}/${testCase.id}: timeout_s must be a positive number of seconds`);
+      }
       if (!Array.isArray(testCase.assertions) || !testCase.assertions.length) {
         problems.push(`${skill}/${testCase.id}: no checkable assertions`);
       }
@@ -202,8 +216,31 @@ function selfTest() {
   expect("the known agents do not all share one skills directory",
     new Set(known.map((agent) => agent.skillsDirs[0])).size === known.length);
 
+  const baseline = {
+    quality: {
+      total: 2, passed: 1,
+      cases: [{ id: "a", passed: true }, { id: "b", passed: false }],
+      repeat_summary: { repeats: 3, min: 1, max: 1 },
+    },
+  };
+  const probe = {
+    quality: {
+      total: 1, passed: 1,
+      cases: [{ id: "b", passed: true }],
+      repeat_summary: { repeats: 1, min: 1, max: 1 },
+    },
+  };
+  const mergedProbe = mergeRecords(baseline, probe);
+  expect("a one-case run merges into the day's file instead of replacing it",
+    mergedProbe.quality.total === 2 && mergedProbe.quality.passed === 2);
+  expect("a partial run drops the repeat summary it cannot describe",
+    mergedProbe.quality.repeat_summary === null);
+  expect("a complete rerun keeps its repeat summary",
+    mergeRecords(baseline, { quality: { ...baseline.quality } }).quality.repeat_summary !== null);
+  expect("probe filenames are filesystem-safe", slug("store-readiness") === "store-readiness" && slug("???") === "run");
+
   for (const problem of problems) console.log(`  x ${problem}`);
-  console.log(`\n${problems.length ? "FAIL" : "PASS"} — runner self-test, ${problems.length} problem(s)`);
+  console.log(`\n${problems.length ? "FAIL" : "PASS"} - runner self-test, ${problems.length} problem(s)`);
   return problems.length;
 }
 
@@ -306,6 +343,16 @@ function findCli(agent) {
     if (process.platform !== "win32") return candidates[0] ?? null;
     // `where` lists the extensionless npm shim first, which spawn() cannot execute.
     const rank = (path) => (/\.exe$/i.test(path) ? 0 : /\.(cmd|bat)$/i.test(path) ? 1 : 2);
+    // npm installs the real binary beside the shim, not on PATH. A `.cmd` shim routes arguments
+    // through cmd.exe and truncates a multi-line prompt at the first newline, so reach for the
+    // packaged .exe first: that is what the 2026-11-18 quality run had to do by hand.
+    const shimDir = dirname(candidates.sort((a, b) => rank(a) - rank(b))[0] ?? "");
+    for (const relative of [
+      ["node_modules", "@opencode", "cli", "bin", "opencode.exe"],
+    ]) {
+      const packaged = join(shimDir, ...relative);
+      if (existsSync(packaged)) return packaged;
+    }
     return candidates.sort((a, b) => rank(a) - rank(b))[0] ?? null;
   } catch {
     return null;
@@ -412,11 +459,15 @@ function detectInText(text) {
   return hits;
 }
 
-function runPrompt(agent, cli, prompt, cwd, { quality }) {
+function runPrompt(agent, cli, prompt, cwd, { quality, timeoutMs = opts.timeoutMs } = {}) {
   return new Promise((resolveRun) => {
-    const args = opts.cliArgs
+    const usesCmdShim = process.platform === "win32" && /\.(cmd|bat)$/i.test(cli);
+    // A cmd.exe shim treats a newline as the end of the command. Flatten the prompt rather than
+    // silently sending only its first line (the bug behind the 2026-11-18 generic answers).
+    const args = (opts.cliArgs
       ? opts.cliArgs.trim().split(/\s+/).map((part) => part.replace("{prompt}", prompt))
-      : agent.command(prompt, { quality });
+      : agent.command(prompt, { quality }))
+      .map((part) => (usesCmdShim ? part.replace(/\r?\n+/g, " ") : part));
 
     const started = Date.now();
     const env = { ...process.env };
@@ -507,12 +558,12 @@ function runPrompt(agent, cli, prompt, cwd, { quality }) {
         try { execFileSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore" }); return; } catch { /* fall through */ }
       }
       child.kill();
-    }, opts.timeoutMs);
+    }, timeoutMs);
     // Belt and braces: if the process tree survives the kill and never closes its pipes, resolve
     // anyway so the harness cannot hang forever.
     const hardStop = setTimeout(() => {
-      resolveRun({ invoked, response: raw, error: `timed out after ${opts.timeoutMs / 1000}s`, timedOut: true, skillCount, limit: limitHit, ms: Date.now() - started });
-    }, opts.timeoutMs + 15_000);
+      resolveRun({ invoked, response: raw, error: `timed out after ${timeoutMs / 1000}s`, timedOut: true, skillCount, limit: limitHit, ms: Date.now() - started });
+    }, timeoutMs + 15_000);
     child.on("error", (error) => {
       clearTimeout(timer);
       clearTimeout(hardStop);
@@ -643,6 +694,45 @@ function metrics(cases) {
   };
 }
 
+function slug(value) {
+  return String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "run";
+}
+
+// A same-day run must never erase a different run's cases. Quality cases are merged by id, so
+// `--only` / `--resume` / a trigger-only rerun add evidence instead of replacing the set.
+function mergeRecords(previous, current) {
+  const record = { ...previous, ...current };
+  record.trigger = current.trigger ?? previous.trigger;
+  if (!current.quality) {
+    record.quality = current.quality ?? previous.quality ?? null;
+    return record;
+  }
+  if (!previous.quality?.cases?.length) {
+    record.quality = current.quality;
+    return record;
+  }
+  const byId = new Map(previous.quality.cases.map((item) => [item.id, item]));
+  const previousIds = [...byId.keys()];
+  const currentIds = new Set(current.quality.cases.map((item) => item.id));
+  for (const item of current.quality.cases) byId.set(item.id, item);
+  const cases = [...byId.values()];
+  record.quality = {
+    ...previous.quality,
+    ...current.quality,
+    cases,
+    total: cases.length,
+    passed: cases.filter((item) => item.passed).length,
+  };
+  // A repeat summary only describes the cases that ran together. A union of two partial runs
+  // has no single min/max, so drop it rather than print a number that cannot be reproduced.
+  const sameSet = previousIds.length === currentIds.size && previousIds.every((id) => currentIds.has(id));
+  if (!sameSet) {
+    record.quality.repeats = null;
+    record.quality.repeat_summary = null;
+  }
+  return record;
+}
+
 function mdSummary(result) {
   const lines = [`# ${result.skill} evals — ${result.date}`, "", `model: ${result.model ?? "CLI default"}`, ""];
   if (result.trigger) {
@@ -654,10 +744,16 @@ function mdSummary(result) {
     lines.push("");
   }
   if (result.quality) {
-    lines.push(`## Quality set`, "", "| case | pass | failed assertion |", "|---|---|---|");
+    const repeats = result.quality.repeat_summary;
+    lines.push(`## Quality set`, "",
+      `passed ${result.quality.passed}/${result.quality.total}${repeats ? ` · repeats ${repeats.repeats} · range ${repeats.min}–${repeats.max}` : ""}`, "",
+      "| case | pass rate | pass | failed assertion |", "|---|---|---|---|");
     for (const testCase of result.quality.cases) {
       const failed = testCase.assertions.find((a) => !a.pass);
-      lines.push(`| ${testCase.id} | ${testCase.passed ? "pass" : "FAIL"} | ${failed ? failed.label : ""} |`);
+      lines.push(`| ${testCase.id} | ${testCase.pass_rate ?? (testCase.passed ? 1 : 0)}/${repeats?.repeats ?? 1} | ${testCase.passed ? "pass" : "FAIL"} | ${failed ? failed.label : ""} |`);
+    }
+    if (repeats) {
+      lines.push("", `Per repeat: ${repeats.per_repeat.map((r) => `run ${r.repeat} ${r.passed}/${r.total}`).join(" · ")}`);
     }
     lines.push("");
   }
@@ -745,9 +841,9 @@ async function main() {
     for (const skill of skills) {
       const trigger = loadJson(join(repoRoot, "skills", skill, "evals", "trigger.json"));
       const quality = loadJson(join(repoRoot, "skills", skill, "evals", "quality.json"));
-      console.log(`${skill}: ${trigger.prompts.length} trigger prompt(s), ${quality.cases.length} quality case(s)`);
+      console.log(`${skill}: ${trigger.prompts.length} trigger prompt(s), ${quality.cases.length} quality case(s)${opts.repeat > 1 ? ` × ${opts.repeat} repeats` : ""}`);
       if (opts.trigger) for (const p of trigger.prompts) console.log(`  [${p.should_trigger ? "+" : "-"}] ${p.prompt}`);
-      if (opts.quality) for (const c of quality.cases) console.log(`  [q] ${c.id}`);
+      if (opts.quality) for (const c of quality.cases) console.log(`  [q] ${c.id}${c.timeout_s ? ` (${c.timeout_s}s)` : ""}`);
     }
     process.exit(0);
   }
@@ -788,6 +884,7 @@ async function main() {
   const results = [];
   let failures = 0;
   let aborted = null;
+  let wroteAny = false;
 
   for (const skill of skills) {
     const trigger = loadJson(join(repoRoot, "skills", skill, "evals", "trigger.json"));
@@ -842,40 +939,174 @@ async function main() {
       }
 
       if (opts.quality) {
-        const cases = [];
+        const suffix = opts.shard ? `.shard-${opts.shard.index}` : opts.only ? `-only-${slug(opts.only)}` : "";
+        const checkpointPath = resolve(opts.resume ?? join(
+          repoRoot, "skills", skill, "evals", "results",
+          `.progress-${skill}${suffix}.json`
+        ));
+
+        // Resume keeps the repeats that already passed. A case only counts as passed when every
+        // requested repeat passed, so a flaky case cannot hide behind one lucky run.
+        let previous = new Map();
+        if (opts.resume) {
+          try {
+            const saved = loadJson(checkpointPath);
+            const savedCases = saved.quality?.cases ?? saved.cases ?? [];
+            for (const item of savedCases) {
+              if (Array.isArray(item.repeats)) {
+                for (const repeat of item.repeats) if (repeat.passed) previous.set(`${item.id}#${repeat.repeat - 1}`, repeat);
+              } else if (item.passed) {
+                previous.set(`${item.id}#${item.repeat ?? 0}`, item);
+              }
+            }
+            console.log(`  resume: ${previous.size} passed run(s) kept from ${checkpointPath}`);
+          } catch (error) {
+            console.error(`--resume could not read ${checkpointPath}: ${error.message}`);
+            process.exit(2);
+          }
+        } else {
+          rmSync(checkpointPath, { force: true });
+        }
+
+        const selected = [];
         for (const [caseIndex, testCase] of quality.cases.entries()) {
           if (opts.only && testCase.id !== opts.only) continue;
           if (opts.shard && caseIndex % opts.shard.count !== opts.shard.index) continue;
-          const caseWorkspace = makeWorkspace(skill, agent);
-          try {
-            // A case may describe a project it expects to exist ("a live app in ./existing-app").
-            // Copy the fixture in under the name the prompt uses so the test measures the skill,
-            // not whether the model can invent a codebase from a path that is not there.
-            if (testCase.fixture) {
-              cpSync(join(repoRoot, "test-fixtures", testCase.fixture), join(caseWorkspace, testCase.fixture_path ?? "existing-app"), { recursive: true });
-            }
-            // Quality cases are automated: there is no human to answer the skill's intake
-            // questions, so say so once. Without this the model correctly asks its five
-            // questions and writes nothing, and the case measures the harness, not the skill.
-            const prompt = `Automated evaluation — there is no human to answer questions. State your assumptions briefly and complete the task.\n\n${testCase.prompt}`;
-            const run = await runPrompt(agent, cli, prompt, caseWorkspace, { quality: true });
-            if (run.spawnError) { aborted = `could not start ${cli}: ${run.error}`; break; }
-            if (run.limit) { aborted = run.limit; break; }
-            const assertions = testCase.assertions.map((assertion) => checkAssertion(assertion, caseWorkspace, run.response));
-            // A timeout is a harness limit, not proof the task failed: if the artifacts are on
-            // disk, score them. Record the timeout on the case so nobody reads it as fast.
-            if (run.error && !run.timedOut) assertions.push({ label: "run completed", pass: false, detail: run.error });
-            const passed = assertions.every((a) => a.pass);
-            if (!passed) failures++;
-            cases.push({ id: testCase.id, prompt: testCase.prompt, passed, assertions, judgement: testCase.judgement ?? [], ms: run.ms, timed_out: run.timedOut, response: run.response.slice(0, 4000) });
-            const failed = assertions.filter((a) => !a.pass);
-            console.log(`  ${passed ? "PASS" : "FAIL"} [quality] ${testCase.id}${failed.length ? ` — ${failed.map((a) => a.label).join("; ")}` : ""}${run.timedOut ? ` (timed out at ${opts.timeoutMs / 1000}s; assertions still checked)` : ""}`);
-          } finally {
-            if (!opts.keep) cleanup(caseWorkspace);
-          }
+          selected.push({ caseIndex, testCase });
         }
+
+        // One task per (case, repeat). A crash or a quota stop leaves the checkpoint behind,
+        // so the next command pays only for the runs that are still missing.
+        const queue = [];
+        for (const task of selected) {
+          for (let repeat = 0; repeat < opts.repeat; repeat++) queue.push({ ...task, repeat });
+        }
+
+        const collected = new Map();
+        for (const task of selected) collected.set(task.caseIndex, new Map());
+        for (const task of queue) {
+          const kept = previous.get(`${task.testCase.id}#${task.repeat}`);
+          if (kept) collected.get(task.caseIndex).set(task.repeat, { ...kept, resumed: true });
+        }
+        const pending = queue.filter((task) => !previous.has(`${task.testCase.id}#${task.repeat}`));
+        if (previous.size) console.log(`  resume: ${queue.length - pending.length}/${queue.length} run(s) kept, ${pending.length} to run`);
+        console.log(`  checkpoint: ${checkpointPath}${opts.repeat > 1 ? ` · ${opts.repeat} repeats` : ""}`);
+
+        const saveCheckpoint = () => {
+          const cases = [];
+          for (const [caseIndex, repeats] of [...collected.entries()].sort((a, b) => a[0] - b[0])) {
+            const testCase = quality.cases[caseIndex];
+            for (const [repeat, item] of repeats) cases.push({ id: testCase.id, repeat, ...item });
+          }
+          mkdirSync(dirname(checkpointPath), { recursive: true });
+          writeFileSync(checkpointPath, `${JSON.stringify({
+            skill, date, agent: agent.label, model: opts.model ?? null, checkpoint: true,
+            quality: { cases },
+          }, null, 2)}\n`);
+        };
+
+        let nextTask = 0;
+        const worker = async () => {
+          while (!aborted) {
+            const index = nextTask++;
+            if (index >= pending.length) return;
+            const { caseIndex, testCase, repeat } = pending[index];
+            const caseWorkspace = makeWorkspace(skill, agent);
+            // A case can declare its own budget; a slow model on one prompt should not force
+            // every other case to wait that long.
+            const caseTimeout = Number(testCase.timeout_ms ?? testCase.timeoutMs ?? (testCase.timeout_s ? testCase.timeout_s * 1000 : 0)) || opts.timeoutMs;
+            try {
+              // A case may describe a project it expects to exist ("a live app in ./existing-app").
+              // Copy the fixture in under the name the prompt uses so the test measures the skill,
+              // not whether the model can invent a codebase from a path that is not there.
+              if (testCase.fixture) {
+                cpSync(join(repoRoot, "test-fixtures", testCase.fixture), join(caseWorkspace, testCase.fixture_path ?? "existing-app"), { recursive: true });
+              }
+              // Quality cases are automated: there is no human to answer the skill's intake
+              // questions, so say so once. Without this the model correctly asks its five
+              // questions and writes nothing, and the case measures the harness, not the skill.
+              const prompt = `Automated evaluation — there is no human to answer questions. State your assumptions briefly and complete the task.\n\n${testCase.prompt}`;
+              const run = await runPrompt(agent, cli, prompt, caseWorkspace, { quality: true, timeoutMs: caseTimeout });
+              if (run.spawnError) { aborted = `could not start ${cli}: ${run.error}`; return; }
+              if (run.limit) { aborted = run.limit; return; }
+              const assertions = testCase.assertions.map((assertion) => checkAssertion(assertion, caseWorkspace, run.response));
+              // A timeout is a harness limit, not proof the task failed: if the artifacts are on
+              // disk, score them. Record the timeout on the case so nobody reads it as fast.
+              if (run.error && !run.timedOut) assertions.push({ label: "run completed", pass: false, detail: run.error });
+              const passed = assertions.every((a) => a.pass);
+              collected.get(caseIndex).set(repeat, {
+                repeat, passed, assertions, ms: run.ms, timed_out: run.timedOut,
+                timeout_s: Math.round(caseTimeout / 1000), response: run.response.slice(0, 4000),
+              });
+              saveCheckpoint();
+              const failed = assertions.filter((a) => !a.pass);
+              const label = opts.repeat > 1 ? `${testCase.id} (run ${repeat + 1}/${opts.repeat})` : testCase.id;
+              console.log(`  ${passed ? "PASS" : "FAIL"} [quality] ${label}${failed.length ? ` — ${failed.map((a) => a.label).join("; ")}` : ""}${run.timedOut ? ` (timed out at ${caseTimeout / 1000}s; assertions still checked)` : ""}`);
+            } finally {
+              if (!opts.keep) cleanup(caseWorkspace);
+            }
+          }
+        };
+        const workers = Math.max(1, Math.min(opts.concurrency, pending.length || 1));
+        await Promise.all(Array.from({ length: workers }, () => worker()));
+
+        const cases = selected.map(({ caseIndex, testCase }) => {
+          const repeats = [...collected.get(caseIndex).entries()]
+            .sort((a, b) => a[0] - b[0])
+            .map(([, item]) => item);
+          const passCount = repeats.filter((item) => item.passed).length;
+          const passed = repeats.length === opts.repeat && passCount === opts.repeat;
+          const firstFailure = repeats.find((item) => !item.passed);
+          const first = repeats[0];
+          if (!repeats.length) return null;
+          return {
+            id: testCase.id,
+            prompt: testCase.prompt,
+            passed,
+            // Divide by the runs that happened, not the runs requested: an aborted run must not
+            // report 0/3 for a case it never started.
+            pass_rate: Number((passCount / repeats.length).toFixed(3)),
+            assertions: (firstFailure ?? first)?.assertions ?? [],
+            judgement: testCase.judgement ?? [],
+            ms: repeats.reduce((total, item) => total + (item.ms ?? 0), 0),
+            timed_out: repeats.some((item) => item.timed_out),
+            timeout_s: first?.timeout_s ?? Math.round(opts.timeoutMs / 1000),
+            response: first?.response ?? "",
+            repeats: repeats.map((item) => ({
+              repeat: item.repeat + 1,
+              passed: item.passed,
+              assertions: item.assertions,
+              ms: item.ms,
+              timed_out: item.timed_out,
+              response: (item.response ?? "").slice(0, 1000),
+            })),
+          };
+        }).filter(Boolean);
         if (cases.length) {
-          result.quality = { total: cases.length, passed: cases.filter((c) => c.passed).length, cases, harness: "prefixed with: no human to answer questions — state assumptions and complete the task" };
+          const perRepeat = Array.from({ length: opts.repeat }, (_, index) => ({
+            repeat: index + 1,
+            passed: cases.filter((item) => item.repeats.find((r) => r.repeat === index + 1)?.passed).length,
+            total: cases.length,
+          }));
+          result.quality = {
+            total: cases.length,
+            passed: cases.filter((c) => c.passed).length,
+            cases,
+            repeats: opts.repeat,
+            complete: !aborted,
+            aborted: aborted ?? null,
+            repeat_summary: {
+              repeats: opts.repeat,
+              per_repeat: perRepeat,
+              min: Math.min(...perRepeat.map((r) => r.passed)),
+              max: Math.max(...perRepeat.map((r) => r.passed)),
+            },
+            checkpoint: checkpointPath,
+            harness: "prefixed with: no human to answer questions — state assumptions and complete the task",
+          };
+          if (opts.resume) result.quality.resumed_from = checkpointPath;
+          failures += cases.filter((c) => !c.passed).length;
+          if (!aborted) rmSync(checkpointPath, { force: true });
         }
       }
     } finally {
@@ -884,18 +1115,31 @@ async function main() {
     }
 
     const outDir = join(repoRoot, "skills", skill, "evals", "results");
-    if (aborted) break;
+    const produced = Boolean(result.quality?.cases?.length || result.trigger?.cases?.length);
+    if (!produced) {
+      // A probe that matched nothing in this skill is not a result. Writing an empty file would
+      // read as "zero cases passed" and would sit next to the real file for the same day.
+      console.log(`  no ${opts.only ? `case matching --only "${opts.only}"` : "cases selected"} in ${skill}; nothing written`);
+      if (aborted) break;
+      continue;
+    }
+    wroteAny = true;
     mkdirSync(outDir, { recursive: true });
-    const suffix = opts.shard ? `.shard-${opts.shard.index}` : "";
+    // A one-case probe is evidence, not the day's result: keep it out of the canonical file.
+    let suffix = opts.shard ? `.shard-${opts.shard.index}` : opts.only ? `-only-${slug(opts.only)}` : "";
     // Trigger and quality runs are separate commands, often on the same day. Merge rather
     // than replace, so the second run cannot erase the first run's numbers.
-    const outJson = join(outDir, `${date}${suffix}.json`);
+    let outJson = join(outDir, `${date}${suffix}.json`);
     let record = result;
     if (!suffix && existsSync(outJson)) {
       try {
         const previous = JSON.parse(readFileSync(outJson, "utf8"));
         if (previous.agent === result.agent && (previous.model ?? null) === (result.model ?? null)) {
-          record = { ...previous, ...result, trigger: result.trigger ?? previous.trigger, quality: result.quality ?? previous.quality };
+          record = mergeRecords(previous, result);
+        } else {
+          // Two models on one day are two results. Never let the second silently replace the first.
+          suffix = `-${slug(`${result.agent}-${result.model ?? "default"}`)}`;
+          outJson = join(outDir, `${date}${suffix}.json`);
         }
       } catch { /* an unreadable file is replaced, not merged */ }
     }
@@ -903,12 +1147,18 @@ async function main() {
     writeFileSync(join(outDir, `${date}${suffix}.md`), `${mdSummary(record)}\n`);
     results.push(record);
     console.log(`  wrote skills/${skill}/evals/results/${date}${suffix}.json`);
+    if (aborted) break;
+  }
+
+  if (opts.only && !wroteAny) {
+    console.error(`No case with id "${opts.only}" in ${skills.join(", ")}. Check the id with --dry-run --quality.`);
+    process.exit(2);
   }
 
   if (aborted) {
     if (evalConfigDir) cleanup(evalConfigDir.dir);
-    console.error(`\nABORTED — could not run the evals: ${aborted}`);
-    console.error("No results file was written. Sign the CLI in, raise its limit, or pass --cli/--agent.");
+    console.error(`\nABORTED — could not finish the evals: ${aborted}`);
+    console.error("Partial results were written if any case completed; re-run with --resume <file> to keep them.");
     process.exit(2);
   }
 
@@ -918,7 +1168,10 @@ async function main() {
       const t = result.trigger.metrics;
       console.log(`  ${result.skill}: precision ${t.precision} recall ${t.recall} accuracy ${t.accuracy} (tp ${t.tp}, fp ${t.fp}, fn ${t.fn}, tn ${t.tn})`);
     }
-    if (result.quality) console.log(`  ${result.skill}: quality ${result.quality.passed}/${result.quality.total}`);
+    if (result.quality) {
+      const repeat = result.quality.repeat_summary;
+      console.log(`  ${result.skill}: quality ${result.quality.passed}/${result.quality.total}${repeat ? ` (${repeat.repeats} repeats, range ${repeat.min}–${repeat.max})` : ""}`);
+    }
   }
   if (evalConfigDir) cleanup(evalConfigDir.dir);
   process.exit(failures ? 1 : 0);
