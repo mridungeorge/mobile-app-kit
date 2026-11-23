@@ -30,6 +30,11 @@ Thumbs.db
 .vscode/
 *.swp
 
+# Generated test and eval run state.
+test-results/
+playwright-report/
+**/.progress-*.json
+
 # Logs.
 *.log
 npm-debug.log*
