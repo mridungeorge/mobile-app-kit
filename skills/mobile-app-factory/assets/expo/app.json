@@ -6,10 +6,18 @@
     "scheme": "__APP_SLUG__",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "plugins": ["expo-router"],
-    "experiments": { "typedRoutes": true },
-    "ios": { "bundleIdentifier": "__BUNDLE_ID__", "supportsTablet": true },
-    "android": { "package": "__BUNDLE_ID__", "edgeToEdgeEnabled": true }
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "ios": {
+      "bundleIdentifier": "__BUNDLE_ID__",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "__BUNDLE_ID__"
+    }
   }
 }

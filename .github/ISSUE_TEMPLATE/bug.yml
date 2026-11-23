@@ -1,0 +1,55 @@
+name: Bug report
+description: Something in a skill, script or starter is wrong or broken.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for the report. Do not paste store credentials, signing material or private source.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Output of `git rev-parse --short HEAD`, or the release tag.
+    validations:
+      required: true
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Skill
+      options: [mobile-app-factory, motion-experiences, both / not sure]
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Command or prompt
+      description: The exact command, or the prompt you gave the agent.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: Paste the error and the first lines of output. Long logs can be attached as a file.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node version, agent and model.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I ran `node skills/mobile-app-factory/scripts/check-skill.mjs`
+        - label: I removed secrets and personal data from this report

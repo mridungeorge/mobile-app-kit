@@ -188,22 +188,50 @@ try {
   rmSync(temp, { recursive: true, force: true });
 }
 
-// Router smoke tests
+// Router smoke tests: 30 ideas with per-case assertions, plus the intake-driven stack choice.
 try {
   const { routeIdea } = await import("./route-idea.mjs");
-  const cases = [
-    ["a sleep tracker with white noise", "health-fitness"],
-    ["marketplace for local dog walkers", "commerce-marketplace"],
-    ["kids phonics and bedtime stories", "kids-family"],
-    ["AI journal that summarises my week", "ai-assistant"],
-    ["offline bird identifier with photos", "camera-photo"],
-    ["b2b field inspections with offline mode", "b2b-field"],
-    ["courier app with live tracking", "delivery-logistics"],
-    ["a unit converter", "utility"]
-  ];
-  const wrong = cases.filter(([idea, expected]) => routeIdea(idea).archetype !== expected);
-  if (wrong.length) errors.push(...wrong.map(([idea, expected]) => `router misclassified "${idea}" (expected ${expected})`));
-  else ok.push(`router: ${cases.length}/${cases.length} smoke cases classified correctly`);
+  const fixture = JSON.parse(readFileSync(join(root, "evals/router-cases.json"), "utf8"));
+  const storeFacts = readFileSync(join(root, "references/store-facts.md"), "utf8");
+  const failures = [];
+  for (const testCase of fixture.cases) {
+    const { idea } = testCase;
+    const profile = routeIdea(idea);
+    const joined = (list) => list.join(" ").toLowerCase();
+    const expectAll = (field, actual, wanted) => {
+      for (const value of wanted || []) {
+        if (!actual.includes(value)) failures.push(`${idea}: ${field} missing "${value}" (has ${actual.join(", ") || "none"})`);
+      }
+    };
+    if (profile.archetype !== testCase.archetype) {
+      failures.push(`${idea}: archetype ${profile.archetype}, expected ${testCase.archetype}`);
+    }
+    if (profile.stack.primary !== testCase.stack) {
+      failures.push(`${idea}: stack ${profile.stack.primary}, expected ${testCase.stack}`);
+    }
+    expectAll("permissions", profile.permissions, testCase.permissions);
+    expectAll("ios declarations", profile.ios.declarations, testCase.iosDeclarations);
+    expectAll("android declarations", profile.android.declarations, testCase.androidDeclarations);
+    for (const phrase of testCase.iosRisk || []) {
+      if (!joined(profile.ios.reviewRisks).includes(phrase.toLowerCase())) failures.push(`${idea}: iOS risk missing "${phrase}"`);
+    }
+    for (const phrase of testCase.androidRisk || []) {
+      if (!joined(profile.android.reviewRisks).includes(phrase.toLowerCase())) failures.push(`${idea}: Android risk missing "${phrase}"`);
+    }
+    // Negative/refusal cases: a cited rule must exist in the dated store facts, and the profile
+    // must actually name that rule. Prevents invented guideline numbers.
+    const evidence = joined([...profile.ios.declarations, ...profile.ios.reviewRisks]);
+    for (const rule of testCase.cites || []) {
+      if (!evidence.includes(rule.toLowerCase())) failures.push(`${idea}: profile does not cite store rule ${rule}`);
+      if (!storeFacts.toLowerCase().includes(rule.toLowerCase())) failures.push(`${idea}: store-facts.md does not contain rule ${rule}`);
+    }
+  }
+  if (failures.length) errors.push(...failures.slice(0, 12));
+  else ok.push(`router: ${fixture.cases.length}/${fixture.cases.length} fixture cases pass archetype, stack, permission, declaration and rule-citation assertions`);
+
+  const expo = routeIdea("a habit tracker", { intakeData: { team: "two React Native developers" } });
+  if (expo.stack.primary !== "expo") errors.push(`router: React Native intake did not choose Expo (got ${expo.stack.primary})`);
+  else ok.push("router: React/Expo intake chooses the Expo starter; native intake stays native");
 
   const profiles = ARCHETYPE_ORDER.map((a) => routeIdea("test", { archetype: a }));
   const invalid = profiles.filter((p) => p.screens.length > 12 || !p.coreLoop || !p.qaFocus.length);
@@ -739,6 +767,49 @@ try {
   }
 } catch (error) {
   errors.push(`README artwork check failed: ${error.message}`);
+}
+
+// Store compliance + freshness scripts must both pass on the shipped example, and the
+// freshness check must actually fail when the facts age past their review interval.
+try {
+  const repoRoot = resolve(root, "..", "..");
+  const example = join(repoRoot, "examples", "habit-tracker");
+  if (existsSync(example)) {
+    execFileSync(process.execPath, [join(root, "scripts", "check-store-compliance.mjs"), "--dir", example], { stdio: "pipe" });
+    execFileSync(process.execPath, [join(root, "scripts", "check-store-facts-freshness.mjs")], { stdio: "pipe" });
+    let stale = false;
+    try {
+      execFileSync(process.execPath, [join(root, "scripts", "check-store-facts-freshness.mjs"), "--today", "2030-01-01"], { stdio: "pipe" });
+    } catch { stale = true; }
+    if (!stale) throw new Error("freshness check did not fail on a stale date");
+    ok.push("store compliance: 8 deterministic checks pass on the habit-tracker example; stale store facts fail CI");
+  } else {
+    warnings.push("store compliance: example not found in this install, scripts not exercised");
+  }
+} catch (error) {
+  errors.push(`store compliance check failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
+}
+
+// Community/release files and the skill-miss reporter: present, and the reporter actually writes.
+try {
+  const repoRoot = resolve(root, "..", "..");
+  if (!existsSync(join(repoRoot, "CONTRIBUTING.md"))) {
+    ok.push("community: installed copy, repo templates not present to check");
+  } else {
+  for (const f of ["CONTRIBUTING.md", "SECURITY.md", ".github/CODEOWNERS", ".github/PULL_REQUEST_TEMPLATE.md",
+    ".github/ISSUE_TEMPLATE/bug.yml", ".github/ISSUE_TEMPLATE/skill-miss.yml", "docs/evals.md",
+    "docs/troubleshooting.md", "docs/release.md"]) {
+    if (!existsSync(join(repoRoot, f))) throw new Error(`${f} missing`);
+  }
+  const temp = mkdtempSync(join(tmpdir(), "maf-miss-"));
+  execFileSync(process.execPath, [join(root, "scripts", "skill-miss.mjs"), "take my app idea to the store",
+    "--expected", "mobile-app-factory", "--out", join(temp, "misses.md")], { stdio: "pipe" });
+  if (!readFileSync(join(temp, "misses.md"), "utf8").includes("mobile-app-factory")) throw new Error("skill-miss did not record the report");
+  rmSync(temp, { recursive: true, force: true });
+  ok.push("community: contributing, security, templates, changelog and troubleshooting present; skill-miss records a report");
+  }
+} catch (error) {
+  errors.push(`community checks failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
 }
 
 // Report

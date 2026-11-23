@@ -256,9 +256,53 @@ jobs:
       - name: Typecheck
         working-directory: ${{ runner.temp }}/CiExpo
         run: npx tsc --noEmit
+      - name: Unit tests
+        working-directory: ${{ runner.temp }}/CiExpo
+        run: npm test
+      - name: Expo doctor
+        working-directory: ${{ runner.temp }}/CiExpo
+        run: npx expo-doctor
       - name: Bundle
         working-directory: ${{ runner.temp }}/CiExpo
         run: npx expo export --platform android --platform ios
+
+  store-facts-freshness:
+    name: store facts freshness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fail when the dated store facts are stale
+        run: node skills/mobile-app-factory/scripts/check-store-facts-freshness.mjs
+
+  example-compliance:
+    name: example store compliance checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node skills/mobile-app-factory/scripts/check-store-compliance.mjs --dir examples/habit-tracker
+      - run: node skills/mobile-app-factory/scripts/check-store-facts-freshness.mjs
+
+  install-clean:
+    name: clean install into a temporary HOME
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install into an empty HOME and audit the installed copy
+        env:
+          HOME: ${{ runner.temp }}/home
+        run: |
+          mkdir -p "$HOME"
+          ./install.sh --target claude
+          node "$HOME/.claude/skills/mobile-app-factory/scripts/check-skill.mjs"
 
   motion-demo-build:
     name: motion-demo builds

@@ -163,16 +163,16 @@ One command, no dependencies:
 node skills/mobile-app-factory/scripts/check-skill.mjs
 ```
 
-Expected output — 19 checks, zero warnings, zero errors:
+Expected output — 23 checks, zero warnings, zero errors:
 
 ```
   ✓ structure: required files and all 7 agent briefs present
   ✓ frontmatter: name matches, description 912 chars
   ✓ references: 106 unique paths checked, all resolve
   ✓ archetypes: 14 match between router and reference
-  ✓ store-facts: 22 dated rows sourced, verified 1 day(s) ago
+  ✓ store-facts: 22 dated rows sourced, verified 7 day(s) ago
   ✓ metadata template: validates clean
-  ✓ router: 8/8 smoke cases classified correctly
+  ✓ router: 30/30 fixture cases pass archetype, stack, permission, declaration and rule-citation assertions
   ✓ profiles: all archetypes emit a complete profile with ≤ 12 screens
   ✓ pipeline: intake → preview → changes → approval → readiness report
   ✓ size-budget: 2 SKILL.md under 12 KB and 300 lines, every description under 1024 chars
@@ -186,7 +186,7 @@ Expected output — 19 checks, zero warnings, zero errors:
   ✓ cross-platform: Expo starter files present, decision doc linked, router keeps an explicit Expo/Flutter choice
   ✓ readme: 3 referenced image(s) exist
 
-PASS — 19 checks passed, 0 warnings, 0 errors
+PASS — 23 checks passed, 0 warnings, 0 errors
 ```
 
 The `store-facts` line counts days since `verified_on`, so that number grows as the file ages and you get a warning at 90 days. Everything else should match; a failure names the file to fix.
@@ -199,7 +199,7 @@ Last checked **2026-11-18**. "Verified" means the command ran on this machine or
 
 | Item | Status | Evidence |
 |---|---|---|
-| Skill audit (`check-skill.mjs`) | Verified | 19 checks pass, 0 warnings, 0 errors |
+| Skill audit (`check-skill.mjs`) | Verified | 23 checks pass, 0 warnings, 0 errors |
 | Android starter `assembleDebug` | Verified | `BUILD SUCCESSFUL`, debug APK produced |
 | Android starter `testDebugUnitTest` | Verified | 3/3 tests pass |
 | Android starter `lintDebug` | Verified | 0 errors, 0 warnings |
@@ -222,37 +222,16 @@ node skills/mobile-app-factory/scripts/readiness-report.mjs --dir .mobile --stri
 
 It checks the real artifacts and separates **AI-fixable leftovers** (missing PRD/design/motion/compliance, unvalidated metadata, missing native project, no PASS review) from **human/external actions** (developer accounts, signing material, CI secrets, real devices, store uploads, and the Google 12-tester/14-day gate). The rule the agents follow — and the handoff format — is in [`references/gap-closure.md`](skills/mobile-app-factory/references/gap-closure.md).
 
-## Eval results
+## Evals
 
-`evals/trigger.json` (20 prompts per skill: 10 that should trigger it, 10 near-misses that should not) and `evals/quality.json` (19 mobile cases, 7 motion cases with machine-checkable assertions) are run by `scripts/run-evals.mjs`, which drives a real agent CLI in a temp project holding only this kit and reports precision, recall and per-prompt pass/fail. It is not tied to one vendor: `--agent` picks `claude`, `opencode` or `codex`, `--cli-args "<command> {prompt}"` wraps any other CLI, and no API key is needed when that CLI is already signed in.
+Trigger sets (20 prompts each) and quality sets (19 mobile, 7 motion cases with machine-checkable
+assertions) run against a real agent CLI. Latest quality evidence: **12/19 mobile** and **3/4
+completed motion** on 2026-11-20 before the free model hit its quota. That is a real gap, not a
+green tick; the misses are listed by case, and the fixes they drove are in
+[docs/evals.md](docs/evals.md).
 
-| Date | Agent | Model | Skill | Set | Result |
-|---|---|---|---|---|---|
-| 2026-11-16 | Claude Code | CLI default | mobile-app-factory | trigger | precision 1.0 · recall 0.8 · accuracy 0.9 (18/20) |
-| 2026-11-16 | Claude Code | CLI default | motion-experiences | trigger | precision 1.0 · recall 0.6 · accuracy 0.8 (16/20) |
-| 2026-11-17 | Codex CLI | gpt-6.1-sol (low) | mobile-app-factory | trigger | precision 1.0 · recall 1.0 · accuracy 1.0 (20/20) |
-| 2026-11-17 | Codex CLI | gpt-6.1-sol (low) | motion-experiences | trigger | precision 0.909 · recall 1.0 · accuracy 0.95 (19/20) |
-| 2026-11-17 | Codex CLI | gpt-6.1-sol (low) | motion-experiences | quality | 0/7 |
-| 2026-11-17 | Codex CLI | gpt-6.1-sol (low) | mobile-app-factory | quality | not measured — quota |
-| 2026-11-18 | OpenCode | big-pickle (free) | mobile-app-factory | quality | 11/19 — 11 cases hit the 300s limit, artifacts still scored |
-| 2026-11-18 | OpenCode | big-pickle (free) | motion-experiences | quality | 3/7 |
-
-The result files are committed under `skills/*/evals/results/`. The agents use different detection: Claude Code's `stream-json` output records which skill tool was called; Codex and OpenCode print text, so a run counts as triggered when its transcript contains that skill's `SKILL.md` path. A miss can therefore be a false negative on a text CLI, and a hit can be a model opening the file to check whether the skill applies. The numbers are not directly comparable across agents for that reason. OpenCode was only used for the quality sets; its trigger sets were not run.
-
-The two 2026-11-16 Claude misses were description misses, not harness errors: "Which native stack should I use, Kotlin or Swift first?" and "Take this app idea to a shippable release plan for iOS and Android" did not fire the mobile skill; "Add reveal-on-scroll to these cards", "How do I use GSAP ScrollTrigger in React?", "My GSAP animations replay on route change" and "How do I animate list items in Jetpack Compose?" did not fire the motion skill. Both descriptions were widened after that run. The 2026-11-17 Codex run is the first measurement of the widened text: it fired on all ten mobile positives and all ten motion positives. Its one false positive is motion on "Animate this SVG logo in After Effects", which is not a supported target.
-
-**Quality is a real gap, not a green tick.** On 2026-11-17 every motion case failed at least one named-API assertion under Codex. On 2026-11-18 a free OpenCode model passed 3 of 7 motion cases and 11 of 19 mobile cases, so the assertions are achievable but not routinely met. The mobile misses cluster in compliance-heavy work: `store-readiness`, `adaptive-ui`, `account-deletion` and both billing cases wrote prose instead of the artifact the assertion names, and `design-drift` did not use the Rune spacing scale. The motion misses are named APIs: no `useGSAP` + `matchMedia`, no `useAnimatedStyle`, and no reduce-motion branch in the budget answer. Treat the quality assertions as the next thing to fix, not as evidence that the pipeline is correct.
-
-Two harness bugs surfaced during the 2026-11-18 run and are fixed in `run-evals.mjs`. A case that hits `--timeout` is now scored on whatever is on disk, with `timed_out: true` recorded, instead of being thrown away — eleven of the 19 mobile cases reached the 300-second limit, and eight of them had already written everything the assertions check. And a text CLI's whole transcript was being scanned for quota words, so an app design that mentioned rate limiting aborted the run; only the CLI's own last lines are checked now. The runner also grew the controls a flaky, slow CLI needs: `--repeat N` runs each case N times and passes it only when every repeat passes, recording `pass_rate` and the per-repeat min/max in `repeat_summary`; `--concurrency N` keeps several cases in flight; `--resume <checkpoint>` keeps passed repeats after a quota stop; a case can set its own `timeout_s`; and `--only <case>` writes a separate `-only-<case>` result instead of replacing the day's full set. The default timeout is 360s, because the 2026-11-18 run showed a 240s ceiling measuring the model's reading time rather than the skill. `--shard i/n` splits a set for parallel runs and `--merge` reassembles the shards into one dated result.
-
-**Both paid CLI quotas were exhausted during the 2026-11-17 run.** Claude Code returned `429 usage_limit_reached` — "You've hit your weekly limit · resets Nov 20, 1am (Australia/Sydney)"; Codex returned "You've hit your usage limit ... try again at Nov 20th, 2026 4:02 PM". The committed Claude files are the 2026-11-16 trigger-only run, so their `quality` field is `null`; the 2026-11-17 files hold the Codex numbers above. The 2026-11-18 quality runs used OpenCode's free `big-pickle` model instead, with the CLI binary invoked directly: the `.cmd` shim routes the prompt through `cmd.exe`, which truncates it at the first newline, and the model then answers the preamble instead of the case.
-
-Re-run the quality set when a CLI has quota, on one case first:
-```bash
-node skills/mobile-app-factory/scripts/run-evals.mjs --quality --skill mobile-app-factory --only idea-to-prd --agent codex
-```
-
-The on-demand workflow (`.github/workflows/evals.yml`) runs the same runner under Claude Code with an `ANTHROPIC_API_KEY` secret. A run is only useful when it finishes: the runner refuses to write a results file after a quota error, so a `SKIP` or `ABORTED` line means no number, not a zero.
+The full result tables, quota notes, harness controls and per-case failures live in
+[docs/evals.md](docs/evals.md). Result files are committed under `skills/*/evals/results/`.
 
 ## Where the detail lives
 

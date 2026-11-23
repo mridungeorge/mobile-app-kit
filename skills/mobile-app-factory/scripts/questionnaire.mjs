@@ -164,8 +164,11 @@ function routeProfile(idea, intake, outDir) {
     args.push("--rebuild");
     if (intake.existingSource) args.push("--src", intake.existingSource);
   }
-  // prefer native production stack for both platforms unless specified
-  if (intake.platforms === "android") args.push("--stack", "android-native");
+  // The team answer decides the stack: an existing JS/React team ships Expo; otherwise
+  // native for the platforms chosen. --stack still wins if the user passes it.
+  if (/\b(react|react-native|expo|javascript|typescript|js|web)\b/i.test(String(intake.team || ""))) {
+    args.push("--stack", "expo");
+  } else if (intake.platforms === "android") args.push("--stack", "android-native");
   else if (intake.platforms === "ios") args.push("--stack", "ios-native");
   else args.push("--stack", "native");
 

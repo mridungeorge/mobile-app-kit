@@ -1,0 +1,572 @@
+{
+  "_notes": "Router expectations. Each case asserts the archetype, the stack, at least one permission or declaration, one risk that must be named, and (where present) a rule token that must also appear in references/store-facts.md. Keep these deterministic: no network, no model.",
+  "cases": [
+    {
+      "idea": "a habit tracker with streaks",
+      "archetype": "health-fitness",
+      "stack": "native",
+      "permissions": [
+        "notifications",
+        "health-kit"
+      ],
+      "iosDeclarations": [
+        "healthkit-entitlement",
+        "privacy-manifest"
+      ],
+      "androidDeclarations": [
+        "health-connect",
+        "sensitive-data"
+      ],
+      "iosRisk": [
+        "1.4.1"
+      ],
+      "cites": [
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "a sleep tracker with white noise",
+      "archetype": "health-fitness",
+      "stack": "native",
+      "permissions": [
+        "notifications"
+      ],
+      "iosDeclarations": [
+        "healthkit-entitlement"
+      ],
+      "androidDeclarations": [
+        "health-connect"
+      ],
+      "iosRisk": [
+        "5.1.3"
+      ],
+      "cites": [
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "a workout log with rest timers",
+      "archetype": "health-fitness",
+      "stack": "native",
+      "permissions": [
+        "notifications"
+      ],
+      "iosDeclarations": [
+        "purpose-strings"
+      ],
+      "androidDeclarations": [
+        "health-connect"
+      ],
+      "iosRisk": [
+        "diagnose"
+      ],
+      "cites": [
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "a flashlight app",
+      "archetype": "utility",
+      "stack": "native",
+      "iosDeclarations": [
+        "privacy-manifest"
+      ],
+      "androidDeclarations": [
+        "data-safety"
+      ],
+      "androidRisk": [
+        "minimum functionality"
+      ]
+    },
+    {
+      "idea": "a notes app with offline search",
+      "archetype": "utility",
+      "stack": "native",
+      "iosDeclarations": [
+        "privacy-manifest"
+      ],
+      "androidDeclarations": [
+        "data-safety"
+      ],
+      "iosRisk": [
+        "4.2"
+      ]
+    },
+    {
+      "idea": "a recipe keeper",
+      "archetype": "utility",
+      "stack": "native",
+      "iosDeclarations": [
+        "privacy-manifest"
+      ],
+      "androidRisk": [
+        "misleading"
+      ]
+    },
+    {
+      "idea": "a weather app",
+      "archetype": "utility",
+      "stack": "native",
+      "iosDeclarations": [
+        "privacy-manifest"
+      ],
+      "androidDeclarations": [
+        "data-safety"
+      ]
+    },
+    {
+      "idea": "a community for gardeners to share photos",
+      "archetype": "social-ugc",
+      "stack": "native",
+      "permissions": [
+        "photos",
+        "camera"
+      ],
+      "iosDeclarations": [
+        "ugc-1.2",
+        "account-deletion"
+      ],
+      "androidDeclarations": [
+        "ugc-policy",
+        "child-safety-standards"
+      ],
+      "iosRisk": [
+        "1.2"
+      ],
+      "cites": [
+        "1.2",
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "a photo sharing app for friends",
+      "archetype": "social-ugc",
+      "stack": "native",
+      "permissions": [
+        "photos"
+      ],
+      "iosDeclarations": [
+        "dsa-trader"
+      ],
+      "androidDeclarations": [
+        "ugc-policy"
+      ],
+      "iosRisk": [
+        "1.6"
+      ],
+      "cites": [
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "a marketplace for local dog walkers",
+      "archetype": "commerce-marketplace",
+      "stack": "native",
+      "iosDeclarations": [
+        "3.1.1-payments",
+        "tracking-transparency"
+      ],
+      "androidDeclarations": [
+        "payments-policy"
+      ],
+      "iosRisk": [
+        "2.1"
+      ],
+      "cites": [
+        "3.1.1",
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "a vintage clothing store",
+      "archetype": "commerce-marketplace",
+      "stack": "native",
+      "iosDeclarations": [
+        "3.1.1-payments",
+        "account-deletion"
+      ],
+      "androidDeclarations": [
+        "payments-policy"
+      ],
+      "androidRisk": [
+        "Play billing policy"
+      ],
+      "cites": [
+        "3.1.1",
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "a subscription box store",
+      "archetype": "commerce-marketplace",
+      "stack": "native",
+      "iosDeclarations": [
+        "3.1.1-payments"
+      ],
+      "androidDeclarations": [
+        "payments-policy"
+      ],
+      "iosRisk": [
+        "wrong payment path"
+      ],
+      "cites": [
+        "3.1.1"
+      ]
+    },
+    {
+      "idea": "a podcast player with offline downloads",
+      "archetype": "media",
+      "stack": "native",
+      "permissions": [
+        "background-audio",
+        "microphone"
+      ],
+      "iosDeclarations": [
+        "2.5.2-background-audio"
+      ],
+      "androidDeclarations": [
+        "foreground-media-service"
+      ],
+      "iosRisk": [
+        "unlicensed content"
+      ],
+      "cites": [
+        "3.1.1"
+      ]
+    },
+    {
+      "idea": "a music player with playlists",
+      "archetype": "media",
+      "stack": "native",
+      "permissions": [
+        "background-audio"
+      ],
+      "iosDeclarations": [
+        "2.5.2-background-audio"
+      ],
+      "androidDeclarations": [
+        "foreground-media-service"
+      ],
+      "iosRisk": [
+        "2.5.2"
+      ],
+      "cites": [
+        "3.1.1"
+      ]
+    },
+    {
+      "idea": "an AI journal that summarises my week",
+      "archetype": "ai-assistant",
+      "stack": "native",
+      "iosDeclarations": [
+        "1.2-ai-output",
+        "5.1.2-third-party-ai"
+      ],
+      "androidDeclarations": [
+        "generative-ai-policy"
+      ],
+      "iosRisk": [
+        "5.1.2"
+      ],
+      "cites": [
+        "1.2",
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "an AI tutor chatbot for students",
+      "archetype": "ai-assistant",
+      "stack": "native",
+      "iosDeclarations": [
+        "1.2-ai-output"
+      ],
+      "androidDeclarations": [
+        "generative-ai-policy"
+      ],
+      "iosRisk": [
+        "wrapper"
+      ],
+      "cites": [
+        "1.2",
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "a budgeting app with bank accounts",
+      "archetype": "fintech",
+      "stack": "native",
+      "permissions": [
+        "biometrics"
+      ],
+      "iosDeclarations": [
+        "5.1.1-data",
+        "financial-services-review"
+      ],
+      "androidDeclarations": [
+        "financial-services-policy"
+      ],
+      "iosRisk": [
+        "regulatory licensing"
+      ],
+      "cites": [
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "an expense tracker",
+      "archetype": "fintech",
+      "stack": "native",
+      "permissions": [
+        "biometrics"
+      ],
+      "iosDeclarations": [
+        "5.1.1-data"
+      ],
+      "androidDeclarations": [
+        "financial-services-policy"
+      ],
+      "androidRisk": [
+        "financial services declaration"
+      ],
+      "cites": [
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "kids phonics and bedtime stories",
+      "archetype": "kids-family",
+      "stack": "native",
+      "iosDeclarations": [
+        "kids-category",
+        "1.3"
+      ],
+      "androidDeclarations": [
+        "families-policy",
+        "designed-for-families"
+      ],
+      "iosRisk": [
+        "1.3"
+      ]
+    },
+    {
+      "idea": "a kids story app",
+      "archetype": "kids-family",
+      "stack": "native",
+      "iosDeclarations": [
+        "5.1.4"
+      ],
+      "androidDeclarations": [
+        "families-policy"
+      ],
+      "androidRisk": [
+        "Families policy"
+      ]
+    },
+    {
+      "idea": "hiking maps that work offline",
+      "archetype": "travel-maps",
+      "stack": "native",
+      "permissions": [
+        "location-when-in-use"
+      ],
+      "iosDeclarations": [
+        "5.1.1-location",
+        "5.1.5"
+      ],
+      "androidDeclarations": [
+        "location-declaration"
+      ],
+      "iosRisk": [
+        "vague location purpose"
+      ],
+      "cites": [
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "a city guide with nearby places",
+      "archetype": "travel-maps",
+      "stack": "native",
+      "permissions": [
+        "location-when-in-use"
+      ],
+      "iosDeclarations": [
+        "5.1.1-location"
+      ],
+      "androidDeclarations": [
+        "location-declaration"
+      ],
+      "iosRisk": [
+        "background location"
+      ]
+    },
+    {
+      "idea": "b2b field inspections with offline mode",
+      "archetype": "b2b-field",
+      "stack": "native",
+      "permissions": [
+        "camera",
+        "location"
+      ],
+      "iosDeclarations": [
+        "business-manager",
+        "account-deletion"
+      ],
+      "androidDeclarations": [
+        "managed-play"
+      ],
+      "iosRisk": [
+        "demo account"
+      ],
+      "cites": [
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "b2b warehouse inventory scanner with barcodes",
+      "archetype": "b2b-field",
+      "stack": "native",
+      "permissions": [
+        "camera"
+      ],
+      "iosDeclarations": [
+        "business-manager"
+      ],
+      "androidDeclarations": [
+        "managed-play"
+      ],
+      "androidRisk": [
+        "private distribution"
+      ],
+      "cites": [
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "an offline bird identifier with photos",
+      "archetype": "camera-photo",
+      "stack": "native",
+      "permissions": [
+        "camera",
+        "photos"
+      ],
+      "iosDeclarations": [
+        "5.1.1-purpose-strings"
+      ],
+      "androidDeclarations": [
+        "camera-mic-declaration"
+      ],
+      "iosRisk": [
+        "4.2"
+      ]
+    },
+    {
+      "idea": "a photo editor with filters",
+      "archetype": "camera-photo",
+      "stack": "native",
+      "permissions": [
+        "photos"
+      ],
+      "iosDeclarations": [
+        "2.5.13-arkit"
+      ],
+      "androidDeclarations": [
+        "photo-video-permissions"
+      ],
+      "iosRisk": [
+        "2.5.13"
+      ]
+    },
+    {
+      "idea": "a puzzle game",
+      "archetype": "game",
+      "stack": "unity",
+      "iosDeclarations": [
+        "game-center",
+        "4.3-spam"
+      ],
+      "androidDeclarations": [
+        "iarc-content-rating"
+      ],
+      "iosRisk": [
+        "4.3"
+      ]
+    },
+    {
+      "idea": "a farming game",
+      "archetype": "game",
+      "stack": "unity",
+      "iosDeclarations": [
+        "3.1.1-payments"
+      ],
+      "androidDeclarations": [
+        "iarc-content-rating"
+      ],
+      "iosRisk": [
+        "loot-box"
+      ]
+    },
+    {
+      "idea": "a dating app for nearby singles",
+      "archetype": "dating",
+      "stack": "native",
+      "permissions": [
+        "location-when-in-use"
+      ],
+      "iosDeclarations": [
+        "1.2-ugc",
+        "dsa-trader"
+      ],
+      "androidDeclarations": [
+        "dating-policy"
+      ],
+      "iosRisk": [
+        "age verification"
+      ],
+      "cites": [
+        "1.2",
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "a courier app with live tracking",
+      "archetype": "delivery-logistics",
+      "stack": "native",
+      "permissions": [
+        "location-background"
+      ],
+      "iosDeclarations": [
+        "5.1.1-background-location"
+      ],
+      "androidDeclarations": [
+        "background-location-declaration"
+      ],
+      "iosRisk": [
+        "background-location rejection"
+      ],
+      "cites": [
+        "5.1.1"
+      ]
+    },
+    {
+      "idea": "a food delivery app",
+      "archetype": "delivery-logistics",
+      "stack": "native",
+      "permissions": [
+        "location-when-in-use"
+      ],
+      "iosDeclarations": [
+        "3.1.1-payments"
+      ],
+      "androidDeclarations": [
+        "location-video"
+      ],
+      "iosRisk": [
+        "payment compliance"
+      ],
+      "cites": [
+        "3.1.1"
+      ]
+    }
+  ]
+}

@@ -436,6 +436,8 @@ function parseArgs(argv) {
       case "--src": opts.src = next(); opts.rebuild = true; break;
       case "--archetype": opts.archetype = next(); break;
       case "--stack": opts.stack = next(); break;
+      case "--intake": opts.intake = next(); break;
+      case "--explain": opts.explain = true; break;
       case "--monetisation": case "--monetization": opts.monetisation = next(); break;
       case "--accounts": opts.accounts = true; break;
       case "--no-accounts": opts.accounts = false; break;
@@ -461,6 +463,8 @@ function help() {
   node scripts/route-idea.mjs --fast "a quiet app to stop doomscrolling"   # skips the questionnaire and the preview gate
 
 Flags: --json --summary --out <path> --archetype <name> --stack <native|android-native|ios-native|kmp|flutter|expo|capacitor|unity>
+       --intake <00-intake.json>   team decides Expo vs native (an explicit --stack wins)
+       --explain                   show the keyword scores and why each choice was made
        --monetisation <free|iap|subscription|ads|contract|none> --accounts --no-accounts
        --ugc --no-ugc --ai --no-ai --offline
        --fast --dir <path>   write intake, profile and an approved-fast record with assumptions
@@ -514,6 +518,13 @@ export function routeIdea(idea, overrides = {}) {
   const ai = overrides.ai ?? (def.aiGeneratedContent || mentions("ai", "gpt", "llm", "generate", "assistant", "chatbot"));
 
   const stack = { ...def.stack };
+  // The intake's team answer picks the stack before the archetype default does. A JS/React
+  // team gets the Expo starter; an explicit --stack still wins over both.
+  const intakeTeam = overrides.intakeData?.team;
+  if (!overrides.stack && intakeTeam && /\b(react|react-native|expo|javascript|typescript|js|web)\b/i.test(String(intakeTeam))) {
+    Object.assign(stack, STACK_PRESETS.expo);
+    stack.chosenBy = "intake.team";
+  }
   if (overrides.stack) {
     const preset = STACK_PRESETS[overrides.stack];
     if (!preset) throw new Error(`unknown stack "${overrides.stack}". Try: ${Object.keys(STACK_PRESETS).join(", ")}`);
@@ -681,6 +692,33 @@ function summary(profile) {
   ];
   if (profile.clarify.length) lines.push("", "Clarify:", ...profile.clarify.map((q) => `  - ${q}`));
   return lines.join("\n");
+}
+
+function explain(idea, profile) {
+  const scores = scoreArchetypes(idea);
+  const ranked = Object.entries(scores)
+    .map(([name, value]) => ({ name, ...value }))
+    .sort((a, b) => b.score - a.score || ARCHETYPE_ORDER.indexOf(a.name) - ARCHETYPE_ORDER.indexOf(b.name))
+    .filter((entry) => entry.score > 0);
+  const stackWhy = profile.stack.chosenBy
+    ? `chosen by ${profile.stack.chosenBy}`
+    : profile.stack.explicit
+      ? "explicit --stack"
+      : `default for ${profile.archetype}`;
+  return [
+    `Explain — "${idea}"`,
+    "",
+    "Keyword scores (weight × matched phrase):",
+    ...(ranked.length
+      ? ranked.map((entry) => `  ${entry.name.padEnd(22)} ${String(entry.score).padStart(3)}  ${entry.hits.join(", ")}`)
+      : ["  none matched — utility is the fallback"]),
+    "",
+    `Archetype: ${profile.archetype} (${profile.confidence})${profile.secondary.length ? `, also ${profile.secondary.join(", ")}` : ""}`,
+    `Stack:     ${profile.stack.primary} / ${profile.stack.ui} — ${stackWhy}`,
+    `Screens:   ${profile.screens.length} kept after capability filters (accounts=${profile.accounts}, ugc=${profile.ugc}, ai=${profile.aiGeneratedContent}, payments=${profile.payments.join("/") || "none"})`,
+    `Modules:   ${profile.modules.join(", ") || "none"}`,
+    ...(profile.clarify.length ? ["Clarify:", ...profile.clarify.map((q) => `  - ${q}`)] : [])
+  ].join("\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -868,6 +906,14 @@ function main() {
     process.exit(2);
   }
   if (opts.help) { console.log(help()); return; }
+  // A JS/React team in the intake gets the Expo starter. Explicit --stack still wins.
+  const intakePath = opts.intake ? resolve(opts.intake) : resolve(opts.dir || ".mobile", "00-intake.json");
+  if (opts.intake || existsSync(intakePath)) {
+    try { opts.intakeData = JSON.parse(readFileSync(intakePath, "utf8")); }
+    catch (error) {
+      if (opts.intake) { console.error(`error: could not read ${intakePath}: ${error.message}`); process.exit(2); }
+    }
+  }
   // In rebuild mode the inventory already describes the app, so the one-line idea is optional:
   // the documented command is `--rebuild --src ./existing-app --dir .mobile` with no prose.
   if (!opts.words.length && !opts.rebuild) {
@@ -911,6 +957,11 @@ function main() {
   }
 
   const output = opts.json || opts.out || !process.stdout.isTTY ? JSON.stringify(profile, null, 2) : summary(profile);
+  if (opts.explain) {
+    const text = explain(opts.words.join(" "), profile);
+    if (opts.json || opts.out || !process.stdout.isTTY) console.error(`\n${text}`);
+    else console.log(`${text}\n`);
+  }
   if (opts.out) {
     writeFileSync(opts.out, `${JSON.stringify(profile, null, 2)}\n`);
     console.error(`wrote ${opts.out}`);
@@ -933,4 +984,4 @@ function main() {
 
 if (process.argv[1] && process.argv[1].endsWith("route-idea.mjs")) main();
 
-export { ARCHETYPES, ARCHETYPE_ORDER, summary };
+export { ARCHETYPES, ARCHETYPE_ORDER, summary, scoreArchetypes };

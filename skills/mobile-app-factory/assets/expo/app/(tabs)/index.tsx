@@ -1,26 +1,46 @@
-import { router } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
 import { FlatList, View } from 'react-native';
-import { EmptyState } from '../../src/components/EmptyState';
 import { ListRow } from '../../src/components/ListRow';
+import { StateView } from '../../src/components/StateView';
+import { type LoadState, MockApi, toState } from '../../src/api';
+import { cachedHabits, replaceHabits } from '../../src/repository';
+import { useAuth } from '../../src/auth';
 import { useColors } from '../../src/useColors';
-
-const ITEMS = [
-  { id: '1', title: 'First item', subtitle: 'Replace with your data' },
-  { id: '2', title: 'Second item', subtitle: 'Tap to open the detail route' },
-];
 
 export default function Home() {
   const { colors } = useColors();
+  const { token, ready } = useAuth();
+  const [state, setState] = useState<LoadState>({ status: 'loading' });
+
+  useEffect(() => {
+    if (ready && !token) router.replace('/sign-in');
+  }, [ready, token]);
+
+  const load = useCallback(async () => {
+    setState({ status: 'loading' });
+    const cached = await cachedHabits();
+    try {
+      const habits = await MockApi.habits();
+      await replaceHabits(habits);
+      setState(toState(habits, cached));
+    } catch (error) {
+      setState(toState([], cached, error as never));
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <StateView state={state} onRetry={load} />
       <FlatList
-        data={ITEMS}
+        data={state.status === 'content' || state.status === 'offline' ? state.habits : []}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<EmptyState title="Nothing here yet" body="Add your first item to get started." colors={colors} />}
         renderItem={({ item }) => (
           <ListRow
             title={item.title}
-            subtitle={item.subtitle}
+            subtitle={`${item.streak}-day streak`}
             colors={colors}
             onPress={() => router.push({ pathname: '/detail/[id]', params: { id: item.id } })}
           />

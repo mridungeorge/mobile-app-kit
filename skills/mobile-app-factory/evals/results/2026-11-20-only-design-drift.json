@@ -1,0 +1,101 @@
+{
+  "skill": "mobile-app-factory",
+  "date": "2026-11-20",
+  "agent": "Claude Code",
+  "cli_format": "stream-json",
+  "model": null,
+  "auth": "cli-login",
+  "environment": null,
+  "trigger": null,
+  "quality": {
+    "total": 1,
+    "passed": 1,
+    "cases": [
+      {
+        "id": "design-drift",
+        "prompt": "Use Rune's design language for the settings screen.",
+        "passed": true,
+        "pass_rate": 1,
+        "assertions": [
+          {
+            "label": "design artifact exists",
+            "pass": true,
+            "detail": ".mobile/02-design.md exists"
+          },
+          {
+            "label": "hairlines, not shadows",
+            "pass": true,
+            "detail": "matched hairline"
+          },
+          {
+            "label": "motion tokens named",
+            "pass": true,
+            "detail": "matched snap"
+          },
+          {
+            "label": "Rune spacing scale",
+            "pass": true,
+            "detail": "matched 4/8/12/16/24"
+          }
+        ],
+        "judgement": [
+          "One accent, neutral surfaces, 13-14px body",
+          "No glassmorphism, rainbow gradients or a second font",
+          "Reduce-motion path stated"
+        ],
+        "ms": 40021,
+        "timed_out": false,
+        "timeout_s": 420,
+        "response": "\nI'll start by looking at the project and loading the skill that defines Rune's design system.\nI wrote the Settings screen spec to `.mobile/02-design.md`. It's a design spec only, because the project has no app code yet. Nothing has been rendered or run, and I didn't run the skill's artifact lint (`lint-artifacts.mjs`).\n\n**Assumptions**\n- You wanted the spec phase, not a built screen. The skill treats a design request as a spec request, so there's no `.mobile/` profile or app to edit. Tell me which stack (SwiftUI, Compose or React Native) and I'll build the screen from it.\n- Settings is a utility screen, so it gets no expressive flourish.\n\n**What the spec covers, from Rune's language**\n- **Spacing:** the 4/8/12/16/24 scale. Cards have an 8 radius and 1px hairline borders, with no shadows.\n- **Colour:** neutral `bg`/`card` surfaces and a single blue accent. Destructive actions use a red that passes contrast instead of Rune's pink.\n- **Type:** a 20/600 title, 11.5 uppercase section headers, 14/500 row titles, and at most two sizes per row.\n- **Layout:** one grouped card per section, in this order:\n  - Account\n  - Preferences\n  - Privacy\n  - About\n  - Danger zone (Sign out, Delete account)\n- **Store rules:** account deletion and the privacy-policy link are reachable in-app, with a confirm sheet for deletion.\n- **Components:** the Rune 38×22 switch, a segmented control for appearance, and a bottom sheet for the delete confirm.\n- **Motion:** `snap` for toggles, `settle` for the screen entrance, `glide` for sheets and `pop` for the toast. Under Reduce Motion these become 150ms fades.\n- **States:** loading, optimistic toggle with revert, offline, error, notification permission denied, and signed out.\n- **Adaptive:** the layout is specified for 200% text, tablets and landscape.\n\nThe reviewer still needs to check contrast and 200% text on a real device.\nI wrote the Settings screen spec to `.mobile/02-design.md`. It's a design spec only, because the project has no app code yet. Nothing has been rendered or run, and I didn't run the skill's artifact lint (`lint-artifacts.mjs`).\n\n**Assumptions**\n- You wanted the spec phase, not a built screen. The skill treats a design request as a spec request, so there's no `.mobile/` profile or app to edit. Tell me which stack (SwiftUI, Compose or React Native) and I'll build the screen from it.\n- Settings is a utility screen, so it gets no expressive flourish.\n\n**What the spec covers, from Rune's language**\n- **Spacing:** the 4/8/12/16/24 scale. Cards have an 8 radius and 1px hairline borders, with no shadows.\n- **Colour:** neutral `bg`/`card` surfaces and a single blue accent. Destructive actions use a red that passes contrast instead of Rune's pink.\n- **Type:** a 20/600 title, 11.5 uppercase section headers, 14/500 row titles, and at most two sizes per row.\n- **Layout:** one grouped card per section, in this order:\n  - Account\n  - Preferences\n  - Privacy\n  - About\n  - Danger zone (Sign out, Delete account)\n- **Store rules:** account deletion and the privacy-policy link are reachable in-app, with a confirm sheet for deletion.\n- **Components:** the Rune 38×22 switch, a segmented control for appearance, and a bottom sheet for the delete confirm.\n- **Motion:** `snap` for toggles, `settle` for the screen entrance, `glide` for sheets and `pop` for the toast. Under Reduce Motion these become 150ms fades.\n- **States:** loading, optimistic toggle with revert, offline, error, notification permission denied, and signed out.\n- **Adaptive:** the layout is specified for 200% text, tablets and landscape.\n\nThe reviewer still needs to check contrast and 200% text on a real device.",
+        "repeats": [
+          {
+            "repeat": 1,
+            "passed": true,
+            "assertions": [
+              {
+                "label": "design artifact exists",
+                "pass": true,
+                "detail": ".mobile/02-design.md exists"
+              },
+              {
+                "label": "hairlines, not shadows",
+                "pass": true,
+                "detail": "matched hairline"
+              },
+              {
+                "label": "motion tokens named",
+                "pass": true,
+                "detail": "matched snap"
+              },
+              {
+                "label": "Rune spacing scale",
+                "pass": true,
+                "detail": "matched 4/8/12/16/24"
+              }
+            ],
+            "ms": 40021,
+            "timed_out": false,
+            "response": "\nI'll start by looking at the project and loading the skill that defines Rune's design system.\nI wrote the Settings screen spec to `.mobile/02-design.md`. It's a design spec only, because the project has no app code yet. Nothing has been rendered or run, and I didn't run the skill's artifact lint (`lint-artifacts.mjs`).\n\n**Assumptions**\n- You wanted the spec phase, not a built screen. The skill treats a design request as a spec request, so there's no `.mobile/` profile or app to edit. Tell me which stack (SwiftUI, Compose or React Native) and I'll build the screen from it.\n- Settings is a utility screen, so it gets no expressive flourish.\n\n**What the spec covers, from Rune's language**\n- **Spacing:** the 4/8/12/16/24 scale. Cards have an 8 radius and 1px hairline borders, with no shadows.\n- **Colour:** neutral `bg`/`card` surfaces and a single blue accent. Destructive actions use a red that passes contrast instead of Rune's pink.\n- **Type:** a 20/600 title, 11.5 uppercase section heade"
+          }
+        ]
+      }
+    ],
+    "repeats": 1,
+    "complete": true,
+    "aborted": null,
+    "repeat_summary": {
+      "repeats": 1,
+      "per_repeat": [
+        {
+          "repeat": 1,
+          "passed": 1,
+          "total": 1
+        }
+      ],
+      "min": 1,
+      "max": 1
+    },
+    "checkpoint": "C:\\Users\\GeorgeMridun\\mobile\\skills\\mobile-app-factory\\evals\\results\\.progress-mobile-app-factory-only-design-drift.json",
+    "harness": "prefixed with: no human to answer questions — state assumptions and complete the task"
+  }
+}

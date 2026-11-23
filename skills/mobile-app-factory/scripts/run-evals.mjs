@@ -27,7 +27,7 @@
 // Results go to `skills/<skill>/evals/results/<YYYY-MM-DD>.json` (plus a `.md` summary).
 // Exit codes: 0 all requested evals passed, 1 a failure, 2 could not run (no CLI, no auth).
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, cpSync, writeFileSync, copyFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, cpSync, writeFileSync, copyFileSync } from "node:fs";
 import { tmpdir, homedir } from "node:os";
 import { join, resolve, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -407,8 +407,15 @@ function cleanup(dir) {
   }
 }
 
+// %TEMP% on Windows is often the 8.3 alias `C:\Users\GEORGE~1\...`. Claude Code's write tool
+// rejects that as a suspicious path and the sandbox cannot be written at all, so realpath it
+// before anything is created under it.
+function longPath(path) {
+  try { return realpathSync.native(path); } catch { return path; }
+}
+
 function makeWorkspace(skill, agent) {
-  const dir = mkdtempSync(join(tmpdir(), `maf-evals-${skill}-`));
+  const dir = mkdtempSync(join(longPath(tmpdir()), `maf-evals-${skill}-`));
   const skillsDir = join(repoRoot, "skills");
   const sources = readdirSync(skillsDir).filter((name) => existsSync(join(skillsDir, name, "SKILL.md")));
   for (const target of agent.skillsDirs) {
@@ -431,7 +438,7 @@ function makeWorkspace(skill, agent) {
 // login, and the sandbox holds only these skills. Credentials are copied, never modified.
 function makeEvalConfig() {
   const source = process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), ".claude");
-  const dir = mkdtempSync(join(tmpdir(), "maf-evals-config-"));
+  const dir = mkdtempSync(join(longPath(tmpdir()), "maf-evals-config-"));
   const home = join(dir, "home");
   const config = join(home, ".claude");
   mkdirSync(config, { recursive: true });

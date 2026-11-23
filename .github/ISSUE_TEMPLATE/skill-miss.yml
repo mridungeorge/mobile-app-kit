@@ -1,0 +1,40 @@
+name: Skill miss
+description: A prompt should have triggered a skill and did not, or triggered the wrong one.
+labels: [skill-miss]
+body:
+  - type: markdown
+    attributes:
+      value: Trigger behaviour differs by CLI. Include the agent and model so the report is comparable.
+  - type: textarea
+    id: prompt
+    attributes:
+      label: Prompt
+      description: The exact prompt, ideally copied rather than retyped.
+    validations:
+      required: true
+  - type: dropdown
+    id: expected
+    attributes:
+      label: Expected skill
+      options: [mobile-app-factory, motion-experiences, neither]
+    validations:
+      required: true
+  - type: dropdown
+    id: actual
+    attributes:
+      label: What fired
+      options: [mobile-app-factory, motion-experiences, both, neither]
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Agent and model
+      description: e.g. Claude Code / CLI default, OpenCode / big-pickle, Codex / gpt-6.1-sol.
+    validations:
+      required: true
+  - type: textarea
+    id: transcript
+    attributes:
+      label: Relevant transcript
+      description: The lines showing that no skill file was opened, or the wrong one was.
