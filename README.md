@@ -163,7 +163,7 @@ One command, no dependencies:
 node skills/mobile-app-factory/scripts/check-skill.mjs
 ```
 
-Expected output — 23 checks, zero warnings, zero errors:
+Expected output — 24 checks, zero warnings, zero errors:
 
 ```
   ✓ structure: required files and all 7 agent briefs present
@@ -185,8 +185,9 @@ Expected output — 23 checks, zero warnings, zero errors:
   ✓ modules: 5 documented, manifests + tests present, router enables them, reconcile fails on undeclared SDK
   ✓ cross-platform: Expo starter files present, decision doc linked, router keeps an explicit Expo/Flutter choice
   ✓ readme: 3 referenced image(s) exist
+  ✓ workflows: 2 workflow file(s) parse with no duplicate keys
 
-PASS — 23 checks passed, 0 warnings, 0 errors
+PASS — 24 checks passed, 0 warnings, 0 errors
 ```
 
 The `store-facts` line counts days since `verified_on`, so that number grows as the file ages and you get a warning at 90 days. Everything else should match; a failure names the file to fix.
@@ -199,7 +200,7 @@ Last checked **2026-11-23**. "Verified" means the command ran on this machine or
 
 | Item | Status | Evidence |
 |---|---|---|
-| Skill audit (`check-skill.mjs`) | Verified | 23 checks pass, 0 warnings, 0 errors |
+| Skill audit (`check-skill.mjs`) | Verified | 24 checks pass, 0 warnings, 0 errors |
 | Android starter `assembleDebug` | Verified | `BUILD SUCCESSFUL`, debug APK produced |
 | Android starter `testDebugUnitTest` | Verified | 3/3 tests pass |
 | Android starter `lintDebug` | Verified | 0 errors, 0 warnings |

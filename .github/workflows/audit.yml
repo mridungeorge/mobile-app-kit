@@ -173,7 +173,7 @@ jobs:
 
   # Modules rot silently unless something builds them: scaffold fresh apps with every
   # module that ships platform code switched on, then compile them.
-  
+  modules-android:
     name: android starter + modules compiles
     runs-on: ubuntu-latest
     steps:

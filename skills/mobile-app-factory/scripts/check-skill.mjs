@@ -812,6 +812,76 @@ try {
   errors.push(`community checks failed: ${String(error.stdout || error.message).trim().split("\n").slice(0, 3).join(" ")}`);
 }
 
+// GitHub rejects a workflow with duplicate keys ("Invalid workflow file") and never runs
+// it, so a merge that drops a job key is invisible until the push. No YAML parser is
+// available offline, so scan indentation: track one key set per mapping, reset it for
+// each sequence item, and skip block-scalar bodies, which are arbitrary text.
+try {
+  const repoRoot = resolve(root, "..", "..");
+  const dir = join(repoRoot, ".github", "workflows");
+  if (!existsSync(dir)) {
+    ok.push("workflows: installed copy, no GitHub workflows to lint");
+  } else {
+    const problems = [];
+    for (const name of readdirSync(dir).filter((f) => /\.ya?ml$/.test(f))) {
+      const file = `.github/workflows/${name}`;
+      const lines = readFileSync(join(dir, name), "utf8").split(/\r?\n/);
+      const stack = [];
+      let blockIndent = -1;
+      let sawJobs = false;
+      lines.forEach((raw, index) => {
+        const where = `${file}:${index + 1}`;
+        if (!raw.trim() || raw.trim().startsWith("#")) return;
+        const indent = raw.match(/^ */)[0].length;
+        if (raw.includes("\t")) problems.push(`${where}: tab indentation`);
+        if (blockIndent >= 0) {
+          if (indent > blockIndent) return;
+          blockIndent = -1;
+        }
+        const text = raw.trim();
+        if (/:\s*[|>][-+]?$/.test(text)) {
+          blockIndent = indent;
+          return;
+        }
+        while (stack.length && stack[stack.length - 1].indent > indent) stack.pop();
+        const level = () => {
+          if (!stack.length || stack[stack.length - 1].indent < indent) {
+            stack.push({ indent, keys: new Set(), sequence: false });
+          }
+          return stack[stack.length - 1];
+        };
+        if (text.startsWith("-")) {
+          const top = stack[stack.length - 1];
+          if (top && top.indent === indent && top.sequence) top.keys = new Set();
+          else if (!top || top.indent < indent) stack.push({ indent, keys: new Set(), sequence: true });
+          const rest = text.replace(/^-\s*/, "");
+          const inline = rest.match(/^([\w.-]+):(\s|$)/);
+          if (inline) {
+            const item = stack[stack.length - 1];
+            if (item.keys.has(inline[1])) problems.push(`${where}: duplicate key "${inline[1]}" in a list item`);
+            item.keys.add(inline[1]);
+          }
+          return;
+        }
+        const match = text.match(/^([\w.-]+):(\s|$)/);
+        if (!match) {
+          problems.push(`${where}: not a mapping line: ${text.slice(0, 40)}`);
+          return;
+        }
+        if (indent === 0 && match[1] === "jobs") sawJobs = true;
+        const mapping = level();
+        if (mapping.keys.has(match[1])) problems.push(`${where}: duplicate key "${match[1]}"`);
+        mapping.keys.add(match[1]);
+      });
+      if (!sawJobs) problems.push(`${file}: no top-level jobs block`);
+    }
+    if (problems.length) errors.push(...problems.slice(0, 6));
+    else ok.push(`workflows: ${readdirSync(dir).filter((f) => /\.ya?ml$/.test(f)).length} workflow file(s) parse with no duplicate keys`);
+  }
+} catch (error) {
+  errors.push(`workflow lint failed: ${error.message}`);
+}
+
 // Report
 console.log(`Mobile App Factory — skill audit\nroot: ${root}\n`);
 for (const line of ok) console.log(`  ✓ ${line}`);
