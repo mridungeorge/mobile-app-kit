@@ -366,6 +366,11 @@ jobs:
         with:
           api-level: 34
           arch: x86_64
+          # Hosted runners occasionally stall on the default GPU/snapshot path; software
+          # rendering and a cold boot are slower but reliable.
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          emulator-boot-timeout: 600
           working-directory: examples/habit-tracker/android
           script: |
             ./gradlew --no-daemon :app:assembleDebug
