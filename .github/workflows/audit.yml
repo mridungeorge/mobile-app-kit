@@ -28,7 +28,7 @@ jobs:
           node-version: '22'
 
       # Structure, frontmatter, references, archetypes, metadata template, router
-      # smoke cases, all 14 profiles, the intake → preview → approval → readiness
+      # smoke cases, all 14 profiles, the intake â†’ preview â†’ approval â†’ readiness
       # pipeline, both native templates (including the Gradle wrapper binary) and
       # every image the README references.
       - name: Skill audit
@@ -173,7 +173,7 @@ jobs:
 
   # Modules rot silently unless something builds them: scaffold fresh apps with every
   # module that ships platform code switched on, then compile them.
-  modules-android:
+  
     name: android starter + modules compiles
     runs-on: ubuntu-latest
     steps:
@@ -284,3 +284,74 @@ jobs:
         working-directory: motion-demo
         run: npx vite build
 
+
+  example-android:
+    name: example Android builds and tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/habit-tracker/android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+
+  example-android-screenshots:
+    name: example Android screenshots
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Boot an emulator, install, capture
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          working-directory: examples/habit-tracker/android
+          script: |
+            ./gradlew --no-daemon :app:assembleDebug
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb shell am start -n com.example.habittracker/.MainActivity
+            sleep 5
+            mkdir -p ../screenshots
+            adb exec-out screencap -p > ../screenshots/android-today.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: example-android-screenshots
+          path: examples/habit-tracker/screenshots
+
+  example-ios:
+    name: example iOS builds, tests and screenshots
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - name: Generate, test, install and capture
+        working-directory: examples/habit-tracker/ios
+        run: |
+          xcodegen generate
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          print(next(d["udid"] for runtime in sorted(devices, reverse=True) if "iOS" in runtime
+                     for d in devices[runtime] if d["name"].startswith("iPhone")))
+          ')
+          xcodebuild -project HabitTracker.xcodeproj -scheme HabitTracker \
+            -destination "id=$UDID" -derivedDataPath build CODE_SIGNING_ALLOWED=NO test
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/HabitTracker.app
+          xcrun simctl launch "$UDID" com.example.habittracker || true
+          sleep 3
+          mkdir -p ../screenshots
+          xcrun simctl io "$UDID" screenshot ../screenshots/ios-today.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: example-ios-screenshots
+          path: examples/habit-tracker/screenshots

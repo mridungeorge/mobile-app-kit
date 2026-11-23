@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Habit Tracker</string>
+
+    <!-- Shell -->
+    <string name="tab_home">Home</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Shared states -->
+    <string name="state_loading">Loading</string>
+    <string name="state_offline_title">You\'re offline</string>
+    <string name="state_offline_detail">Your saved data is still here. Retry when you have a connection.</string>
+    <string name="state_error_title">Something went wrong</string>
+    <string name="state_empty_title">Nothing here yet</string>
+    <string name="state_empty_detail">The first item you add will appear here.</string>
+    <string name="state_retry">Retry</string>
+
+    <!-- Common actions -->
+    <string name="action_back">Back</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+
+    <!-- Home -->
+    <string name="home_today">Today</string>
+    <string name="home_empty_title">No habits yet</string>
+    <string name="home_empty_detail">Add the first habit you want to keep.</string>
+    <plurals name="home_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+
+    <!-- Detail -->
+    <plurals name="detail_streak">
+        <item quantity="one">%d day streak</item>
+        <item quantity="other">%d day streak</item>
+    </plurals>
+    <string name="detail_body">Detail route for %1$s. Replace this copy with the real record.</string>
+    <string name="detail_a11y_note">Accessibility: every value here is selectable text, not an image.</string>
+
+    <!-- Auth -->
+    <string name="auth_title">Sign in</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_sign_in_email">Sign in with email</string>
+    <string name="auth_sign_in_apple">Sign in with Apple</string>
+    <string name="auth_sign_in_google">Sign in with Google</string>
+    <string name="auth_stub_note">Apple and Google are stubs: wire the entitlement and provider SDK before shipping. The starter never ships a fake success.</string>
+    <string name="auth_signed_in">Signed in as %1$s via %2$s</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notifications_detail">Ask in context, never at launch.</string>
+    <string name="settings_reduce_motion">Reduce motion</string>
+    <string name="settings_reduce_motion_detail">Also follows the system animator setting.</string>
+    <string name="settings_not_signed_in">Not signed in</string>
+    <string name="settings_signed_in_as">Signed in as %1$s</string>
+    <string name="settings_sign_in">Sign in</string>
+    <string name="settings_sign_out">Sign out</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_delete_detail">Delete your account and its data. Required by Apple 5.1.1(v) and Google Play whenever an account can be created.</string>
+    <string name="settings_delete_account">Delete account</string>
+
+    <!-- Account deletion -->
+    <string name="deletion_title">Delete account</string>
+    <string name="deletion_body">This deletes the account, its habits and its server data. Published apps must also offer a web page where deletion can be requested — Play requires the link in the listing.</string>
+    <string name="deletion_web_link">Web deletion link (replace before release): https://example.com/account/delete</string>
+    <string name="deletion_action">Delete my account</string>
+    <string name="deletion_confirm_title">Delete account?</string>
+    <string name="deletion_confirm_body">This cannot be undone. Your data is removed from the device and the server.</string>
+</resources>

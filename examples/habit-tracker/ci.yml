@@ -1,0 +1,19 @@
+# Commands CI runs
+
+GitHub ignores workflow files below the repository root. The real jobs live in
+`../../.github/workflows/audit.yml` (`example-android`, `example-ios`). This file mirrors them so
+`readiness-report.mjs` can see that the project ships a CI plan.
+
+```bash
+# Android
+cd examples/habit-tracker/android
+./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+
+# iOS (macOS runner)
+cd examples/habit-tracker/ios
+xcodegen generate
+UDID=$(xcrun simctl list devices available -j | python3 -c '...')   # first installed iPhone
+xcodebuild -project HabitTracker.xcodeproj -scheme HabitTracker \
+  -destination "id=$UDID" CODE_SIGNING_ALLOWED=NO test
+xcrun simctl io booted screenshot screenshots/today.png
+```
