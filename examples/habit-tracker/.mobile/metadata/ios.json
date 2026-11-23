@@ -1,0 +1,14 @@
+{
+  "name": "Habit Tracker",
+  "subtitle": "One quiet daily check-in",
+  "promotionalText": "Small streaks, no noise. Offline-first, with optional sync.",
+  "keywords": "habit,streak,tracker,daily,routine,offline",
+  "description": "Habit Tracker keeps one daily ritual in view.\n\nWHY IT WORKS\n• One tap to check in, one streak to keep\n• Works offline; your data stays on the device\n• A 30-day history you can read at a glance\n\nOptional monthly subscription adds unlimited habits and cross-device sync. Restore purchases any time from Settings. No ads, no data resale.\n\nQuestions? support@example.com",
+  "whatsNew": "First release: daily check-in, streaks and local history.",
+  "supportUrl": "https://example.com/support",
+  "privacyPolicyUrl": "https://example.com/privacy",
+  "primaryCategory": "Productivity",
+  "ageRating": "4+",
+  "icon": "1024x1024",
+  "screenshots": ["1320x2868", "1320x2868", "1320x2868", "1320x2868", "1320x2868", "1320x2868"]
+}

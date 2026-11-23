@@ -1,0 +1,11 @@
+{
+  "schema": "mobile-app-factory/approval@1",
+  "status": "approved",
+  "decidedAt": "2026-11-23T00:16:11.347Z",
+  "source": "cli",
+  "appName": null,
+  "checklist": [],
+  "changeRequests": null,
+  "appliedChanges": null,
+  "history": []
+}

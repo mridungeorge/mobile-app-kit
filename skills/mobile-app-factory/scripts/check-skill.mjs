@@ -14,6 +14,11 @@ import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+// The same audit runs from the repo and from ~/.claude/skills after install.sh. Repo-only
+// assets (LICENSE, install.sh, test-fixtures) are absent in the installed copy, so those
+// checks must say so instead of failing the install.
+const repoRoot = resolve(root, "..", "..");
+const installedCopy = !existsSync(join(repoRoot, "install.sh"));
 const errors = [];
 const warnings = [];
 const ok = [];
@@ -368,9 +373,10 @@ try {
 // Repository licence and third-party attribution. The skill is installed as a copy, so a
 // missing LICENSE is only an error in the repo checkout, never in ~/.claude/skills.
 {
-  const repoRoot = resolve(root, "..", "..");
   const licensePath = join(repoRoot, "LICENSE");
-  if (!existsSync(licensePath)) {
+  if (installedCopy) {
+    ok.push("licence: installed copy, repo LICENSE not present to check");
+  } else if (!existsSync(licensePath)) {
     errors.push("LICENSE is missing at the repo root (MIT, © 2026 George Mridun)");
   } else {
     const text = readFileSync(licensePath, "utf8");
@@ -383,11 +389,12 @@ try {
 
 // Eval sets: every skill with evals has a valid, 50/50 trigger set and a quality set
 // whose assertions are all checkable. Validation is offline — no model is called.
-try {
+if (installedCopy) {
+  warnings.push("evals: installed copy has no repo test-fixtures; run the audit from the checkout to validate");
+} else try {
   const output = execFileSync(process.execPath, [join(root, "scripts", "run-evals.mjs"), "--validate"], { stdio: "pipe", encoding: "utf8" });
   const summary = output.trim().split("\n").pop() ?? "";
   if (!/^PASS/.test(summary)) throw new Error(summary || "run-evals.mjs --validate did not pass");
-  const repoRoot = resolve(root, "..", "..");
   const skillsWithEvals = readdirSync(join(repoRoot, "skills")).filter((name) => existsSync(join(repoRoot, "skills", name, "evals", "trigger.json")));
   if (!skillsWithEvals.includes("mobile-app-factory") || !skillsWithEvals.includes("motion-experiences")) {
     throw new Error(`expected evals for both skills, found: ${skillsWithEvals.join(", ") || "none"}`);
@@ -405,8 +412,10 @@ try {
   const summary = output.trim().split("\n").pop() ?? "";
   if (!/^PASS/.test(summary)) throw new Error(summary || "run-evals.mjs --self-test did not pass");
 
-  const repoRoot = resolve(root, "..", "..");
   const installer = join(repoRoot, "install.sh");
+  if (installedCopy) {
+    ok.push("portability: agent adapters self-test pass on the installed copy");
+  } else {
   if (!existsSync(installer)) throw new Error("install.sh is missing at the repo root");
   const text = readFileSync(installer, "utf8");
   const targets = [".claude/skills", ".agents/skills", ".config/opencode/skills"];
@@ -414,6 +423,7 @@ try {
   if (missing.length) throw new Error(`install.sh does not mention ${missing.join(", ")}`);
 
   ok.push(`portability: agent adapters self-test, installer targets ${targets.join(", ")}`);
+  }
 } catch (error) {
   errors.push(`portability check failed: ${String(error.stdout || error.message).trim().split("\n").slice(-2).join(" ")}`);
 }

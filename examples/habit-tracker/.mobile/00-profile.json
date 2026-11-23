@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "idea": "Ritual: a calm offline habit tracker that builds daily streaks without accounts",
+  "mode": "new",
+  "archetype": "utility",
+  "archetypeLabel": "Utility / tool",
+  "secondary": [],
+  "confidence": "high",
+  "clarify": [],
+  "coreLoop": "open Today → check in once → streak advances → review the week",
+  "stack": {
+    "primary": "native",
+    "ui": "swiftui-compose",
+    "state": "platform-state",
+    "data": "sqlite-room-coredata",
+    "backend": "none",
+    "android": "kotlin-jetpack-compose",
+    "ios": "swift-swiftui",
+    "androidToolchain": "android-studio-gradle-kotlin",
+    "iosToolchain": "xcode-swiftui",
+    "build": "gradle-xcode",
+    "explicit": true
+  },
+  "screens": [
+    "today",
+    "history",
+    "detail",
+    "settings",
+    "paywall"
+  ],
+  "dataSensitivity": [],
+  "permissions": [
+    "notifications"
+  ],
+  "accounts": false,
+  "ugc": false,
+  "aiGeneratedContent": false,
+  "payments": [
+    "subscription"
+  ],
+  "monetisation": "subscription",
+  "modules": [
+    "billing"
+  ],
+  "ios": {
+    "declarations": [
+      "privacy-manifest"
+    ],
+    "ageRatingFloor": "4+",
+    "reviewRisks": [
+      "4.2 thin functionality",
+      "2.3 misleading metadata",
+      "3.1.1 external purchase link"
+    ]
+  },
+  "android": {
+    "declarations": [
+      "data-safety"
+    ],
+    "contentRatingFloor": "Everyone",
+    "reviewRisks": [
+      "minimum functionality",
+      "misleading store listing",
+      "billing policy"
+    ]
+  },
+  "motionBudget": "restrained",
+  "qaFocus": [
+    "offline behaviour",
+    "large or malformed input",
+    "permission-denied path",
+    "export and share output"
+  ],
+  "metadataHints": {
+    "subtitle": "the task in five words",
+    "keywords": [
+      "scanner",
+      "converter",
+      "offline",
+      "simple",
+      "fast"
+    ],
+    "category": {
+      "ios": "Utilities",
+      "android": "Tools"
+    }
+  },
+  "scores": {
+    "health-fitness": 1
+  }
+}

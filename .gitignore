@@ -8,6 +8,9 @@
 
 # Local project artifacts produced by the Mobile App Factory.
 **/.mobile/
+# ...except the habit-tracker example, whose pipeline output CI checks.
+!examples/habit-tracker/.mobile/
+!examples/habit-tracker/.mobile/**
 
 # Promo render scratch space (frames and the font-inlined build).
 promo/.build/

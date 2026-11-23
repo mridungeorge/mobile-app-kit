@@ -1,0 +1,25 @@
+{
+  "appName": "Habit Tracker",
+  "shortDescription": "One quiet daily check-in, offline-first.",
+  "fullDescription": "Habit Tracker keeps one daily ritual in view.\n\nWHY IT WORKS\n• One tap to check in, one streak to keep\n• Works offline; your data stays on the device\n• A 30-day history you can read at a glance\n\nOptional monthly subscription adds unlimited habits and cross-device sync. Restore purchases any time from Settings. No ads, no data resale.\n\nQuestions? support@example.com",
+  "contactEmail": "support@example.com",
+  "privacyPolicyUrl": "https://example.com/privacy",
+  "packageName": "com.example.habittracker",
+  "targetSdk": 36,
+  "icon": "512x512",
+  "featureGraphic": "1024x500",
+  "screenshots": [
+    "1080x1920",
+    "1080x1920",
+    "1080x1920",
+    "1080x1920"
+  ],
+  "declarations": {
+    "dataSafety": true,
+    "contentRating": true,
+    "appAccess": true,
+    "ads": true,
+    "targetAudience": true,
+    "accountDeletion": true
+  }
+}
