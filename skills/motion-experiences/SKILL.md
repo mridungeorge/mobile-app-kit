@@ -166,6 +166,7 @@ Full code in `references/gsap-recipes.md`:
 | `references/native-motion.md` | SwiftUI and Compose: token files, entry, reveal, shared-element flourish, press, reduced motion |
 | `references/react-bits-catalog.md` | Which component for which job, with install names |
 | `references/gsap-recipes.md` | Copy-paste GSAP + React patterns |
+| `references/motion-recipes.md` | Four stacks, each with its reduce-motion path and the test that proves it (GSAP test runs in CI) |
 | `references/mobile-motion.md` | Reanimated/Flutter mapping, gesture and scroll patterns |
 | `assets/gsap-setup.ts` | Plugin registration, `useGSAP` helpers, reduced-motion guard |
 | `assets/ScrollReveal.tsx` | Drop-in reveal component (GSAP, once, a11y-safe) |

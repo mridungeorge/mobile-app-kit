@@ -328,6 +328,14 @@ jobs:
         working-directory: motion-demo
         run: npx vite build
 
+      - name: Install Playwright Chromium
+        working-directory: motion-demo
+        run: npx playwright install --with-deps chromium
+
+      - name: Reduced-motion end-to-end test
+        working-directory: motion-demo
+        run: npx playwright test
+
 
   example-android:
     name: example Android builds and tests
