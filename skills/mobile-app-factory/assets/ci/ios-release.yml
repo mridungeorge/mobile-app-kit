@@ -31,13 +31,15 @@ jobs:
           SCHEME: App
           PROJECT: App.xcodeproj
 
-      # Production signing/archive/upload typically uses Fastlane (match/gym/pilot)
-      # or App Store Connect API keys. Configure secrets and replace placeholders.
-      # - name: Install Fastlane
-      #   run: gem install fastlane
-      # - name: Build & Upload to TestFlight
-      #   run: fastlane beta
-      #   env:
-      #     APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-      #     APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-      #     APP_STORE_CONNECT_API_KEY: ${{ secrets.ASC_KEY }}
+      # Needs a Gemfile with fastlane (the scaffold adds one), the ASC_* secrets, and
+      # IOS_PROJECT / IOS_SCHEME set to your project. Set SIGNING=match plus
+      # MATCH_GIT_URL / MATCH_PASSWORD if you keep certificates in match.
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - name: Build & upload to TestFlight
+        run: bundle exec fastlane beta
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY: ${{ secrets.ASC_KEY }}

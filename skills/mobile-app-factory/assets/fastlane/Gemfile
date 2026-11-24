@@ -1,0 +1,5 @@
+source "https://rubygems.org"
+
+# Run lanes with `bundle exec fastlane <lane>`; commit Gemfile and Gemfile.lock.
+# Ruby 3.2+ (3.3+ preferred). Update with `bundle update fastlane`.
+gem "fastlane"

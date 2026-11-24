@@ -20,7 +20,7 @@ CI config, signing/fastlane config, `.mobile/06-release.md`.
 2. iOS: certificates/profiles via Xcode automatic signing or fastlane `match`; App Store Connect app record; TestFlight groups.
 3. Android: upload keystore + Play App Signing; AAB output; internal → closed → production tracks.
 4. CI: install → lint → test → build → upload. Fail fast, cache dependencies, keep secrets in the CI secret store. Native default: Gradle + Xcode Cloud or fastlane; Expo/EAS only if the profile says so.
-5. Store automation: `fastlane deliver` / `supply`, or `eas submit` on the prototype path. Metadata should live in the repo, not typed into a web form.
+5. Store automation: fastlane (`bundle exec fastlane beta|release` on iOS, `internal|release` on Android; templates in `assets/ios/Fastfile`, `assets/android/Fastfile`, `assets/fastlane/Gemfile`), which never submits for review or rolls out to users on its own, or `fastlane deliver` / `supply`, or `eas submit` on the prototype path. Metadata should live in the repo, not typed into a web form.
 6. Calendar: backward-plan from launch with the **14-day Play gate** and 24–72h Apple review as fixed constraints. B2B/contract apps distributed via Managed Google Play / Apple Business Manager need their own lead time.
 7. Rollback: previous build kept promotable; staged rollout percentages; kill-switch for remote config if present.
 

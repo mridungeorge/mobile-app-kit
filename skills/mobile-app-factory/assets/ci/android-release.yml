@@ -46,8 +46,22 @@ jobs:
           name: app-release
           path: app/build/outputs/bundle/release/*.aab
 
-      # Optional: upload to Play via Fastlane or Gradle Play Publisher (configure service account)
-      # - name: Upload to Play (internal)
-      #   run: ./gradlew publishReleaseBundle
-      #   env:
-      #     PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+      # Upload to the Play internal track with fastlane supply. Needs a Gemfile with
+      # fastlane, the service-account secret, and one AAB already uploaded by hand.
+      # The `internal` lane rebuilds the AAB itself, so drop the separate build step
+      # above if you want a single build. ANDROID_DIR points at the Gradle folder
+      # (this workflow assumes it is the repo root).
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - name: Write Play service-account key
+        run: echo '${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}' > play-service-account.json
+      - name: Upload to Play (internal)
+        run: bundle exec fastlane android internal
+        env:
+          ANDROID_DIR: .
+          PLAY_JSON_KEY: play-service-account.json
+          KEYSTORE_PATH: app/upload-keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}

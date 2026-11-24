@@ -41,7 +41,7 @@ skills/mobile-app-factory/
     check-skill.mjs                  self-audit + end-to-end pipeline smoke test
     run-evals.mjs                    trigger + quality eval runner
     new-app.sh                       scaffold native Android/iOS (Expo explicit only)
-    new-android-app.sh               full Android project + docs + CI starter
+    new-android-app.sh               full Android project + docs + Fastlane + CI starter
     new-ios-app.sh                   full iOS project + docs + Fastlane + CI starter
     validate-metadata.mjs            zero-dependency store metadata linter
   evals/
