@@ -1,0 +1,57 @@
+# Fastlane template for native Android (Kotlin/Compose) releases.
+# Run with `bundle exec fastlane <lane>` from the folder that contains fastlane/.
+# Lanes: test, build, internal (Play internal track), release (production, draft).
+#
+# Config comes from env vars:
+#   ANDROID_DIR     Gradle project folder (default android)
+#   PLAY_JSON_KEY   path to the Play service-account JSON (see Appfile)
+#   KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD  upload-key signing
+#
+# Play needs the very first AAB uploaded by hand in the Play Console before
+# supply can talk to the app. After that these lanes work. Nothing is rolled out
+# to users automatically: `release` creates a draft you promote in the Console.
+
+default_platform(:android)
+
+ANDROID_DIR = ENV.fetch("ANDROID_DIR", "android")
+
+platform :android do
+  desc "Run lint and unit tests"
+  lane :test do
+    gradle(project_dir: ANDROID_DIR, tasks: [":app:lintDebug", ":app:testDebugUnitTest"])
+  end
+
+  desc "Build a signed release AAB"
+  lane :build do
+    gradle(project_dir: ANDROID_DIR, task: ":app:bundle", build_type: "Release")
+  end
+
+  desc "Build and upload to the Play internal testing track"
+  lane :internal do
+    build
+    upload_to_play_store(
+      track: "internal",
+      release_status: "completed",
+      aab: lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH],
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Build and upload a DRAFT to production, with store listing metadata"
+  lane :release do
+    build
+    upload_to_play_store(
+      track: "production",
+      release_status: "draft", # a human reviews and rolls out in the Play Console
+      aab: lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH],
+      metadata_path: "fastlane/metadata/android"
+    )
+  end
+
+  desc "Validate the Play service-account key without uploading anything"
+  lane :check_key do
+    validate_play_store_json_key(json_key: ENV.fetch("PLAY_JSON_KEY"))
+  end
+end

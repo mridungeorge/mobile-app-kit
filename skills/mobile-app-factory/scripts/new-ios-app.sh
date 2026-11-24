@@ -35,6 +35,7 @@ cp "$SKILL_DIR/references/ios-app-store.md" "$TARGET/docs/ios-app-store.md" 2>/d
 cp "$SKILL_DIR/assets/ci/ios-release.yml" "$TARGET/ci/ios-release.yml" 2>/dev/null || true
 cp "$SKILL_DIR/assets/ios/Fastfile" "$TARGET/fastlane/Fastfile" 2>/dev/null || true
 cp "$SKILL_DIR/assets/ios/Appfile.example" "$TARGET/fastlane/Appfile.example" 2>/dev/null || true
+cp "$SKILL_DIR/assets/fastlane/Gemfile" "$TARGET/Gemfile" 2>/dev/null || true
 
 # Buildable native project (SwiftUI + XcodeGen project.yml)
 SCAFFOLD_ARGS=(--platform ios --name "$APP_NAME" --out "$TARGET/ios")
@@ -120,7 +121,7 @@ Included:
   - ios/      buildable SwiftUI sources, XcodeGen project.yml, PrivacyInfo, Assets, XCTest
   - .mobile/  factory state
   - docs/     design tokens, iOS release/store guides, testing, PrivacyInfo
-  - fastlane/ (Fastfile, Appfile.example)
+  - fastlane/ (Fastfile, Appfile.example) + Gemfile; set IOS_PROJECT=ios/<Name>.xcodeproj and IOS_SCHEME
   - ci/ios-release.yml
 
 Next:

@@ -1,0 +1,4 @@
+# Copy to fastlane/Appfile. Never commit the JSON key (play-service-account.json is gitignored).
+# Create the key in Google Cloud (service account) and grant it access in Play Console > Users and permissions.
+json_key_file(ENV["PLAY_JSON_KEY"] || "play-service-account.json")
+package_name("com.example.app") # applicationId

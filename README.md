@@ -143,6 +143,17 @@ node skills/mobile-app-factory/scripts/enable-modules.mjs --platform android \
 
 `reconcile-declarations.mjs` exits 1 when an SDK is in the build but missing from the declarations, so a privacy form cannot drift away from the binary.
 
+## Store release automation (fastlane)
+
+Release lanes for [fastlane](https://github.com/fastlane/fastlane) ship with both starters, so a build can reach TestFlight or the Play internal track from one command. `new-ios-app.sh` and `new-android-app.sh` copy them into `fastlane/` together with a `Gemfile`; run them with `bundle exec fastlane <lane>`.
+
+| Platform | Lanes | What they do |
+|---|---|---|
+| iOS (`assets/ios/Fastfile`) | `test`, `beta`, `release`, `check_metadata` | Signs in with an App Store Connect API key (`ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY`), optional `match` signing (`SIGNING=match`), TestFlight-based build numbers, `precheck` before upload. Never submits for review |
+| Android (`assets/android/Fastfile`) | `test`, `build`, `internal`, `release`, `check_key` | Signed AAB, upload to the Play internal track, or a **draft** production release with listing metadata. Never rolls out to users |
+
+The CI starters (`assets/ci/ios-release.yml`, `assets/ci/android-release.yml`) now call these lanes. Android needs the first AAB uploaded by hand in the Play Console before fastlane can reach the app, and the Play service-account JSON stays out of git.
+
 ## What this does not do
 
 It writes the code, the specs and the declarations. It does not:
@@ -214,6 +225,7 @@ Last checked **2026-11-23**. "Verified" means the command ran on this machine or
 | Router + store compliance checks | Verified | 2026-11-23: 30/30 router fixture cases and 8/8 compliance checks pass on the example |
 | Habit-tracker example | Partial | Artifacts lint clean and both native projects scaffolded; the review is a real FAIL on the unauthored History and paywall screens; builds run in CI, not on this machine |
 | Motion demo reduced-motion test | Verified | 2026-11-23: `npm run build` and `npx playwright test` — 2/2 passed (`prefers-reduced-motion` emulated) |
+| fastlane lanes (iOS + Android) | Not verified | Written against the current fastlane docs, 2026-11-24. Not run: no Ruby or Xcode on the authoring machine, and no CI job exercises them yet |
 | Quality evals | Partial | 2026-11-20 OpenCode (free `big-pickle`, 2 repeats): mobile 12/19, motion 3/4 completed. 2026-11-18: mobile 11/19, motion 3/7. Remaining misses are documented in `docs/evals.md` |
 
 ## Automated vs. external
